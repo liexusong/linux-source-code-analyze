@@ -229,11 +229,11 @@ opps:
 `kmem_cache_create()` 函数比较长，所以上面代码去掉了一些不那么重要的地方，使代码更清晰的体现其原理。
 
 在 `kmem_cache_create()` 函数中，首先调用 `kmem_cache_alloc()` 函数申请一个 `kmem_cache_t` 对象，我们看到调用 `kmem_cache_alloc()` 时，传入的就是 `cache_cache` 变量。申请完 `kmem_cache_t对象` 后需要对其进行初始化操作，主要是对 `kmem_cache_t对象` 的所有字段进行初始化：
-* 1) 计算需要多少个页面来作为slab的大小。
-* 2) 计算一个slab能够分配多少个对象。
-* 3) 计算着色区信息。
-* 4) 初始化 `slab_full / slab_partial / slab_free` 链表。
-* 5) 把申请的 `kmem_cache_t对象` 保存到 `cache_chain` 链表中。
+* 计算需要多少个页面来作为slab的大小。
+* 计算一个slab能够分配多少个对象。
+* 计算着色区信息。
+* 初始化 `slab_full / slab_partial / slab_free` 链表。
+* 把申请的 `kmem_cache_t对象` 保存到 `cache_chain` 链表中。
 
 ### 对象分配
 申请完 `kmem_cache_t对象` 后，就使用通过调用 `kmem_cache_alloc()` 函数来申请指定的对象。`kmem_cache_alloc()` 函数代码如下：
@@ -304,9 +304,9 @@ void * kmem_cache_alloc (kmem_cache_t *cachep, int flags)
 }
 ```
 `kmem_cache_alloc()` 函数被我展开之后如上代码，`kmem_cache_alloc()` 函数的主要步骤是：
-* 1) 从` kmem_cache_t对象` 的 `slab_partial` 列表中查找是否有slab可用，如果有就直接从slab中分配一个对象。
-* 2) 如果 `slab_partial` 列表中没有可用的slab，那么就从 `slab_free` 列表中查找可用的slab，如果有可用slab，就从slab分配一个对象，并且把此slab放置到 `slab_partial` 列表中。
-* 3) 如果 `slab_free` 列表中没有可用的slab，那么就调用 `kmem_cache_grow()` 函数申请新的slab来进行对象的分配。
+* 从` kmem_cache_t对象` 的 `slab_partial` 列表中查找是否有slab可用，如果有就直接从slab中分配一个对象。
+* 如果 `slab_partial` 列表中没有可用的slab，那么就从 `slab_free` 列表中查找可用的slab，如果有可用slab，就从slab分配一个对象，并且把此slab放置到 `slab_partial` 列表中。
+* 如果 `slab_free` 列表中没有可用的slab，那么就调用 `kmem_cache_grow()` 函数申请新的slab来进行对象的分配。
 
 一个slab的结构如下图：
 ![enter image description here](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/memory_slab.png)
@@ -347,5 +347,5 @@ static inline void kmem_cache_free_one(kmem_cache_t *cachep, void *objp)
 }
 ```
 对象释放的时候首先会把对象的索引添加到slab的空闲对象链表中，然后根据slab的使用情况移动slab到合适的列表中。
-* 1) 如果slab所有对象都被释放完时，把slab放置到slab_free列表中。
-* 2) 如果对象所在的slab原来在slab_full中，那么就把slab移动到slab_partial中。
+* 如果slab所有对象都被释放完时，把slab放置到slab_free列表中。
+* 如果对象所在的slab原来在slab_full中，那么就把slab移动到slab_partial中。
