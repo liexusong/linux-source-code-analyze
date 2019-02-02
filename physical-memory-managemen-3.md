@@ -347,5 +347,5 @@ static inline void kmem_cache_free_one(kmem_cache_t *cachep, void *objp)
 }
 ```
 对象释放的时候首先会把对象的索引添加到slab的空闲对象链表中，然后根据slab的使用情况移动slab到合适的列表中。
-* 如果slab所有对象都被释放完时，把slab放置到slab_free列表中。
-* 如果对象所在的slab原来在slab_full中，那么就把slab移动到slab_partial中。
+* 如果slab所有对象都被释放完时，把slab放置到 `slab_free` 列表中。
+* 如果对象所在的slab原来在 `slab_full` 中，那么就把slab移动到 `slab_partial` 中。
