@@ -9,3 +9,4 @@
     * [物理内存管理(上)](https://github.com/liexusong/linux-source-code-analyze/blob/master/physical-memory-managemen-1.md)
     * [物理内存管理(中)](https://github.com/liexusong/linux-source-code-analyze/blob/master/physical-memory-managemen-2.md)
     * [物理内存管理(下)](https://github.com/liexusong/linux-source-code-analyze/blob/master/physical-memory-managemen-3.md)
+    * [虚拟内存管理](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual-memory-managemen.md)
