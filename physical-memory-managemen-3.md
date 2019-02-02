@@ -306,7 +306,7 @@ void * kmem_cache_alloc (kmem_cache_t *cachep, int flags)
 `kmem_cache_alloc()` 函数被我展开之后如上代码，`kmem_cache_alloc()` 函数的主要步骤是：
 * 从` kmem_cache_t对象` 的 `slab_partial` 列表中查找是否有slab可用，如果有就直接从slab中分配一个对象。
 * 如果 `slab_partial` 列表中没有可用的slab，那么就从 `slab_free` 列表中查找可用的slab，如果有可用slab，就从slab分配一个对象，并且把此slab放置到 `slab_partial` 列表中。
-* 如果 `slab_free` 列表中没有可用的slab，那么就调用 `kmem_cache_grow()` 函数申请新的slab来进行对象的分配。
+* 如果 `slab_free` 列表中没有可用的slab，那么就调用 `kmem_cache_grow()` 函数申请新的slab来进行对象的分配。`kmem_cache_grow()` 函数会调用 `__get_free_pages()` 函数来申请内存页并且初始化slab.
 
 一个slab的结构如下图：
 ![enter image description here](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/memory_slab.png)
