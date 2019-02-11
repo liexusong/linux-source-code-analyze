@@ -59,7 +59,7 @@ static inline struct task_struct * get_current(void)
 * `TASK_TRACED (被追踪)` -- 进程处于被追踪状态, 例如通过ptrace命令对进程进行调试.
 * `TASK_STOPPED (停止)` -- 进程处于停止状态, 进程不能被执行. 一般接收到SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU信号进程会变成TASK_STOPPED状态.
 
-个钟状态间的转换如下图:
+各种状态间的转换如下图:
 
 ![](https://raw.githubusercontent.com/liexusong/myblog/master/images/task_state.png)
 
