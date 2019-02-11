@@ -60,6 +60,7 @@ static inline struct task_struct * get_current(void)
 * `TASK_STOPPED (停止)` -- 进程处于停止状态, 进程不能被执行. 一般接收到SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU信号进程会变成TASK_STOPPED状态.
 
 个钟状态间的转换如下图:
+
 ![](https://raw.githubusercontent.com/liexusong/myblog/master/images/task_state.png)
 
 ### 进程的创建
