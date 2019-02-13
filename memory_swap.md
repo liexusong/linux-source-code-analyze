@@ -66,8 +66,7 @@ static int do_try_to_free_pages(unsigned int gfp_mask, int user)
 {
     int ret = 0;
 
-    if (free_shortage() || nr_inactive_dirty_pages > nr_free_pages() +
-            nr_inactive_clean_pages())
+    if (free_shortage() || nr_inactive_dirty_pages > nr_free_pages() + nr_inactive_clean_pages())
         ret += page_launder(gfp_mask, user);
 
     if (free_shortage() || inactive_shortage()) {
@@ -82,3 +81,4 @@ static int do_try_to_free_pages(unsigned int gfp_mask, int user)
     return ret;
 }
 ```
+`do_try_to_free_pages()` 函数第一步先判断系统中的空闲物理内存页是否短缺, 或者非活跃脏页面的数量大于空闲物理内存页和非活跃干净页面的总和, 其中一个条件满足了, 就调用 `page_launder()` 函数把非活跃脏链表中的页面刷到磁盘中, 然后移动到非活跃干净链表中.
