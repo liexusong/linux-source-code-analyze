@@ -58,5 +58,27 @@ int kswapd(void *unused)
     }
 }
 ```
-`kswapd` 内核线程由一个无限循环组成, 首先通过 `inactive_shortage()` 和 `free_shortage()` 函数判断系统的非活跃页面和空闲物理内存页是否短缺, 如果短缺的话, 那么就调用 `do_try_to_free_pages()` 函数试图释放一些物理内存页. 然后通过调用 `refill_inactive_scan()` 函数把一些活跃链表中的内存页移动到非活跃脏链表中. 最后, 如果空闲内存页或者非活跃页面不短缺, 那么就休眠 `kswapd` 内核线程.
+`kswapd` 内核线程由一个无限循环组成, 首先通过 `inactive_shortage()` 和 `free_shortage()` 函数判断系统的非活跃页面和空闲物理内存页是否短缺, 如果短缺的话, 那么就调用 `do_try_to_free_pages()` 函数试图释放一些物理内存页. 然后通过调用 `refill_inactive_scan()` 函数把一些活跃链表中的内存页移动到非活跃脏链表中. 最后, 如果空闲物理内存页或者非活跃内存页不短缺, 那么就让 `kswapd` 内核线程休眠一秒.
 
+接下来我们分析一下 `do_try_to_free_pages()` 函数做了一些什么工作, 代码如下:
+```cpp
+static int do_try_to_free_pages(unsigned int gfp_mask, int user)
+{
+    int ret = 0;
+
+    if (free_shortage() || nr_inactive_dirty_pages > nr_free_pages() +
+            nr_inactive_clean_pages())
+        ret += page_launder(gfp_mask, user);
+
+    if (free_shortage() || inactive_shortage()) {
+        shrink_dcache_memory(6, gfp_mask);
+        shrink_icache_memory(6, gfp_mask);
+        ret += refill_inactive(gfp_mask, user);
+    } else {
+        kmem_cache_reap(gfp_mask);
+        ret = 1;
+    }
+
+    return ret;
+}
+```
