@@ -15,3 +15,46 @@ static int __init kswapd_init(void)
     return 0;
 }
 ```
+可以看到, `kswapd_init()` 函数会创建 `kswapd` 和 `kreclaimd` 两个内核线程, 这两个内核线程负责在系统物理内存紧缺时释放一些物理内存页, 从而使系统的可用内存达到一个平衡. 下面我们重点来分析 `kswapd` 这个内核线程, `kswapd()` 的源码如下:
+```cpp
+int kswapd(void *unused)
+{
+    struct task_struct *tsk = current;
+
+    tsk->session = 1;
+    tsk->pgrp = 1;
+    strcpy(tsk->comm, "kswapd");
+    sigfillset(&tsk->blocked);
+    kswapd_task = tsk;
+
+    tsk->flags |= PF_MEMALLOC;
+
+    for (;;) {
+        static int recalc = 0;
+
+        if (inactive_shortage() || free_shortage()) {
+            int wait = 0;
+            /* Do we need to do some synchronous flushing? */
+            if (waitqueue_active(&kswapd_done))
+                wait = 1;
+            do_try_to_free_pages(GFP_KSWAPD, wait);
+        }
+
+        refill_inactive_scan(6, 0);
+
+        if (time_after(jiffies, recalc + HZ)) {
+            recalc = jiffies;
+            recalculate_vm_stats();
+        }
+
+        wake_up_all(&kswapd_done);
+        run_task_queue(&tq_disk);
+
+        if (!free_shortage() || !inactive_shortage()) {
+            interruptible_sleep_on_timeout(&kswapd_wait, HZ);
+        } else if (out_of_memory()) {
+            oom_kill();
+        }
+    }
+}
+```
