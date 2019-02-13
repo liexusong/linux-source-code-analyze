@@ -58,4 +58,5 @@ int kswapd(void *unused)
     }
 }
 ```
-`kswapd` 内核线程由一个无限循环组成, 首先通过 `inactive_shortage()` 和 `free_shortage()` 函数判断系统的非活跃页面和空闲物理内存页是否短缺, 如果短缺的话, 那么就调用 `do_try_to_free_pages()` 函数试图释放一些物理内存页.
+`kswapd` 内核线程由一个无限循环组成, 首先通过 `inactive_shortage()` 和 `free_shortage()` 函数判断系统的非活跃页面和空闲物理内存页是否短缺, 如果短缺的话, 那么就调用 `do_try_to_free_pages()` 函数试图释放一些物理内存页. 然后通过调用 `refill_inactive_scan()` 函数把一些活跃链表中的内存页移动到非活跃脏链表中. 最后, 如果空闲内存页或者非活跃页面不短缺, 那么就休眠 `kswapd` 内核线程.
+
