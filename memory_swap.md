@@ -172,4 +172,30 @@ dirty_page_rescan:
             goto page_active;
         }
 ```
-上面的代码首先判断内存页是否脏的(是否设置了 `PG_dirty` 标志), 如果是, 那么就需要把内存页刷新到磁盘中. 这里有个要主要的地方是, 当 `launder_loop` 变量为0时只是把内存页移动到非活跃脏链表的头部. 当 `launder_loop` 变量为1时才会把内存页刷新到磁盘中. 为什么要这样做呢? 这是因为Linux内核希望第一次扫描先把非活跃脏链表中的干净内存页移动到非活跃干净链表中, 第二次扫描才把脏的内存页刷新到磁盘中. 后面的代码会对 `launder_loop` 变量进行修改.
+上面的代码首先判断内存页是否脏的(是否设置了 `PG_dirty` 标志), 如果是, 那么就需要把内存页刷新到磁盘中. 这里有个要主要的地方是, 当 `launder_loop` 变量为0时只是把内存页移动到非活跃脏链表的头部. 当 `launder_loop` 变量为1时才会把内存页刷新到磁盘中. 为什么要这样做呢? 这是因为Linux内核希望第一次扫描先把非活跃脏链表中的干净内存页移动到非活跃干净链表中, 第二次扫描才把脏的内存页刷新到磁盘中. 后面的代码会对 `launder_loop` 变量进行修改. 而且我们发现, 把脏页面刷新到磁盘后, 并没有立刻把内存页移动到非活跃干净链表中, 而是简单的清除了 `PG_dirty` 标志.
+```cpp
+        if (page->buffers) { // 涉及文件系统部分, 先略过
+            ...
+        } else if (page->mapping && !PageDirty(page)) {
+            /*
+             * If a page had an extra reference in
+             * deactivate_page(), we will find it here.
+             * Now the page is really freeable, so we
+             * move it to the inactive_clean list.
+             */
+            del_page_from_inactive_dirty_list(page);
+            add_page_to_inactive_clean_list(page);
+            UnlockPage(page);
+            cleaned_pages++;
+        } else {
+page_active:
+            /*
+             * OK, we don't know what to do with the page.
+             * It's no use keeping it here, so we move it to
+             * the active list.
+             */
+            del_page_from_inactive_dirty_list(page);
+            add_page_to_active_list(page);
+            UnlockPage(page);
+        }
+```
