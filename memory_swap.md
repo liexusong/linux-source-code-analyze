@@ -139,20 +139,12 @@ dirty_page_rescan:
             continue;
         }
 
-        /*
-         * The page is locked. IO in progress?
-         * Move it to the back of the list.
-         */
         if (TryLockPage(page)) { // 把内存页上锁
             list_del(page_lru);
             list_add(page_lru, &inactive_dirty_list);
             continue;
         }
 
-        /*
-         * Dirty swap-cache page? Write it out if
-         * last copy..
-         */
         if (PageDirty(page)) { // 如果页面是脏的, 那么应该把页面写到磁盘中
             int (*writepage)(struct page *) = page->mapping->a_ops->writepage;
             int result;
@@ -185,6 +177,8 @@ dirty_page_rescan:
             goto page_active;
         }
 
+        // 到这里说明页面已经是干净的...
+
         if (page->buffers) {
             int wait, clearedbuf;
             int freed_page = 0;
@@ -193,6 +187,7 @@ dirty_page_rescan:
             page_cache_get(page);
             spin_unlock(&pagemap_lru_lock);
 
+            /* Will we do (asynchronous) IO? */
             if (launder_loop && maxlaunder == 0 && sync)
                 wait = 2;   /* Synchrounous IO */
             else if (launder_loop && maxlaunder-- > 0)
@@ -200,12 +195,16 @@ dirty_page_rescan:
             else
                 wait = 0;   /* No IO */
 
+            /* Try to free the page buffers. */
             clearedbuf = try_to_free_buffers(page, wait);
 
             spin_lock(&pagemap_lru_lock);
 
+            /* The buffers were not freed. */
             if (!clearedbuf) {
                 add_page_to_inactive_dirty_list(page);
+
+            /* The page was only in the buffer cache. */
             } else if (!page->mapping) {
                 atomic_dec(&buffermem_pages);
                 freed_page = 1;
@@ -215,6 +214,7 @@ dirty_page_rescan:
             } else if (page_count(page) > 2) {
                 add_page_to_active_list(page);
 
+            /* OK, we "created" a freeable page. */
             } else /* page->mapping && page_count(page) == 2 */ {
                 add_page_to_inactive_clean_list(page);
                 cleaned_pages++;
@@ -227,6 +227,7 @@ dirty_page_rescan:
                 break;
             continue;
         } else if (page->mapping && !PageDirty(page)) {
+            // 把干净的页面移动到非活跃干净链表中
             del_page_from_inactive_dirty_list(page);
             add_page_to_inactive_clean_list(page);
             UnlockPage(page);
@@ -238,5 +239,20 @@ page_active:
             UnlockPage(page);
         }
     }
+    spin_unlock(&pagemap_lru_lock);
+
+    if (can_get_io_locks && !launder_loop && free_shortage()) {
+        launder_loop = 1;
+        /* If we cleaned pages, never do synchronous IO. */
+        if (cleaned_pages)
+            sync = 0;
+        /* We only do a few "out of order" flushes. */
+        maxlaunder = MAX_LAUNDER;
+        /* Kflushd takes care of the rest. */
+        wakeup_bdflush(0);
+        goto dirty_page_rescan;
+    }
+
+    return cleaned_pages;
 }
 ```
