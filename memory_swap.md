@@ -114,10 +114,26 @@ int page_launder(int gfp_mask, int sync)
 dirty_page_rescan:
     spin_lock(&pagemap_lru_lock);
     maxscan = nr_inactive_dirty_pages;
-    // 从非活跃脏页面lru链表的后面开始扫描
+    // 从非活跃脏链表的后面开始扫描
     while ((page_lru = inactive_dirty_list.prev) != &inactive_dirty_list &&
                 maxscan-- > 0) {
         page = list_entry(page_lru, struct page, lru);
     ...
 ```
 上面的代码首先把 `pagemap_lru_lock` 上锁, 然后从尾部开始遍历非活跃脏链表.
+```cpp
+        // 如果满足以下的任意一个条件, 都表示内存页在使用中, 把他移动到活跃链表
+        if (PageTestandClearReferenced(page) ||             // 如果设置了 PG_referenced 标志
+                page->age > 0 ||                            // 如果age大于0, 表示页面被访问过
+                (!page->buffers && page_count(page) > 1) || // 如果页面被其他进程映射
+                page_ramdisk(page)) {                       // 如果用于内存磁盘的页面
+            del_page_from_inactive_dirty_list(page);
+            add_page_to_active_list(page);
+            continue;
+        }
+```
+上面代码判断内存页是否能需要重新移动到活跃链表中, 依据有: 
+* 1. 内存页是否设置了 `PG_referenced` 标志; 
+* 2. 内存页的age字段是否大于0 (age字段是内存页的生命周期); 
+* 3. 内存页是否跟进程有映射关系; 
+* 4. 内存页是否用于内存磁盘. 
