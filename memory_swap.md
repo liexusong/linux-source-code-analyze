@@ -176,26 +176,33 @@ dirty_page_rescan:
 ```cpp
         if (page->buffers) { // 涉及文件系统部分, 先略过
             ...
-        } else if (page->mapping && !PageDirty(page)) {
-            /*
-             * If a page had an extra reference in
-             * deactivate_page(), we will find it here.
-             * Now the page is really freeable, so we
-             * move it to the inactive_clean list.
-             */
+        } else if (page->mapping && !PageDirty(page)) { // 内存页是干净的, 移动到非活跃干净链表
             del_page_from_inactive_dirty_list(page);
             add_page_to_inactive_clean_list(page);
             UnlockPage(page);
             cleaned_pages++;
         } else {
 page_active:
-            /*
-             * OK, we don't know what to do with the page.
-             * It's no use keeping it here, so we move it to
-             * the active list.
-             */
             del_page_from_inactive_dirty_list(page);
             add_page_to_active_list(page);
             UnlockPage(page);
         }
+```
+上面的代码比较简单, 如果内存页已经是干净的, 那么久移动到非活跃干净链表中.
+```cpp
+    if (can_get_io_locks && !launder_loop && free_shortage()) {
+        launder_loop = 1;
+        /* If we cleaned pages, never do synchronous IO. */
+        if (cleaned_pages)
+            sync = 0;
+        /* We only do a few "out of order" flushes. */
+        maxlaunder = MAX_LAUNDER;
+        /* Kflushd takes care of the rest. */
+        wakeup_bdflush(0);
+        goto dirty_page_rescan;
+    }
+
+    /* Return the number of pages moved to the inactive_clean list. */
+    return cleaned_pages;
+}
 ```
