@@ -135,7 +135,40 @@ dirty_page_rescan:
 上面代码判断内存页是否能需要重新移动到活跃链表中, 依据有: 
 * 内存页是否设置了 `PG_referenced` 标志; 
 * 内存页的age字段是否大于0 (age字段是内存页的生命周期); 
-* 内存页是否跟进程有映射关系; 
+* 内存页是否还有映射关系; 
 * 内存页是否用于内存磁盘. 
 
 如果满足上面其中一个条件, 都需要重新把内存页移动到活跃页面中.
+```cpp
+        if (PageDirty(page)) { // 如果页面是脏的, 那么应该把页面写到磁盘中
+            int (*writepage)(struct page *) = page->mapping->a_ops->writepage;
+            int result;
+
+            if (!writepage)
+                goto page_active;
+
+            /* First time through? Move it to the back of the list */
+            if (!launder_loop) { // 第一次只把页面移动到链表的头部, 这是为了先处理已经干净的页面
+                list_del(page_lru);
+                list_add(page_lru, &inactive_dirty_list);
+                UnlockPage(page);
+                continue;
+            }
+
+            /* OK, do a physical asynchronous write to swap.  */
+            ClearPageDirty(page);
+            page_cache_get(page);
+            spin_unlock(&pagemap_lru_lock);
+
+            result = writepage(page);
+            page_cache_release(page);
+
+            /* And re-start the thing.. */
+            spin_lock(&pagemap_lru_lock);
+            if (result != 1)
+                continue;
+            /* writepage refused to do anything */
+            set_page_dirty(page);
+            goto page_active;
+        }
+```
