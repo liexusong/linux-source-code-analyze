@@ -172,3 +172,4 @@ dirty_page_rescan:
             goto page_active;
         }
 ```
+上面的代码首先判断内存页是否脏的(是否设置了 `PG_dirty` 标志), 如果是, 那么就需要把内存页刷新到磁盘中.
