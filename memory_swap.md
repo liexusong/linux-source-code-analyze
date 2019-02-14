@@ -206,4 +206,4 @@ page_active:
     return cleaned_pages;
 }
 ```
-从上面的代码可以看到, 当 `can_get_io_locks` 等于1(`gfp_mask` 设置了 `__GFP_IO` 标志), `launder_loop` 等于0, 并且空闲内存页还是短缺(`free_shortage()` 为真)的情况下, 把 `launder_loop` 变量被设置为1, 并且跳转到 `dirty_page_rescan` 处重新扫描, 这是第二次扫描非活跃脏链表.
+从上面的代码可以看到, 当 `can_get_io_locks` 等于1(`gfp_mask` 设置了 `__GFP_IO` 标志), `launder_loop` 等于0, 并且空闲内存页还是短缺(`free_shortage()` 为真)的情况下, 把 `launder_loop` 变量被设置为1, 并且跳转到 `dirty_page_rescan` 处重新扫描, 这是第二次扫描非活跃脏链表, 会把脏的内存页刷新到磁盘中.
