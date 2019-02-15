@@ -310,3 +310,83 @@ int refill_inactive_scan(unsigned int priority, int oneshot)
 }
 ```
 `refill_inactive_scan()` 函数比较简单, 首先从活跃链表的尾部开始遍历, 然后判断内存页的生命是否已经用完(age是否等于0), 并且没有进程与其有映射关系(count是否等于1). 如果是, 那么就调用 `deactivate_page_nolock()` 函数把内存页移动到非活跃脏链表中.
+
+接着来看看 `swap_out()` 函数, `swap_out()` 函数比较复杂, 但最终会调用 `try_to_swap_out()` 函数, 所以我们只分析 `try_to_swap_out()` 函数:
+```cpp
+static int try_to_swap_out(struct mm_struct * mm, struct vm_area_struct* vma, unsigned long address, pte_t * page_table, int gfp_mask)
+{
+    pte_t pte;
+    swp_entry_t entry;
+    struct page * page;
+    int onlist;
+
+    pte = *page_table;
+    if (!pte_present(pte))
+        goto out_failed;
+    page = pte_page(pte);
+    if ((!VALID_PAGE(page)) || PageReserved(page))
+        goto out_failed;
+
+    if (!mm->swap_cnt)
+        return 1;
+
+    mm->swap_cnt--;
+
+    onlist = PageActive(page); // 是否已经在活跃链表
+    if (ptep_test_and_clear_young(page_table)) {
+        age_page_up(page);
+        goto out_failed;
+    }
+    if (!onlist)
+        age_page_down_ageonly(page);
+
+    if (page->age > 0)
+        goto out_failed;
+
+    if (TryLockPage(page))
+        goto out_failed;
+
+    pte = ptep_get_and_clear(page_table);
+    flush_tlb_page(vma, address);
+
+    if (PageSwapCache(page)) {
+        entry.val = page->index;
+        if (pte_dirty(pte))
+            set_page_dirty(page);
+set_swap_pte:
+        swap_duplicate(entry);
+        // 把页目录项设置为磁盘交换区的信息(注意:此时是否在内存中标志位为0, 所以访问这个内存地址会触发内存访问异常)
+        set_pte(page_table, swp_entry_to_pte(entry));
+drop_pte:
+        UnlockPage(page);
+        mm->rss--;
+        deactivate_page(page);
+        page_cache_release(page);
+out_failed:
+        return 0;
+    }
+
+    flush_cache_page(vma, address);
+    if (!pte_dirty(pte))
+        goto drop_pte;
+
+    if (page->mapping) {
+        set_page_dirty(page);
+        goto drop_pte;
+    }
+
+    entry = get_swap_page();
+    if (!entry.val)
+        goto out_unlock_restore; /* No swap space left */
+
+    /* Add it to the swap cache and mark it dirty */
+    add_to_swap_cache(page, entry);
+    set_page_dirty(page);
+    goto set_swap_pte;
+
+out_unlock_restore:
+    set_pte(page_table, pte);
+    UnlockPage(page);
+    return 0;
+}
+```
