@@ -380,3 +380,27 @@ void add_to_page_cache_locked(struct page * page, struct address_space *mapping,
     spin_unlock(&pagecache_lock);
 }
 ```
+`add_to_swap_cache()` 函数会调用 `add_to_page_cache_locked()` 函数, 而`add_to_page_cache_locked()` 函数会调用 `lru_cache_add()` 函数来把内存页添加到活跃链表中, `lru_cache_add()` 函数代码如下:
+```cpp
+#define add_page_to_active_list(page) {     \
+    DEBUG_ADD_PAGE                          \
+    ZERO_PAGE_BUG                           \
+    SetPageActive(page);                    \
+    list_add(&(page)->lru, &active_list);   \
+    nr_active_pages++;                      \
+}
+
+void lru_cache_add(struct page * page)
+{
+    spin_lock(&pagemap_lru_lock);
+    if (!PageLocked(page))
+        BUG();
+    DEBUG_ADD_PAGE
+    add_page_to_active_list(page);
+    /* This should be relatively rare */
+    if (!page->age)
+        deactivate_page_nolock(page);
+    spin_unlock(&pagemap_lru_lock);
+}
+```
+从上面的代码可以看到, `lru_cache_add()` 函数最终会调用 `list_add(&(page)->lru, &active_list);` 这行代码来把内存页添加到活跃链表(`active_list`)中.
