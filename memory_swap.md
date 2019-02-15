@@ -315,41 +315,17 @@ int refill_inactive_scan(unsigned int priority, int oneshot)
 ```cpp
 static int try_to_swap_out(struct mm_struct * mm, struct vm_area_struct* vma, unsigned long address, pte_t * page_table, int gfp_mask)
 {
-    pte_t pte;
-    swp_entry_t entry;
-    struct page * page;
-    int onlist;
-
-    pte = *page_table;
-    if (!pte_present(pte))
-        goto out_failed;
+    ...
     page = pte_page(pte);
-    if ((!VALID_PAGE(page)) || PageReserved(page))
-        goto out_failed;
 
     if (!mm->swap_cnt)
         return 1;
 
     mm->swap_cnt--;
 
-    onlist = PageActive(page); // 是否已经在活跃链表
-    if (ptep_test_and_clear_young(page_table)) {
-        age_page_up(page);
-        goto out_failed;
-    }
-    if (!onlist)
-        age_page_down_ageonly(page);
+    ...
 
-    if (page->age > 0)
-        goto out_failed;
-
-    if (TryLockPage(page))
-        goto out_failed;
-
-    pte = ptep_get_and_clear(page_table);
-    flush_tlb_page(vma, address);
-
-    if (PageSwapCache(page)) {
+    if (PageSwapCache(page)) { // 内存页之前已经发生过交换操作
         entry.val = page->index;
         if (pte_dirty(pte))
             set_page_dirty(page);
@@ -366,20 +342,12 @@ out_failed:
         return 0;
     }
 
-    flush_cache_page(vma, address);
-    if (!pte_dirty(pte))
-        goto drop_pte;
-
-    if (page->mapping) {
-        set_page_dirty(page);
-        goto drop_pte;
-    }
+    ...
 
     entry = get_swap_page();
     if (!entry.val)
         goto out_unlock_restore; /* No swap space left */
 
-    /* Add it to the swap cache and mark it dirty */
     add_to_swap_cache(page, entry);
     set_page_dirty(page);
     goto set_swap_pte;
@@ -388,5 +356,27 @@ out_unlock_restore:
     set_pte(page_table, pte);
     UnlockPage(page);
     return 0;
+}
+```
+上面的代码中, 首先调用 `get_swap_page()` 函数获取交换文件的一个槽(用于保存内存页的内容), 然后调用 `add_to_swap_cache()` 函数把内存页添加到活跃链表中, `add_to_swap_cache()` 函数源码如下:
+```cpp
+void add_to_swap_cache(struct page *page, swp_entry_t entry)
+{
+    ...
+    add_to_page_cache_locked(page, &swapper_space, entry.val);
+}
+
+void add_to_page_cache_locked(struct page * page, struct address_space *mapping, unsigned long index)
+{
+    if (!PageLocked(page))
+        BUG();
+
+    page_cache_get(page);
+    spin_lock(&pagecache_lock);
+    page->index = index;
+    add_page_to_inode_queue(mapping, page);
+    add_page_to_hash_queue(page, page_hash(mapping, index));
+    lru_cache_add(page);
+    spin_unlock(&pagecache_lock);
 }
 ```
