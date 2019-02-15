@@ -403,4 +403,4 @@ void lru_cache_add(struct page * page)
     spin_unlock(&pagemap_lru_lock);
 }
 ```
-从上面的代码可以看到, `lru_cache_add()` 函数最终会调用 `list_add(&(page)->lru, &active_list);` 这行代码来把内存页添加到活跃链表(`active_list`)中.
+从上面的代码可以看到, `lru_cache_add()` 函数最终会调用 `list_add(&(page)->lru, &active_list)` 这行代码来把内存页添加到活跃链表(`active_list`)中, 并设置内存页的 `PG_active` 标志.
