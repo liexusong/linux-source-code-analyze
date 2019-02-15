@@ -404,3 +404,6 @@ void lru_cache_add(struct page * page)
 }
 ```
 从上面的代码可以看到, `lru_cache_add()` 函数最终会调用 `list_add(&(page)->lru, &active_list)` 这行代码来把内存页添加到活跃链表(`active_list`)中, 并设置内存页的 `PG_active` 标志.
+
+最后我们通过一幅图来总结一下 `kswapd` 内核线程的流程:
+![kswapd](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/kswapd.png)
