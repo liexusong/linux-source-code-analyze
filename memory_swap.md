@@ -410,6 +410,5 @@ void lru_cache_add(struct page * page)
 ![kswapd](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/kswapd.png)
 
 `swap_out()` 函数会把进程占用的内存页添加到活跃链表中, 而 `refill_inactive_scan()` 函数会把活跃链表的内存页移动到非活跃脏链表中, 最后 `page_launder()` 会把非活跃脏链表的内存页刷新到磁盘并且移动到非活跃干净链表中, 非活跃干净链表中的内存页是直接可以用来分配使用的.
-`
-注意: 内核只维护着一个活跃链表和一个非活跃脏链表, 但是非活跃干净链表是每个内存管理区都有一个的.
-`
+
+    注意: 内核只维护着一个活跃链表和一个非活跃脏链表, 但是非活跃干净链表是每个内存管理区都有一个的.
