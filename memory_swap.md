@@ -230,7 +230,7 @@ static int refill_inactive(unsigned int gfp_mask, int user)
             schedule();
         }
 
-        while (refill_inactive_scan(priority, 1)) { // 把活跃页面链表中的页面放置到非活跃脏页面链表中
+        while (refill_inactive_scan(priority, 1)) { // 把活跃页面链表中的页面移动到非活跃脏页面链表中
             made_progress = 1;
             if (--count <= 0)
                 goto done;
@@ -238,7 +238,7 @@ static int refill_inactive(unsigned int gfp_mask, int user)
 
         ...
 
-        while (swap_out(priority, gfp_mask)) { // 把一些用户进程的内存页放置到活跃页面链表中
+        while (swap_out(priority, gfp_mask)) { // 把一些用户进程映射的内存页放置到活跃页面链表中
             made_progress = 1;
             if (--count <= 0)
                 goto done;
@@ -264,3 +264,48 @@ done:
 * 调用 `refill_inactive_scan()` 函数, `refill_inactive_scan()` 函数的作用是把活跃链表中的内存页移动到非活跃脏链表中.
 * 调用 `swap_out()` 函数, `swap_out()` 函数的作用是选择一个用户进程, 并且把其映射的内存页添加到活跃链表中.
 
+先来看看 `refill_inactive_scan()` 函数:
+```cpp
+int refill_inactive_scan(unsigned int priority, int oneshot)
+{
+    struct list_head * page_lru;
+    struct page * page;
+    int maxscan, page_active = 0;
+    int ret = 0;
+
+    spin_lock(&pagemap_lru_lock);
+    maxscan = nr_active_pages >> priority;
+    while (maxscan-- > 0 && (page_lru = active_list.prev) != &active_list) {
+        page = list_entry(page_lru, struct page, lru);
+
+        ...
+
+        /* Do aging on the pages. */
+        if (PageTestandClearReferenced(page)) {
+            age_page_up_nolock(page);
+            page_active = 1;
+        } else {
+            age_page_down_ageonly(page); // page->age = page->age / 2
+
+            if (page->age == 0 && page_count(page) <= (page->buffers ? 2 : 1)) {
+                deactivate_page_nolock(page); // 把页面放置到非活跃脏页面链表
+                page_active = 0;
+            } else {
+                page_active = 1;
+            }
+        }
+
+        if (page_active || PageActive(page)) {
+            list_del(page_lru);
+            list_add(page_lru, &active_list);
+        } else {
+            ret = 1;
+            if (oneshot)
+                break;
+        }
+    }
+    spin_unlock(&pagemap_lru_lock);
+
+    return ret;
+}
+```
