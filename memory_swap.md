@@ -207,3 +207,57 @@ page_active:
 }
 ```
 从上面的代码可以看到, 当 `can_get_io_locks` 等于1(`gfp_mask` 设置了 `__GFP_IO` 标志), `launder_loop` 等于0, 并且空闲内存页还是短缺(`free_shortage()` 为真)的情况下, 把 `launder_loop` 变量被设置为1, 并且跳转到 `dirty_page_rescan` 处重新扫描, 这是第二次扫描非活跃脏链表, 会把脏的内存页刷新到磁盘中.
+
+接下来我们继续分析 `refill_inactive()` 这个函数:
+```cpp
+static int refill_inactive(unsigned int gfp_mask, int user)
+{
+    int priority, count, start_count, made_progress;
+
+    count = inactive_shortage() + free_shortage();
+    if (user)
+        count = (1 << page_cluster);
+    start_count = count;
+
+    kmem_cache_reap(gfp_mask);
+
+    priority = 6;
+    do {
+        made_progress = 0;
+
+        if (current->need_resched) {
+            __set_current_state(TASK_RUNNING);
+            schedule();
+        }
+
+        while (refill_inactive_scan(priority, 1)) { // 把活跃页面链表中的页面放置到非活跃脏页面链表中
+            made_progress = 1;
+            if (--count <= 0)
+                goto done;
+        }
+
+        shrink_dcache_memory(priority, gfp_mask);
+        shrink_icache_memory(priority, gfp_mask);
+
+        while (swap_out(priority, gfp_mask)) { // 把一些用户进程的内存页放置到活跃页面链表中
+            made_progress = 1;
+            if (--count <= 0)
+                goto done;
+        }
+
+        if (!inactive_shortage() || !free_shortage())
+            goto done;
+
+        if (!made_progress)
+            priority--;
+    } while (priority >= 0);
+
+    while (refill_inactive_scan(0, 1)) {
+        if (--count <= 0)
+            goto done;
+    }
+
+done:
+    return (count < start_count);
+}
+```
