@@ -309,3 +309,4 @@ int refill_inactive_scan(unsigned int priority, int oneshot)
     return ret;
 }
 ```
+`refill_inactive_scan()` 函数比较简单, 首先从活跃链表的尾部开始遍历, 然后判断内存页的生命是否已经用完(age是否等于0), 并且没有进程与其有映射关系(count是否等于1). 如果是, 那么就调用 `deactivate_page_nolock()` 函数把内存页移动到非活跃脏链表中.
