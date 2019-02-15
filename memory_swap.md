@@ -261,3 +261,7 @@ done:
     return (count < start_count);
 }
 ```
+在这个函数中, 我们主要关注两个地方:
+* 第一个是调用了 `refill_inactive_scan()` 函数, `refill_inactive_scan()` 函数的作用是把活跃链表中的内存页移动到非活跃脏链表中.
+* 第二个是调用了 `swap_out()` 函数, `swap_out()` 函数的作用是选择一个用户进程, 并且把其映射的内存页添加到活跃链表中.
+
