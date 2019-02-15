@@ -219,7 +219,7 @@ static int refill_inactive(unsigned int gfp_mask, int user)
         count = (1 << page_cluster);
     start_count = count;
 
-    kmem_cache_reap(gfp_mask);
+    ...
 
     priority = 6;
     do {
@@ -236,8 +236,7 @@ static int refill_inactive(unsigned int gfp_mask, int user)
                 goto done;
         }
 
-        shrink_dcache_memory(priority, gfp_mask);
-        shrink_icache_memory(priority, gfp_mask);
+        ...
 
         while (swap_out(priority, gfp_mask)) { // 把一些用户进程的内存页放置到活跃页面链表中
             made_progress = 1;
@@ -262,6 +261,6 @@ done:
 }
 ```
 在这个函数中, 我们主要关注两个地方:
-* 第一个是调用了 `refill_inactive_scan()` 函数, `refill_inactive_scan()` 函数的作用是把活跃链表中的内存页移动到非活跃脏链表中.
-* 第二个是调用了 `swap_out()` 函数, `swap_out()` 函数的作用是选择一个用户进程, 并且把其映射的内存页添加到活跃链表中.
+* 调用 `refill_inactive_scan()` 函数, `refill_inactive_scan()` 函数的作用是把活跃链表中的内存页移动到非活跃脏链表中.
+* 调用 `swap_out()` 函数, `swap_out()` 函数的作用是选择一个用户进程, 并且把其映射的内存页添加到活跃链表中.
 
