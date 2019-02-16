@@ -106,6 +106,7 @@ reschedule:
 2. 如果进程的 `need_resched` 为1, 那么久调用 `schedule()` 函数进行进程的调度.
 3. 调用完 `schedule()` 函数后, 继续返回到 `ret_from_sys_call` 处执行.
 
+### schedule()函数
 现在我们来分析一下 `schedule()` 这个函数, 由于这个函数比较长, 所以我们分段来分析这个函数:
 ```cpp
 asmlinkage void schedule(void)
