@@ -13,4 +13,34 @@ struct task_struct {
 ### 时钟中断
 有了时间片的概念后, 进程就不能为所欲为的占用CPU了. 但这里有个问题, 就是进程的时间片不会自己减少的, 那么应该由谁来将进程的时间片减少呢? 答案就是 `时钟中断` 程序(`中断处理` 在后面会介绍, 所以这里不会对 `中断处理` 作详细的介绍).
 
-`时钟中断` 是指每隔一段相同的时间, 都会发出一个中断信号(由8253芯片触发), CPU接受到中断信号后触发内核中相应的中断处理程序.
+`时钟中断` 是指每隔一段相同的时间, 都会发出一个中断信号(由8253芯片触发), CPU接受到中断信号后触发内核中相应的中断处理程序. 当 `时钟中断` 发生时会调用 `timer_interrupt()` 函数来处理中断, `timer_interrupt()` 函数源码如下:
+```cpp
+static void timer_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+    int count;
+
+    write_lock(&xtime_lock);
+
+    ...
+    do_timer_interrupt(irq, NULL, regs);
+
+    write_unlock(&xtime_lock);
+}
+
+static inline void do_timer_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+    ...
+    do_timer(regs);
+    ...
+    if ((time_status & STA_UNSYNC) == 0 &&
+        xtime.tv_sec > last_rtc_update + 660 &&
+        xtime.tv_usec >= 500000 - ((unsigned) tick) / 2 &&
+        xtime.tv_usec <= 500000 + ((unsigned) tick) / 2) {
+        if (set_rtc_mmss(xtime.tv_sec) == 0)
+            last_rtc_update = xtime.tv_sec;
+        else
+            last_rtc_update = xtime.tv_sec - 600;
+    }
+    ...
+}
+```
