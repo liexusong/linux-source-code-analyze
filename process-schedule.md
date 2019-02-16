@@ -80,7 +80,30 @@ void update_process_times(int user_tick)
 
 这里有个问题, 就是时钟中断只是把进程的 `need_resched` 字段设置为1而已, 并没有对进程进行调度啊, 那么什么时候才会对进程进行调度呢? 答案是从内核态返回到用户态的时候.
 
-从内核态返回到用户态有几个时机, 
-1. 中断处理完成后. 
-2. 异常处理完成后. 
-3. 系统调用完成后.
+从内核态返回到用户态有几个时机: 
+1. 中断处理完成后返回. 
+2. 异常处理完成后返回. 
+3. 系统调用完成后返回.
+
+但最终也是调用以下的代码:
+```asm
+ENTRY(ret_from_sys_call)
+#ifdef CONFIG_SMP
+    movl processor(%ebx),%eax
+    shll $CONFIG_X86_L1_CACHE_SHIFT,%eax
+    movl SYMBOL_NAME(irq_stat)(,%eax),%ecx      # softirq_active
+    testl SYMBOL_NAME(irq_stat)+4(,%eax),%ecx   # softirq_mask
+#else
+    movl SYMBOL_NAME(irq_stat),%ecx     # softirq_active
+    testl SYMBOL_NAME(irq_stat)+4,%ecx  # softirq_mask
+#endif
+    jne   handle_softirq
+    
+ret_with_reschedule:
+    cmpl $0,need_resched(%ebx)
+    jne reschedule
+    cmpl $0,sigpending(%ebx)
+    jne signal_return
+restore_all:
+    RESTORE_ALL
+```
