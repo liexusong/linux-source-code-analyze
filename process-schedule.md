@@ -5,6 +5,8 @@
 ```cpp
 struct task_struct {
     ...
+    volatile long need_resched;
+    ...
     long counter;
     ...
 };
@@ -74,4 +76,8 @@ void update_process_times(int user_tick)
     ...
 }
 ```
-从上面的代码可以看出, 每次时钟中断发生都会将当前进程的时间片减一, 当时间片用完后设置进程的 `need_resched` 字段为1(表示需要调用当前进程).
+从上面的代码可以看出, 每次时钟中断发生都会将当前进程的时间片减一, 当时间片用完后会设置进程的 `need_resched` 字段为1(表示需要调用当前进程).
+
+这里有个问题, 就是时钟中断只是把进程的 `need_resched` 字段设置为1而已, 并没有对进程进行调度啊, 那么什么时候才会对进程进行调度呢? 答案是从内核态返回到用户态的时候.
+
+
