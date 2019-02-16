@@ -194,6 +194,7 @@ out:
 ```cpp
     prepare_to_switch();
     {
+        // 切换进程的内存空间
         struct mm_struct *mm = next->mm;
         struct mm_struct *oldmm = prev->active_mm;
         if (!mm) {
@@ -214,4 +215,26 @@ out:
 
     switch_to(prev, next, prev);
     __schedule_tail(prev);
+```
+找到合适的进程后, 接下来就是进行调度工作了. 调度工作首先调用 `switch_mm()` 函数来把旧进程的内存空间切换到新进程的内存空间, 切换内存空间主要是通过把 `cr3` 寄存器的值设置为新进程页目录的地址. 接着调用 `switch_to()` 函数进行进程的切换, 我们来看看 `switch_to()` 函数的实现:
+```
+#define switch_to(prev,next,last) do {                  \
+    asm volatile("pushl %%esi\n\t"                  \
+             "pushl %%edi\n\t"                  \
+             "pushl %%ebp\n\t"                  \
+             "movl %%esp,%0\n\t"    /* save ESP */      \
+             "movl %3,%%esp\n\t"    /* restore ESP */   \
+             "movl $1f,%1\n\t"      /* save EIP */      \
+             "pushl %4\n\t"     /* restore EIP */   \
+             "jmp __switch_to\n"                \
+             "1:\t"                     \
+             "popl %%ebp\n\t"                   \
+             "popl %%edi\n\t"                   \
+             "popl %%esi\n\t"                   \
+             :"=m" (prev->thread.esp),"=m" (prev->thread.eip),  \
+              "=b" (last)                   \
+             :"m" (next->thread.esp),"m" (next->thread.eip),    \
+              "a" (prev), "d" (next),               \
+              "b" (prev));                  \
+} while (0)
 ```
