@@ -166,7 +166,7 @@ static inline int goodness(struct task_struct * p, int this_cpu, struct mm_struc
     if (p->policy & SCHED_YIELD)
         goto out;
 
-    if (p->policy == SCHED_OTHER) {
+    if (p->policy == SCHED_OTHER) { // 普通进程
         weight = p->counter;
         if (!weight)
             goto out;
@@ -182,3 +182,6 @@ out:
     return weight;
 }
 ```
+计算过程很简单, 首先进程在Linux内核中分为实时进程和普通进程, 普通进程的计算方法就是:
+
+    进程时间片(`count`) + 20 - 进程的友好值(`nice`).
