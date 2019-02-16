@@ -1,2 +1,14 @@
 ## 进程调度
 在Linux内核中通常有几十或者上百个进程在运行, 但个人电脑的CPU一般也只有双核或者四核, CPU的一个核在某一时刻只能运行一个进程, 所以有四个核的CPU只能同时运行4个进程, 那么Linux内核怎么可以运行比CPU核数多的进程呢? 这里就涉及到一个叫 `进程运行时间片` 的概念.
+
+`进程运行时间片` 是让每个进程在CPU中运行一段指定的时间(时间片), 当某一个进程的时间片用完后, 由Linux内核切换到其他时间片还没用完的进程运行. 进程管理结构 `task_struct` 中有个保存着时间片的字段 `counter`, 如下:
+```cpp
+struct task_struct {
+    volatile long state;
+    unsigned long flags;
+    ...
+    long counter;
+    long nice;
+    ...
+};
+```
