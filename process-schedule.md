@@ -44,3 +44,17 @@ static inline void do_timer_interrupt(int irq, void *dev_id, struct pt_regs *reg
     ...
 }
 ```
+从上面的代码可以看到, `timer_interrupt()` 函数会调用 `do_timer_interrupt()` 函数, 而 `do_timer_interrupt()` 函数最终会调用 `do_timer()`, `do_timer()` 函数是时钟中断处理的主要逻辑, 源码如下:
+```cpp
+void do_timer(struct pt_regs *regs)
+{
+    (*(unsigned long *)&jiffies)++;
+#ifndef CONFIG_SMP
+    /* SMP process accounting uses the local APIC timer */
+    update_process_times(user_mode(regs));
+#endif
+    mark_bh(TIMER_BH);
+    if (TQ_ACTIVE(tq_timer))
+        mark_bh(TQUEUE_BH);
+}
+```
