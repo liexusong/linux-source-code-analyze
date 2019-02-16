@@ -86,19 +86,9 @@ void update_process_times(int user_tick)
 3. 系统调用完成后返回.
 
 但最终也会调用以下的汇编代码:
-```gas
+```asm
 ENTRY(ret_from_sys_call)
-#ifdef CONFIG_SMP
-    movl processor(%ebx),%eax
-    shll $CONFIG_X86_L1_CACHE_SHIFT,%eax
-    movl SYMBOL_NAME(irq_stat)(,%eax),%ecx
-    testl SYMBOL_NAME(irq_stat)+4(,%eax),%ecx
-#else
-    movl SYMBOL_NAME(irq_stat),%ecx
-    testl SYMBOL_NAME(irq_stat)+4,%ecx
-#endif
-    jne   handle_softirq
-    
+    ...
 ret_with_reschedule:
     cmpl $0,need_resched(%ebx)
     jne reschedule
