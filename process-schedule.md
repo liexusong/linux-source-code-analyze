@@ -4,11 +4,8 @@
 `进程运行时间片` 是让每个进程在CPU中运行一段指定的时间(时间片), 当某一个进程的时间片用完后, 由Linux内核切换到其他时间片还没用完的进程运行. 进程管理结构 `task_struct` 中有个保存着时间片的字段 `counter`, 如下:
 ```cpp
 struct task_struct {
-    volatile long state;
-    unsigned long flags;
     ...
     long counter;
-    long nice;
     ...
 };
 ```
