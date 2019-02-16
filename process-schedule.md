@@ -58,3 +58,19 @@ void do_timer(struct pt_regs *regs)
         mark_bh(TQUEUE_BH);
 }
 ```
+`do_timer()` 函数主要调用 `update_process_times()` 函数更新进程的时间片, 代码如下:
+```cpp
+void update_process_times(int user_tick)
+{
+    struct task_struct *p = current;
+    ...
+    if (p->pid) {
+        if (--p->counter <= 0) {
+            p->counter = 0;
+            p->need_resched = 1;
+        }
+        ...
+    }
+    ...
+}
+```
