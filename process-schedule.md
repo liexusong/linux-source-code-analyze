@@ -217,7 +217,7 @@ out:
     __schedule_tail(prev);
 ```
 找到合适的进程后, 接下来就是进行调度工作了. 调度工作首先调用 `switch_mm()` 函数来把旧进程的内存空间切换到新进程的内存空间, 切换内存空间主要是通过把 `cr3` 寄存器的值设置为新进程页目录的地址. 接着调用 `switch_to()` 函数进行进程的切换, 我们来看看 `switch_to()` 函数的实现:
-```
+```cpp
 #define switch_to(prev,next,last) do {                          \
     asm volatile("pushl %%esi\n\t"                              \
              "pushl %%edi\n\t"                                  \
@@ -238,4 +238,4 @@ out:
               "b" (prev));                                      \
 } while (0)
 ```
-又是一段难懂的汇编, 而且是比汇编更难懂的嵌入汇编.
+又是一段难懂的汇编, 而且是比汇编更难懂的GCC嵌入汇编. 
