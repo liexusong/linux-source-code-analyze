@@ -85,15 +85,19 @@ void update_process_times(int user_tick)
 2. 异常处理完成后返回. 
 3. 系统调用完成后返回.
 
-但最终也会调用以下的汇编代码:
+譬如, 当用户进程调用系统调用返回时, 会调用以下的汇编代码:
 ```asm
 ENTRY(ret_from_sys_call)
     ...
 ret_with_reschedule:
-    cmpl $0,need_resched(%ebx)
-    jne reschedule
+    cmpl $0,need_resched(%ebx)  // 判断当前进程的 need_resched 字段是否为1
+    jne reschedule              // 如果是, 就跳到reschedule处执行
     cmpl $0,sigpending(%ebx)
     jne signal_return
 restore_all:
-    RESTORE_ALL
+    RESTORE_ALL                 // 返回到用户空间
+
+reschedule:
+    call SYMBOL_NAME(schedule)  // 调用 schedule() 函数进行进程的调度
+    jmp ret_from_sys_call
 ```
