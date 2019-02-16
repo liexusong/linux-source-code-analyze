@@ -106,3 +106,32 @@ reschedule:
 2. 如果进程的 `need_resched` 为1, 那么久调用 `schedule()` 函数进行进程的调度.
 3. 调用完 `schedule()` 函数后, 继续返回到 `ret_from_sys_call` 处执行.
 
+现在我们来分析一下 `schedule()` 这个函数, 由于这个函数比较长, 所以我们分段来分析这个函数:
+```cpp
+asmlinkage void schedule(void)
+{
+    struct schedule_data * sched_data;
+    struct task_struct *prev, *next, *p;
+    struct list_head *tmp;
+    int this_cpu, c;
+
+    ...
+
+    spin_lock_irq(&runqueue_lock);
+
+    if (prev->policy == SCHED_RR)
+        goto move_rr_last;
+move_rr_back:
+
+    switch (prev->state) {
+        case TASK_INTERRUPTIBLE:
+            if (signal_pending(prev)) {
+                prev->state = TASK_RUNNING;
+                break;
+            }
+        default:
+            del_from_runqueue(prev);
+        case TASK_RUNNING:
+    }
+    prev->need_resched = 0;
+```
