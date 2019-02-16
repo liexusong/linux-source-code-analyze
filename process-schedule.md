@@ -101,3 +101,8 @@ reschedule:
     call SYMBOL_NAME(schedule)  // 调用 schedule() 函数进行进程的调度
     jmp ret_from_sys_call
 ```
+由于是汇编写的, 所以有点难懂, 所以这里我大概说说这段代码的流程:
+1. 首先判断当前进程的 `need_resched` 字段是否为1.
+2. 如果进程的 `need_resched` 为1, 那么久调用 `schedule()` 函数进行进程的调度.
+3. 调用完 `schedule()` 函数后, 继续返回到 `ret_from_sys_call` 处执行.
+
