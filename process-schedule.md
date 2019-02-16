@@ -116,6 +116,8 @@ asmlinkage void schedule(void)
     int this_cpu, c;
 
     ...
+    prev = current;
+    ...
 
     spin_lock_irq(&runqueue_lock);
 
@@ -134,4 +136,49 @@ move_rr_back:
         case TASK_RUNNING:
     }
     prev->need_resched = 0;
+```
+上面的代码首先判断当前进程是否可中断休眠状态, 并且接受到信号, 如果是就唤醒当前进程. 如果当前进程是休眠状态, 那么就把当前进程从运行队列中删除. 接着把当前进程的 `need_resched` 字段设置为0.
+
+```cpp
+repeat_schedule:
+    next = idle_task(this_cpu);
+    c = -1000;
+    if (prev->state == TASK_RUNNING)
+        goto still_running;
+
+still_running_back:
+    list_for_each(tmp, &runqueue_head) {
+        p = list_entry(tmp, struct task_struct, run_list);
+        if (can_schedule(p, this_cpu)) {
+            int weight = goodness(p, this_cpu, prev->active_mm);
+            if (weight > c)
+                c = weight, next = p;
+        }
+    }
+```
+这段代码是便利运行队列中的所有进程, 然后通过调用 `goodness()` 函数来计算每个进程的运行优先级, 值越大就越先被运行. 我们来看看 `goodness()` 的计算过程:
+```cpp
+static inline int goodness(struct task_struct * p, int this_cpu, struct mm_struct *this_mm)
+{
+    int weight;
+
+    weight = -1;
+    if (p->policy & SCHED_YIELD)
+        goto out;
+
+    if (p->policy == SCHED_OTHER) {
+        weight = p->counter;
+        if (!weight)
+            goto out;
+
+        if (p->mm == this_mm || !p->mm)
+            weight += 1;
+        weight += 20 - p->nice;
+        goto out;
+    }
+
+    weight = 1000 + p->rt_priority;
+out:
+    return weight;
+}
 ```
