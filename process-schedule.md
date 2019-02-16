@@ -156,7 +156,7 @@ still_running_back:
         }
     }
 ```
-这段代码是便利运行队列中的所有进程, 然后通过调用 `goodness()` 函数来计算每个进程的运行优先级, 值越大就越先被运行. 我们来看看 `goodness()` 的计算过程:
+这段代码是便利运行队列中的所有进程, 然后通过调用 `goodness()` 函数来计算每个进程的运行优先级, 值越大就越先被运行, 找到的进程会被保存到 `next` 变量中. 我们来看看 `goodness()` 的计算过程:
 ```cpp
 static inline int goodness(struct task_struct * p, int this_cpu, struct mm_struct *this_mm)
 {
@@ -190,3 +190,28 @@ out:
 
     1000 + 实时进程的优先级
 
+我们继续来分析 `schedule()` 函数的余下部分:
+```cpp
+    prepare_to_switch();
+    {
+        struct mm_struct *mm = next->mm;
+        struct mm_struct *oldmm = prev->active_mm;
+        if (!mm) {
+            if (next->active_mm) BUG();
+            next->active_mm = oldmm;
+            atomic_inc(&oldmm->mm_count);
+            enter_lazy_tlb(oldmm, next, this_cpu);
+        } else {
+            if (next->active_mm != mm) BUG();
+            switch_mm(oldmm, mm, next, this_cpu);
+        }
+
+        if (!prev->mm) {
+            prev->active_mm = NULL;
+            mmdrop(oldmm);
+        }
+    }
+
+    switch_to(prev, next, prev);
+    __schedule_tail(prev);
+```
