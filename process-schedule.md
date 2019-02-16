@@ -85,17 +85,17 @@ void update_process_times(int user_tick)
 2. 异常处理完成后返回. 
 3. 系统调用完成后返回.
 
-但最终也是调用以下的代码:
-```asm
+但最终也会调用以下的汇编代码:
+```gas
 ENTRY(ret_from_sys_call)
 #ifdef CONFIG_SMP
     movl processor(%ebx),%eax
     shll $CONFIG_X86_L1_CACHE_SHIFT,%eax
-    movl SYMBOL_NAME(irq_stat)(,%eax),%ecx      # softirq_active
-    testl SYMBOL_NAME(irq_stat)+4(,%eax),%ecx   # softirq_mask
+    movl SYMBOL_NAME(irq_stat)(,%eax),%ecx
+    testl SYMBOL_NAME(irq_stat)+4(,%eax),%ecx
 #else
-    movl SYMBOL_NAME(irq_stat),%ecx     # softirq_active
-    testl SYMBOL_NAME(irq_stat)+4,%ecx  # softirq_mask
+    movl SYMBOL_NAME(irq_stat),%ecx
+    testl SYMBOL_NAME(irq_stat)+4,%ecx
 #endif
     jne   handle_softirq
     
