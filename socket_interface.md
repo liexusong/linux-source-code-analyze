@@ -131,3 +131,5 @@ asmlinkage long sys_socketcall(int call, unsigned long *args)
 #define SYS_RECVMSG     17      /* sys_recvmsg(2)       */
 ```
 从上面的定义可以看出，在 GLIBC 中的定义跟 Linux 内核中的定义是一一对应的。
+
+所以从中得到，当在用户态调用 `socket()` 函数时实际调用的是 `sys_socket()` 内核函数。
