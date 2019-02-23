@@ -6,6 +6,9 @@ Soket族系统调用提供了一系列的接口函数，如下：
 * socket()
 * bind()
 * listen()
-* ...
 * accept()
-* ...
+* connect()
+* recv()
+* send()
+* recvfrom()
+* sendto()
