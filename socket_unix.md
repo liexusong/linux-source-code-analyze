@@ -29,3 +29,4 @@ int main(int argc, char *argv[])
     }
 }
 ```
+从上面的代码可知，要创建一个 `Unix Domain Socket`，首先在调用 `socket()` 函数时第一个参数传入 `AF_UNIX`，这样就可以创建一个 `Unix Domain Socket`。然后调用 `bind()` 函数时需要传入一个 `struct sockaddr_un` 的结构体，这个结构体用来指定这个 `socket` 绑定的名字，因为每个 `Unix Domain Socket` 都需要绑定一个唯一的名字，接着调用 `listen()` 函数开始监听请求，最后在主循环中调用 `accpet()` 函数来接收请求的连接。
