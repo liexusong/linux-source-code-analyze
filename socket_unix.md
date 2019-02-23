@@ -54,3 +54,26 @@ int main(int argc, char *argv[])
 客户端请求时需要指定要连接的 `Unix Domain Socket` 绑定的名字，然后调用 `connect()` 函数连接到服务端，并且开始进行通信。
 
 ## Unix Domain Socket 实现
+当在用户态调用 `socket()` 函数创建一个 `Unix Domain Socket` 时，最终调用的内核函数是 `sock_socket()`，那么我们来看看 `sock_socket()` 的实现吧：
+```cpp
+asmlinkage long sys_socket(int family, int type, int protocol)
+{
+    int retval;
+    struct socket *sock;
+
+    retval = sock_create(family, type, protocol, &sock);
+    if (retval < 0)
+        goto out;
+
+    retval = sock_map_fd(sock);
+    if (retval < 0)
+        goto out_release;
+
+out:
+    return retval;
+
+out_release:
+    sock_release(sock);
+    return retval;
+}
+```
