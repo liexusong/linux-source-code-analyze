@@ -110,3 +110,23 @@ out:
 }
 ```
 `sock_create()` 函数首先调用 `sock_alloc()` 申请一个类型为 `struct socket` 结构的对象 `sock`，然后根据 `family` 的值从 `net_families` 数组中找到对应的 `net_proto_family` 结构，然后通过此 `net_proto_family` 结构的 `create` 函数来初始化 `sock`。
+
+我们先来看看 `struct socket` 结构的定义：
+```cpp
+struct socket
+{
+    socket_state            state;
+
+    unsigned long           flags;
+    struct proto_ops        *ops;
+    struct inode            *inode;
+    struct fasync_struct    *fasync_list;
+    struct file             *file;
+    struct sock             *sk;
+    wait_queue_head_t       wait;
+
+    short                   type;
+    unsigned char           passcred;
+};
+```
+
