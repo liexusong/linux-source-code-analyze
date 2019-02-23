@@ -77,7 +77,7 @@ out_release:
     return retval;
 }
 ```
-`sys_socket()` 函数首先会调用 `sock_create()` 函数创建一个 `struct socket` 结构 sock，然后调用 `sock_map_fd()` 函数把 sock 映射到一个文件句柄上。由于创建 `Unix Domain Socket` 时传入的 `family` 值为 `AF_UNIX`，而 `type` 的值为 `SOCK_STREAM`。
+`sys_socket()` 函数首先会调用 `sock_create()` 函数创建一个类型为 `struct socket` 结构的 sock，然后调用 `sock_map_fd()` 函数把 sock 映射到一个文件句柄上。创建 `Unix Domain Socket` 时传入的 `family` 值为 `AF_UNIX`，而 `type` 的值为 `SOCK_STREAM`。
 
 下面接着来分析 `sock_create()` 函数的实现：
 ```cpp
@@ -109,3 +109,4 @@ out:
     return i;
 }
 ```
+`sock_create()` 函数首先调用 `sock_alloc()` 申请一个 `struct socket` 结构，然后根据 `family` 的值从 `net_families` 数组中找到对应的 `net_proto_family` 结构，然后通过此 `net_proto_family` 结构的 `create` 函数来初始化此 `struct socket` 结构。
