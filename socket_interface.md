@@ -117,19 +117,19 @@ asmlinkage long sys_socketcall(int call, unsigned long *args)
 #define SYS_CONNECT     3       /* sys_connect(2)       */
 #define SYS_LISTEN      4       /* sys_listen(2)        */
 #define SYS_ACCEPT      5       /* sys_accept(2)        */
-#define SYS_GETSOCKNAME 6       /* sys_getsockname(2)       */
-#define SYS_GETPEERNAME 7       /* sys_getpeername(2)       */
-#define SYS_SOCKETPAIR  8       /* sys_socketpair(2)        */
+#define SYS_GETSOCKNAME 6       /* sys_getsockname(2)   */
+#define SYS_GETPEERNAME 7       /* sys_getpeername(2)   */
+#define SYS_SOCKETPAIR  8       /* sys_socketpair(2)    */
 #define SYS_SEND        9       /* sys_send(2)          */
 #define SYS_RECV        10      /* sys_recv(2)          */
 #define SYS_SENDTO      11      /* sys_sendto(2)        */
 #define SYS_RECVFROM    12      /* sys_recvfrom(2)      */
 #define SYS_SHUTDOWN    13      /* sys_shutdown(2)      */
-#define SYS_SETSOCKOPT  14      /* sys_setsockopt(2)        */
-#define SYS_GETSOCKOPT  15      /* sys_getsockopt(2)        */
+#define SYS_SETSOCKOPT  14      /* sys_setsockopt(2)    */
+#define SYS_GETSOCKOPT  15      /* sys_getsockopt(2)    */
 #define SYS_SENDMSG     16      /* sys_sendmsg(2)       */
 #define SYS_RECVMSG     17      /* sys_recvmsg(2)       */
 ```
 从上面的定义可以看出，在 GLIBC 中的定义跟 Linux 内核中的定义是一一对应的。
 
-所以从中得到，当在用户态调用 `socket()` 函数时实际调用的是 `sys_socket()` 内核函数，其他的 `Socket族系统调用` 道理一致。
+所以从中得到，当在用户态调用 `socket()` 函数时实际调用的是 `sys_socket()` 内核函数，其他的 `Socket族系统调用` 道理与 `socket()` 系统调用一致。
