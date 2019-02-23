@@ -80,3 +80,37 @@ out_release:
 `sys_socket()` 函数首先会调用 `sock_create()` 函数创建一个 `struct socket` 结构 sock，然后调用 `sock_map_fd()` 函数把 sock 映射到一个文件句柄上。由于创建 `Unix Domain Socket` 时传入的 `family` 值为 `AF_UNIX`，而 `type` 的值为 `SOCK_STREAM`。
 
 下面接着来分析 `sock_create()` 函数的实现：
+```cpp
+int sock_create(int family, int type, int protocol, struct socket **res)
+{
+    int i;
+    struct socket *sock;
+
+    ...
+
+    net_family_read_lock();
+    if (net_families[family] == NULL) {
+        i = -EAFNOSUPPORT;
+        goto out;
+    }
+
+    if (!(sock = sock_alloc())) {
+        printk(KERN_WARNING "socket: no more sockets\n");
+        i = -ENFILE;
+        goto out;
+    }
+
+    sock->type  = type;
+
+    if ((i = net_families[family]->create(sock, protocol)) < 0) {
+        sock_release(sock);
+        goto out;
+    }
+
+    *res = sock;
+
+out:
+    net_family_read_unlock();
+    return i;
+}
+```
