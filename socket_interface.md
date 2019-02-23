@@ -45,6 +45,13 @@ ENTRY (P(__,socket))
 
 所以从上面的代码可以看出，调用 `socket()` 函数时会把 `eax` 的值设置为 `sys_socketcall`，把 `ebx` 的值会设置为 `SOCKOP_socket`，而把 `ecx` 的值设置为调用 `socket()` 函数时第一个参数的地址。然后通过代码 `int 0x80` 来触发一次系统调用中断，那么最终调用的是 `sys_socketcall()` 内核函数，而第一个参数的值为 `SOCKOP_socket`，第二个参数的值为调用 `socket()` 函数时第一个参数的地址。
 
+那么 `bind()` 函数又是怎么定义的呢？因为有了 `socket()` 函数的定义，那么所有 `Socket族系统调用` 都可以使用这个模板来实现，例如 `bind()` 函数的定义如下：
+```cpp
+#define	socket	bind
+#include <socket.S>
+```
+可以看到，`bind()` 函数直接套用了 `socket()` 函数实现的模板，只是把 `socket` 这个名字替换成 `bind` 而已，替换之后 `ebx` 的值就会变成 `SOCKOP_bind`，其他都跟 `socket()` 函数一样，所以这时传给 `sys_socketcall()` 函数的第一个参数就变成 `SOCKOP_bind`了。
+
 ### sys_socketcall()函数
 所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
 ```cpp
