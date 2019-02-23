@@ -16,8 +16,8 @@ Socket的英文原本意思是 `孔` 或 `插座`。但在计算机科学中通�
 
 例如 `socket()` 接口用于创建一个socket句柄，而 `bind()` 函数将一个socket绑定到指定的IP和端口上。当然，系统调用最终都会调用到内核态的某个内核函数来进行处理，在系统调用一章我们介绍过相关的原理，所以这里只会介绍一下这些系统调用最终会调用哪些内核函数。
 
-### Socket族系统调用在glibc中的定义
-我们先来看看 `glibc` 是怎么定义这些系统调用的吧，首先来看看 `socket()` 函数的定义如下：
+### Socket族系统调用在 GLIBC 中的定义
+我们先来看看 `GLIBC` 是怎么定义这些系统调用的吧，首先来看看 `socket()` 函数的定义如下：
 ```asm
 #define P(a, b) P2(a, b)
 #define P2(a, b) a##b
@@ -54,7 +54,7 @@ ENTRY (P(__,socket))
 可以看到，`bind()` 函数直接套用了 `socket()` 函数实现的模板，只是把 `socket` 这个名字替换成 `bind` 而已，替换之后 `ebx` 的值就会变成 `SOCKOP_bind`，其他都跟 `socket()` 函数一样，所以这时传给 `sys_socketcall()` 函数的第一个参数就变成 `SOCKOP_bind`了。
 
 ### sys_socketcall()函数
-所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
+前面说过，所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
 ```cpp
 asmlinkage long sys_socketcall(int call, unsigned long *args)
 {
@@ -88,6 +88,46 @@ asmlinkage long sys_socketcall(int call, unsigned long *args)
     return err;
 }
 ```
-从 `sys_socketcall()` 函数可以看出，根据参数 `call` 不同的值会调用不同的内核函数，譬如 `call` 的值为 `SYS_SOCKET` 时会调用 `sys_socket()` 函数，而 `call` 的值为 `SYS_BIND` 时会调用 `sys_bind()` 函数。而参数 `args` 就是在用户态给 `Socket族系统调用` 传入的参数列表，Linux内核会先使用 `copy_from_user()` 函数把这些参数复制到内核空间。
+从 `sys_socketcall()` 函数可以看出，根据参数 `call` 不同的值会调用不同的内核函数，譬如 `call` 的值为 `SYS_SOCKET` 时会调用 `sys_socket()` 函数，而 `call` 的值为 `SYS_BIND` 时会调用 `sys_bind()` 函数。而参数 `args` 就是在用户态给 `Socket族系统调用` 传入的参数列表地址，Linux内核会先使用 `copy_from_user()` 函数把这些参数复制到内核空间。
 
-在用户空间调用 `socket()` 系统调用时会把参数 `call` 的值设置为 `SYS_SOCKET`，所以此时真正调用的是 `sys_socket()` 内核函数 。
+前面说过，在用户空间调用 `socket()` 系统调用时会把参数 `call` 的值设置为 `SOCKOP_socket`，它的值跟 `sys_socketcall()` 函数中 `SYS_SOCKET` 是一致的，我们可以通过下面的代码看出端倪：
+```cpp
+// GLIBC 的定义
+#define SOCKOP_socket       1
+#define SOCKOP_bind         2
+#define SOCKOP_connect      3
+#define SOCKOP_listen       4
+#define SOCKOP_accept       5
+#define SOCKOP_getsockname  6
+#define SOCKOP_getpeername  7
+#define SOCKOP_socketpair   8
+#define SOCKOP_send         9
+#define SOCKOP_recv         10
+#define SOCKOP_sendto       11
+#define SOCKOP_recvfrom     12
+#define SOCKOP_shutdown     13
+#define SOCKOP_setsockopt   14
+#define SOCKOP_getsockopt   15
+#define SOCKOP_sendmsg      16
+#define SOCKOP_recvmsg      17
+
+// Linux 内核的定义
+#define SYS_SOCKET      1       /* sys_socket(2)        */
+#define SYS_BIND        2       /* sys_bind(2)          */
+#define SYS_CONNECT     3       /* sys_connect(2)       */
+#define SYS_LISTEN      4       /* sys_listen(2)        */
+#define SYS_ACCEPT      5       /* sys_accept(2)        */
+#define SYS_GETSOCKNAME 6       /* sys_getsockname(2)       */
+#define SYS_GETPEERNAME 7       /* sys_getpeername(2)       */
+#define SYS_SOCKETPAIR  8       /* sys_socketpair(2)        */
+#define SYS_SEND        9       /* sys_send(2)          */
+#define SYS_RECV        10      /* sys_recv(2)          */
+#define SYS_SENDTO      11      /* sys_sendto(2)        */
+#define SYS_RECVFROM    12      /* sys_recvfrom(2)      */
+#define SYS_SHUTDOWN    13      /* sys_shutdown(2)      */
+#define SYS_SETSOCKOPT  14      /* sys_setsockopt(2)        */
+#define SYS_GETSOCKOPT  15      /* sys_getsockopt(2)        */
+#define SYS_SENDMSG     16      /* sys_sendmsg(2)       */
+#define SYS_RECVMSG     17      /* sys_recvmsg(2)       */
+```
+从上面的定义可以看出，在 GLIBC 中的定义跟 Linux 内核中的定义是一一对应的。
