@@ -15,4 +15,37 @@ Socket的英文原本意思是 `孔` 或 `插座`。但在计算机科学中通�
 
 例如 `socket()` 接口用于创建一个socket句柄，而 `bind()` 函数将一个socket绑定到指定的IP和端口上。当然，系统调用最终都会调用到内核态的某个内核函数来进行处理，在系统调用一章我们介绍过相关的原理，所以这里只会介绍一下这些系统调用最终会调用哪些内核函数。
 
+所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
+```cpp
+asmlinkage long sys_socketcall(int call, unsigned long *args)
+{
+    unsigned long a[6];
+    unsigned long a0,a1;
+    int err;
 
+    if(call<1||call>SYS_RECVMSG)
+        return -EINVAL;
+
+    /* copy_from_user should be SMP safe. */
+    if (copy_from_user(a, args, nargs[call]))
+        return -EFAULT;
+        
+    a0=a[0];
+    a1=a[1];
+    
+    switch(call) 
+    {
+        case SYS_SOCKET:
+            err = sys_socket(a0,a1,a[2]);
+            break;
+        case SYS_BIND:
+            err = sys_bind(a0,(struct sockaddr *)a1, a[2]);
+            break;
+        case SYS_CONNECT:
+            err = sys_connect(a0, (struct sockaddr *)a1, a[2]);
+            break;
+        ...
+    }
+    return err;
+}
+```
