@@ -49,4 +49,6 @@ asmlinkage long sys_socketcall(int call, unsigned long *args)
     return err;
 }
 ```
-从 `sys_socketcall()` 函数可以看出，根据参数 `call` 不同的值会调用不同的内核函数，譬如 `call` 的值为 `SYS_SOCKET` 时会调用 `sys_socket()` 函数，而 `call` 的值为 `SYS_BIND` 时会调用 `sys_bind()` 函数。
+从 `sys_socketcall()` 函数可以看出，根据参数 `call` 不同的值会调用不同的内核函数，譬如 `call` 的值为 `SYS_SOCKET` 时会调用 `sys_socket()` 函数，而 `call` 的值为 `SYS_BIND` 时会调用 `sys_bind()` 函数。而参数 `args` 就是在用户态给 `Socket族系统调用` 传入的参数列表，Linux内核会先把这些参数复制到内核空间。
+
+在用户空间调用 `socket()` 系统调用时会把参数 `call` 的值设置为 `SYS_SOCKET`，所以此时真正调用的是 `sys_socket()` 内核函数 。
