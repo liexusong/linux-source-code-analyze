@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 客户端请求时需要指定要连接的 `Unix Domain Socket` 绑定的名字，然后调用 `connect()` 函数连接到服务端，并且开始进行通信。
 
 ## Unix Domain Socket 实现
-前面介绍过，当用户程序调用 `socket()` 函数创建一个 `socket` 时，会触发调用内核函数 `sys_socketcall()`，而 `sys_socketcall()` 函数根据 `call` 参数的值来选择调用哪个内核函数，由于调用 `socket()` 函数时传入的是 `SOCKOP_socket` (SYS_SOCKET)，所以 `sys_socketcall()` 最终会调用 `sys_socket()` 内核函数，`sys_socket()` 内核函数的实现如下：
+前面介绍过，当用户程序调用 `socket()` 函数创建一个 `socket` 时，会触发调用内核函数 `sys_socketcall()`，而 `sys_socketcall()` 函数根据 `call` 参数的值来选择调用哪个内核函数，由于调用 `socket()` 函数时传入的是 `SOCKOP_socket` ( `SYS_SOCKET` )，所以 `sys_socketcall()` 最终会调用 `sys_socket()` 内核函数，`sys_socket()` 内核函数的实现如下：
 ```cpp
 asmlinkage long sys_socket(int family, int type, int protocol)
 {
@@ -77,3 +77,6 @@ out_release:
     return retval;
 }
 ```
+`sys_socket()` 函数首先会调用 `sock_create()` 函数创建一个 `struct socket` 结构 sock，然后调用 `sock_map_fd()` 函数把 sock 映射到一个文件句柄上。由于创建 `Unix Domain Socket` 时传入的 `family` 值为 `AF_UNIX`，而 `type` 的值为 `SOCK_STREAM`。
+
+下面接着来分析 `sock_create()` 函数的实现：
