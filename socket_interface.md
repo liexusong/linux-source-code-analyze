@@ -49,3 +49,4 @@ asmlinkage long sys_socketcall(int call, unsigned long *args)
     return err;
 }
 ```
+从 `sys_socketcall()` 函数可以看出，根据参数 `call` 不同的值会调用不同的内核函数，譬如 `call` 的值为 `SYS_SOCKET` 时会调用 `sys_socket()` 函数，而 `call` 的值为 `SYS_BIND` 时会调用 `sys_bind()` 函数。
