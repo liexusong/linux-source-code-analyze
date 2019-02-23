@@ -15,6 +15,7 @@ Socket的英文原本意思是 `孔` 或 `插座`。但在计算机科学中通�
 
 例如 `socket()` 接口用于创建一个socket句柄，而 `bind()` 函数将一个socket绑定到指定的IP和端口上。当然，系统调用最终都会调用到内核态的某个内核函数来进行处理，在系统调用一章我们介绍过相关的原理，所以这里只会介绍一下这些系统调用最终会调用哪些内核函数。
 
+### Socket族系统调用在glibc中的定义
 我们先来看看 `glibc` 是怎么定义这些系统调用的吧，首先来看看 `socket()` 函数的定义如下：
 ```asm
 #define P(a, b) P2(a, b)
@@ -44,6 +45,7 @@ ENTRY (P(__,socket))
 
 所以从上面的代码可以看出，调用 `socket()` 函数时会把 `eax` 的值设置为 `sys_socketcall`，把 `ebx` 的值会设置为 `SOCKOP_socket`，而把 `ecx` 的值设置为调用 `socket()` 函数时第一个参数的地址。然后通过代码 `int 0x80` 来触发一次系统调用中断，那么最终调用的是 `sys_socketcall()` 内核函数，而第一个参数的值为 `SOCKOP_socket`，第二个参数的值为调用 `socket()` 函数时第一个参数的地址。
 
+### sys_socketcall()函数
 所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
 ```cpp
 asmlinkage long sys_socketcall(int call, unsigned long *args)
