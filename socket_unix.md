@@ -81,21 +81,16 @@ out_release:
 
 下面接着来分析 `sock_create()` 函数的实现：
 ```cpp
+static struct net_proto_family *net_families[NPROTO];
+
 int sock_create(int family, int type, int protocol, struct socket **res)
 {
     int i;
     struct socket *sock;
-
     ...
-
     net_family_read_lock();
-    if (net_families[family] == NULL) {
-        i = -EAFNOSUPPORT;
-        goto out;
-    }
-
+    ...
     if (!(sock = sock_alloc())) {
-        printk(KERN_WARNING "socket: no more sockets\n");
         i = -ENFILE;
         goto out;
     }
