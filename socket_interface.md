@@ -29,7 +29,7 @@ ENTRY (P(__,socket))
     movl $SYS_ify(socketcall), %eax
 
     movl $P(SOCKOP_,socket), %ebx
-    lea 4(%esp), %ecx
+    lea 4(%esp), %ecx  # 获取socket函数第一个参数的地址
 
     int $0x80
 
@@ -42,7 +42,7 @@ ENTRY (P(__,socket))
 ```
 虽然 `socket()` 函数是使用汇编来实现的，但是也比较容易理解，我们已经知道在用户态必须使用 `int 0x80` 中断来触发系统调用的，而要调用的系统调用编号保存在寄存器 `eax` 中，第一个参数保存在 `ebx` 寄存器中，而第二个参数保存在 `ecx` 中。
 
-所以从上面的代码可以看出，调用 `socket()` 函数时会把 `eax` 的值设置为 `sys_socketcall`，把 `ebx` 的值会设置为 `SOCKOP_socket`，而把 `ecx` 的值设置为调用 `socket()` 函数时第一个参数的地址。然后通过代码 `int 0x80` 来触发一次系统调用中断，那么最终调用的是 `sys_socketcall()` 内核函数。
+所以从上面的代码可以看出，调用 `socket()` 函数时会把 `eax` 的值设置为 `sys_socketcall`，把 `ebx` 的值会设置为 `SOCKOP_socket`，而把 `ecx` 的值设置为调用 `socket()` 函数时第一个参数的地址。然后通过代码 `int 0x80` 来触发一次系统调用中断，那么最终调用的是 `sys_socketcall()` 内核函数，而第一个参数的值为 `SOCKOP_socket`，第二个参数的值为调用 `socket()` 函数时第一个参数的地址。
 
 所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
 ```cpp
