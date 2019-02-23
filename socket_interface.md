@@ -21,39 +21,28 @@ Socket的英文原本意思是 `孔` 或 `插座`。但在计算机科学中通�
 #define P2(a, b) a##b
 
     .text
-/* The socket-oriented system calls are handled unusally in Linux.
-   They are all gated through the single `socketcall' system call number.
-   `socketcall' takes two arguments: the first is the subcode, specifying
-   which socket function is being called; and the second is a pointer to
-   the arguments to the specific function.
-
-   The .S files for the other calls just #define socket and #include this.  */
 
 .globl P(__,socket)
 ENTRY (P(__,socket))
-
-    /* Save registers.  */
     movl %ebx, %edx
 
-    movl $SYS_ify(socketcall), %eax /* System call number in %eax.  */
+    movl $SYS_ify(socketcall), %eax
 
-    /* Use ## so `socket' is a separate token that might be #define'd.  */
-    movl $P(SOCKOP_,socket), %ebx   /* Subcode is first arg to syscall.  */
-    lea 4(%esp), %ecx       /* Address of args is 2nd arg.  */
+    movl $P(SOCKOP_,socket), %ebx
+    lea 4(%esp), %ecx
 
-        /* Do the system call trap.  */
     int $0x80
 
-    /* Restore registers.  */
     movl %edx, %ebx
 
-    /* %eax is < 0 if there was an error.  */
     cmpl $-125, %eax
     jae syscall_error
 
-    /* Successful; return the syscall's value.  */
     ret
 ```
+虽然 `socket()` 函数是使用汇编来实现的，但是也比较容易理解，我们已经知道在用户态必须使用 `int 0x80` 中断来触发系统调用的，而要调用的系统调用编号保存在寄存器 `eax` 中，第一个参数保存在 `ebx` 寄存器中，而第二个参数保存在 `ecx` 中。
+
+所以从上面的代码可以看出，调用 `socket()` 函数时会把 `eax` 的值设置为 `sys_socketcall`，把 `ebx` 的值会设置为 `SOCKOP_socket`，而把 `ecx` 的值设置为调用 `socket()` 函数时第一个参数的地址。然后通过代码 `int 0x80` 来触发一次系统调用中断，那么最终调用的是 `sys_socketcall()` 内核函数。
 
 所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
 ```cpp
