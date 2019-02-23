@@ -109,4 +109,4 @@ out:
     return i;
 }
 ```
-`sock_create()` 函数首先调用 `sock_alloc()` 申请一个 `struct socket` 结构，然后根据 `family` 的值从 `net_families` 数组中找到对应的 `net_proto_family` 结构，然后通过此 `net_proto_family` 结构的 `create` 函数来初始化此 `struct socket` 结构。
+`sock_create()` 函数首先调用 `sock_alloc()` 申请一个类型为 `struct socket` 结构的对象 `sock`，然后根据 `family` 的值从 `net_families` 数组中找到对应的 `net_proto_family` 结构，然后通过此 `net_proto_family` 结构的 `create` 函数来初始化 `sock`。
