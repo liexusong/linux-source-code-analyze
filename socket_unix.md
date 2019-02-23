@@ -51,3 +51,5 @@ int main(int argc, char *argv[])
     close(sock);
 }
 ```
+客户端请求时需要指定要连接的 `Unix Domain Socket` 绑定的名字，然后调用 `connect()` 函数连接到服务端，并且开始进行通信。
+
