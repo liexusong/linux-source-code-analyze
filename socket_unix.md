@@ -211,7 +211,7 @@ static int unix_create(struct socket *sock, int protocol)
         sock->ops = &unix_stream_ops;
         break;
     case SOCK_RAW:
-        sock->type=SOCK_DGRAM;
+        sock->type = SOCK_DGRAM;
     case SOCK_DGRAM:
         sock->ops = &unix_dgram_ops;
         break;
@@ -222,3 +222,4 @@ static int unix_create(struct socket *sock, int protocol)
     return unix_create1(sock) ? 0 : -ENOMEM;
 }
 ```
+`unix_create()` 函数会根据 `protocol` 变量的值来设置 `socket` 结构的 `ops` 字段，譬如 `protocol` 是 `SOCK_STREAM` （流式）时将会设置为 `unix_stream_ops`。
