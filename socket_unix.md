@@ -252,6 +252,7 @@ struct proto_ops unix_stream_ops = {
 前面我们介绍过创建一个 `Unix Domain Socket` 的服务端和客户端，那么现在我们来分析一下内核是怎么处理这些流程的。
 
 * 创建一个 `Unix Domain Socket`
+
 在用户态可以通过下面的代码创建一个 `Unix Domain Socket`：
 ```cpp
 sock = socket(AF_UNIX, SOCK_STREAM, 0);
