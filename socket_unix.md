@@ -248,3 +248,4 @@ struct proto_ops unix_stream_ops = {
 
 另外，我们还发现 `unix_create()` 函数最后还调用了 `unix_create1()` 函数，这个函数主要是用来创建一个 `struct sock` 结构与 `struct socket` 结构相对应，`struct sock` 结构是功能实现的主体，很多功能相关的数据都存储在这个结构上。由于 `struct sock` 结构的定义比较复杂，所以这里就展示这个结构的定义了，有兴趣可以查阅文件 `include/net/sock.h` 中的定义。
 
+### Unix Domain Socket 流程分析
