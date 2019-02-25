@@ -156,4 +156,4 @@ struct proto_ops {
   int   (*mmap)(struct file *file, struct socket *sock, struct vm_area_struct * vma);
 };
 ```
-
+`struct socket` 结构的 `ops` 字段定义了一系列用于操作 `struct socket` 结构的函数，譬如当调用 `bind()` 函数将IP和端口绑定到一个socket时，便会调用 `ops` 字段的 `bind()` 函数来处理。那么这个 `ops` 字段什么时候被设置的呢？就是在调用 `net_proto_family` 结构的 `create()` 函数时被设置的。
