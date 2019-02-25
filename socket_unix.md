@@ -190,4 +190,35 @@ static int __init af_unix_init(void)
 
 module_init(af_unix_init);
 ```
-代码 `module_init(af_unix_init);` 表示在系统启动的时候会调用 `af_unix_init()` 函数，所以在系统启动时会注册一个类型为 `unix_family_ops` 的 `net_proto_family` 结构。
+代码 `module_init(af_unix_init);` 表示在系统启动的时候会调用 `af_unix_init()` 函数，所以在系统启动时会注册一个类型为 `unix_family_ops` 的 `net_proto_family` 结构。我们再来看看 `unix_family_ops` 的定义：
+```cpp
+struct net_proto_family unix_family_ops = {
+    PF_UNIX,
+    unix_create
+};
+```
+从上面的定义可以知道，当调用 `net_proto_family` 结构的 `create()` 函数时，就会调用 `unix_create()` 函数初始化 `socket`，`unix_create()` 函数的定义如下：
+```cpp
+static int unix_create(struct socket *sock, int protocol)
+{
+    if (protocol && protocol != PF_UNIX)
+        return -EPROTONOSUPPORT;
+
+    sock->state = SS_UNCONNECTED;
+
+    switch (sock->type) {
+    case SOCK_STREAM:
+        sock->ops = &unix_stream_ops;
+        break;
+    case SOCK_RAW:
+        sock->type=SOCK_DGRAM;
+    case SOCK_DGRAM:
+        sock->ops = &unix_dgram_ops;
+        break;
+    default:
+        return -ESOCKTNOSUPPORT;
+    }
+
+    return unix_create1(sock) ? 0 : -ENOMEM;
+}
+```
