@@ -254,4 +254,4 @@ struct proto_ops unix_stream_ops = {
 * 创建一个 `Unix Domain Socket`
 
 当在用户态调用 `socket()` 函数创建一个 `Unix Domain Socket` 时的调用链如下图：
-
+![socket_unix_socket_call_stack](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/socket_unix_socket_call_stack.jpg)
