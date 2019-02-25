@@ -157,3 +157,37 @@ struct proto_ops {
 };
 ```
 `struct socket` 结构的 `ops` 字段定义了一系列用于操作 `struct socket` 结构的函数，譬如当调用 `bind()` 函数将IP和端口绑定到一个socket时，便会调用 `ops` 字段的 `bind()` 函数来处理。那么这个 `ops` 字段什么时候被设置的呢？就是在调用 `net_proto_family` 结构的 `create()` 函数时被设置的。
+
+现在又有个问题，`family` 类型的 `net_proto_family` 结构什么时候注册到 `net_families` 数组的呢？注册一个 `family` 类型的 `net_proto_family` 结构需要调用 `sock_register()` 函数，代码如下：
+```cpp
+int sock_register(struct net_proto_family *ops)
+{
+    int err;
+
+    if (ops->family >= NPROTO) {
+        printk(KERN_CRIT "protocol %d >= NPROTO(%d)\n", ops->family, NPROTO);
+        return -ENOBUFS;
+    }
+    net_family_write_lock();
+    err = -EEXIST;
+    if (net_families[ops->family] == NULL) {
+        net_families[ops->family]=ops;
+        err = 0;
+    }
+    net_family_write_unlock();
+    return err;
+}
+```
+函数的实现比较简单，就是向 `net_families` 数组添加一个 `family` 类型的 `net_proto_family` 结构而已。那么 `Unix Domain Socket` 类型的 `net_proto_family` 结构什么时候注册呢？我们可以在文件 `net/unix/af_unix.c` 中看到如下代码：
+```cpp
+static int __init af_unix_init(void)
+{
+    ...
+    sock_register(&unix_family_ops);
+    ...
+    return 0;
+}
+
+module_init(af_unix_init);
+```
+代码 `module_init(af_unix_init);` 表示在系统启动的时候会调用 `af_unix_init()` 函数，所以在系统启动时会注册一个类型为 `unix_family_ops` 的 `net_proto_family` 结构。
