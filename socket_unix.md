@@ -222,4 +222,29 @@ static int unix_create(struct socket *sock, int protocol)
     return unix_create1(sock) ? 0 : -ENOMEM;
 }
 ```
-`unix_create()` 函数会根据 `protocol` 变量的值来设置 `socket` 结构的 `ops` 字段，譬如 `protocol` 是 `SOCK_STREAM` （流式）时将会设置为 `unix_stream_ops`。
+`unix_create()` 函数会根据 `protocol` 变量的值来设置 `socket` 结构的 `ops` 字段，譬如 `protocol` 是 `SOCK_STREAM` （流式）时将会设置为 `unix_stream_ops`，而当 `protocol` 是 `SOCK_DGRAM` （数据报）或者 `SOCK_RAW` （原生）时，`ops` 字段将会设置为 `unix_dgram_ops`。下面来看看流式操作 `unix_stream_ops` 的定义：
+```cpp
+struct proto_ops unix_stream_ops = {
+    family:     PF_UNIX,
+    
+    release:    unix_release,
+    bind:       unix_bind,
+    connect:    unix_stream_connect,
+    socketpair: unix_socketpair,
+    accept:     unix_accept,
+    getname:    unix_getname,
+    poll:       unix_poll,
+    ioctl:      unix_ioctl,
+    listen:     unix_listen,
+    shutdown:   unix_shutdown,
+    setsockopt: sock_no_setsockopt,
+    getsockopt: sock_no_getsockopt,
+    sendmsg:    unix_stream_sendmsg,
+    recvmsg:    unix_stream_recvmsg,
+    mmap:       sock_no_mmap,
+};
+```
+所以，当对一个 `Unix Domain Socket` 调用 `bind()` 函数时，最终便会调用 `unix_bind()` 函数去处理。
+
+另外，我们还发现 `unix_create()` 函数最后还调用了 `unix_create1()` 函数，这个函数主要是用来创建一个 `struct sock` 结构与 `struct socket` 结构相对应，`struct sock` 结构是功能实现的主体，很多功能相关的数据都存储在这个结构上。
+
