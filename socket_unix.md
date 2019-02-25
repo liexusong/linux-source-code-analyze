@@ -253,7 +253,5 @@ struct proto_ops unix_stream_ops = {
 
 * 创建一个 `Unix Domain Socket`
 
-在用户态可以通过下面的代码创建一个 `Unix Domain Socket`：
-```cpp
-sock = socket(AF_UNIX, SOCK_STREAM, 0);
-```
+当在用户态调用 `socket()` 函数创建一个 `Unix Domain Socket` 时的调用链如下图：
+
