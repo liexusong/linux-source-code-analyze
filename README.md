@@ -15,5 +15,6 @@
 * 硬件中断
 * 系统调用
 * 文件系统
+    * [虚拟文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_file_system.md)
 * Socket相关
     * [Socket族接口层](https://github.com/liexusong/linux-source-code-analyze/blob/master/socket_interface.md)
