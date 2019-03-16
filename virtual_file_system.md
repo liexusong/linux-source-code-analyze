@@ -4,8 +4,7 @@ Linux支持多种文件系统，但提供给用户的文件操作接口却是一
 ## 虚拟文件系统实现细节
 那么虚拟文件系统究竟用了什么魔法来实现这个神奇的功能呢？其实用过面向对象编程语言（如Java、C++等）的同学都应该知道有个 `接口(interface)` 的概念，`接口` 是一系列方法的声明，是一些方法特征的集合。例如，我们使用Java定义一个 人类(Human) 的接口:
 ```java
-public interface Human
-{
+public interface Human {
     public void eat();
     public void walk();
     public void speak(String content);
@@ -13,38 +12,30 @@ public interface Human
 ```
 上面定义了一个 Human 的接口，接口中有3个方法：`eat()`、`walk()` 和 `speak()`，现在我们定义一个名为 Man 和一个名为 Woman 的类来实现 Human 这个接口：
 ```java
-public class Man
-{
-    public void eat()
-    {
+public class Man implements Human {
+    public void eat() {
         System.out.println("I am man, I am eatting...");
     }
     
-    public void walk()
-    {
+    public void walk() {
         System.out.println("I am man, I am walking...");
     }
     
-    public void speak(String content)
-    {
+    public void speak(String content) {
         System.out.println("I am man, I am speaking..." + content);
     }
 }
 
-public class Woman
-{
-    public void eat()
-    {
+public class Woman implements Human {
+    public void eat() {
         System.out.println("I am woman, I am eatting...");
     }
     
-    public void walk()
-    {
+    public void walk() {
         System.out.println("I am woman, I am walking...");
     }
     
-    public void speak(String content)
-    {
+    public void speak(String content) {
         System.out.println("I am woman, I am speaking..." + content);
     }
 }
