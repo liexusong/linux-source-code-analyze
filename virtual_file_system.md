@@ -127,8 +127,8 @@ struct file_system_type {
 ```
 其中成员 `read_super` 是一个函数指针，其指向具体文件系统应该怎么读取超级块数据，譬如 `ext2` 文件系统的 `read_super` 指向的是 `ext2_read_super` 方法。
 
-### dentry
-在Linux内核中，每个文件或者目录都对应一个 `dentry` 结构，用于描述此文件或者目录的信息，定义如下：
+### 目录项(dentry)
+在Linux内核中，每个目录都对应一个 `dentry` 结构，用于描述此目录的信息，定义如下：
 ```cpp
 struct dentry {
 	atomic_t d_count;
@@ -158,3 +158,6 @@ struct dentry {
 * ...
 * d_name: 目录的名字。
 * ...
+在 `dentry` 结构的所有成员中，最重要的是类型为 `inode` 的 `d_inode` 这个成员，下面我们介绍一下 `inode` 这个结构。
+
+### 索引节点(inode)
