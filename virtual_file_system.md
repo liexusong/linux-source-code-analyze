@@ -101,3 +101,10 @@ struct super_block {
 	struct semaphore s_nfsd_free_path_sem;
 };
 ```
+由于 `super_block` 结构的成员比较多，所以这里就不一一解释每个成员的作用（读者也没兴趣），这里就挑几个比较常用的来解释一下吧：
+* s_list: Linux会把系统中所有文件系统的 `super_block` 结构连接到一个全局链表 `super_blocks` 中。
+* s_dev: 当前已挂载的文件系统所属的设备号。
+* s_blocksize: 文件系统中每个数据块的大小（Linux中的文件系统把磁盘划分为数据块来管理，一般一个数据块为4KB）。
+* ...
+* s_type: 这个成员比较重要，因为其定义了应该怎么读取文件系统超级块的数据。
+* ...
