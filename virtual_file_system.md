@@ -158,6 +158,41 @@ struct dentry {
 * ...
 * d_name: 目录的名字。
 * ...
+
 在 `dentry` 结构的所有成员中，最重要的是类型为 `inode` 的 `d_inode` 这个成员，下面我们介绍一下 `inode` 这个结构。
 
 ### 索引节点(inode)
+`索引节点(inode)` 的作用是保存一个目录或文件的信息，譬如修改时间、所属用户和用户组，最重要的是其定义了操作一个目录或者文件的方法集，其定义如下：
+```cpp
+struct inode {
+	struct list_head	i_hash;
+	struct list_head	i_list;
+	struct list_head	i_dentry;
+	...
+	uid_t			i_uid;
+	gid_t			i_gid;
+	kdev_t			i_rdev;
+	loff_t			i_size;
+	time_t			i_atime;
+	time_t			i_mtime;
+	time_t			i_ctime;
+	unsigned long		i_blksize;
+	unsigned long		i_blocks;
+	unsigned long		i_version;
+	struct semaphore	i_sem;
+	struct semaphore	i_zombie;
+	struct inode_operations	*i_op;
+	struct file_operations	*i_fop;	/* former ->i_op->default_file_ops */
+	struct super_block	*i_sb;
+	wait_queue_head_t	i_wait;
+	struct file_lock	*i_flock;
+	struct address_space	*i_mapping;
+	...
+	union {
+		struct minix_inode_info		minix_i;
+		struct ext2_inode_info		ext2_i;
+		...
+	} u;
+};
+```
+由于 `inode` 结构的定义比较庞大，所以这里只截取了部分成员。
