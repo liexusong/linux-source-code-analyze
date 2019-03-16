@@ -70,7 +70,7 @@ Woman eating...
 ```cpp
 struct super_block {
 	struct list_head	s_list;		/* Keep this first */
-	kdev_t			    s_dev;
+	kdev_t			s_dev;
 	unsigned long		s_blocksize;
 	unsigned char		s_blocksize_bits;
 	unsigned char		s_lock;
@@ -92,7 +92,7 @@ struct super_block {
 
 	union {
 		struct minix_sb_info	minix_sb;
-		struct ext2_sb_info	    ext2_sb;
+		struct ext2_sb_info	ext2_sb;
 		...
 	} u;
 
