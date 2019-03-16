@@ -14,7 +14,7 @@ public interface Human {
 ```java
 public class Man implements Human {
     public void eat() {
-        System.out.println("Man eatting...");
+        System.out.println("Man eating...");
     }
     
     public void walk() {
@@ -28,7 +28,7 @@ public class Man implements Human {
 
 public class Woman implements Human {
     public void eat() {
-        System.out.println("Woman eatting...");
+        System.out.println("Woman eating...");
     }
     
     public void walk() {
@@ -44,11 +44,20 @@ public class Woman implements Human {
 ```java
 public class Main {
     public static void main(String[] args) {
-        Human man = new Man();
-        Human woman = new Woman();
+        Human human;
+        Man man = new Man();
+        Woman woman = new Woman();
         
-        man.eat();
-        woman.eat();
+        human = man;
+        human.eat();
+        
+        human = woman;
+        human.eat();
     }
 }
+```
+上面代码输出如下：
+```
+Man eating...
+Woman eating...
 ```
