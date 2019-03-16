@@ -126,3 +126,27 @@ struct file_system_type {
 };
 ```
 其中成员 `read_super` 是一个函数指针，其指向具体文件系统应该怎么读取超级块数据，譬如 `ext2` 文件系统的 `read_super` 指向的是 `ext2_read_super` 方法。
+
+### dentry
+在Linux内核中，每个文件或者目录都对应一个 `dentry` 结构，用于描述此文件或者路径的信息，定义如下：
+```cpp
+struct dentry {
+	atomic_t d_count;
+	unsigned int     d_flags;
+	struct inode  *  d_inode;	/* Where the name belongs to - NULL is negative */
+	struct dentry *  d_parent;	/* parent directory */
+	struct list_head d_vfsmnt;
+	struct list_head d_hash;	/* lookup hash list */
+	struct list_head d_lru;		/* d_count = 0 LRU list */
+	struct list_head d_child;	/* child of parent list */
+	struct list_head d_subdirs;	/* our children */
+	struct list_head d_alias;	/* inode alias list */
+	struct qstr d_name;
+	unsigned long d_time;		/* used by d_revalidate */
+	struct dentry_operations  *d_op;
+	struct super_block * d_sb;	/* The root of the dentry tree */
+	unsigned long d_reftime;	/* last time referenced */
+	void * d_fsdata;		/* fs-specific data */
+	unsigned char d_iname[DNAME_INLINE_LEN]; /* small names */
+};
+```
