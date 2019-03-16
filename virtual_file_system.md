@@ -130,6 +130,8 @@ struct file_system_type {
 ### 目录项(dentry)
 在Linux内核中，每个目录都对应一个 `dentry` 结构，用于描述此目录的信息，定义如下：
 ```cpp
+// include/linux/dcache.h
+
 struct dentry {
 	atomic_t d_count;
 	unsigned int     d_flags;
@@ -164,6 +166,8 @@ struct dentry {
 ### 索引节点(inode)
 `索引节点(inode)` 的作用是保存一个目录或文件的信息，譬如修改时间、所属用户和用户组，最重要的是其定义了操作一个目录或者文件的方法集，其定义如下：
 ```cpp
+// include/linux/fs.h
+
 struct inode {
 	struct list_head	i_hash;
 	struct list_head	i_list;
@@ -195,4 +199,10 @@ struct inode {
 	} u;
 };
 ```
-由于 `inode` 结构的定义比较庞大，所以这里只截取了部分成员。
+由于 `inode` 结构的定义比较庞大，所以这里只截取了部分成员。下面简单介绍一下其中一些成员的作用：
+* i_uid: 文件或目录所属的用户
+* i_gid: 文件或目录所属的用户组
+* i_atime: 文件或目录最后被访问的时间
+* i_fop: 文件或目录对应的操作方法集
+* i_sb: 文件或目录所属的文件系统超级块
+* ...
