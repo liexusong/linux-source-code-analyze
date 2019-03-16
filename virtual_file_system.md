@@ -69,6 +69,8 @@ Woman eating...
 ### 超级块(super block)
 因为Linux支持多种文件系统，所以内核必须通过一个数据结构来管理不同的文件系统，此结构称为 `超级块(super block)`，每种不同的文件系统都需要通过一个 `超级块` 管理其信息和操作，`超级块` 的定义如下：
 ```cpp
+// include/linux/fs.h
+
 struct super_block {
 	struct list_head	s_list;		/* Keep this first */
 	kdev_t			s_dev;
@@ -112,6 +114,8 @@ struct super_block {
 
 我们接着分析一下 `s_type` 成员的类型 `file_system_type`:
 ```cpp
+// include/linux/fs.h
+
 struct file_system_type {
 	const char *name;
 	int fs_flags;
