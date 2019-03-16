@@ -14,29 +14,41 @@ public interface Human {
 ```java
 public class Man implements Human {
     public void eat() {
-        System.out.println("I am man, I am eatting...");
+        System.out.println("Man eatting...");
     }
     
     public void walk() {
-        System.out.println("I am man, I am walking...");
+        System.out.println("Man walking...");
     }
     
     public void speak(String content) {
-        System.out.println("I am man, I am speaking..." + content);
+        System.out.println("Man speaking..." + content);
     }
 }
 
 public class Woman implements Human {
     public void eat() {
-        System.out.println("I am woman, I am eatting...");
+        System.out.println("Woman eatting...");
     }
     
     public void walk() {
-        System.out.println("I am woman, I am walking...");
+        System.out.println("Woman walking...");
     }
     
     public void speak(String content) {
-        System.out.println("I am woman, I am speaking..." + content);
+        System.out.println("Woman speaking..." + content);
+    }
+}
+```
+因为 Man 和 Woman 类都实现了 Human 这个接口，所以我们可以通过 Human 这个接口来访问这两个类的方法：
+```java
+public class Main {
+    public static void main(String[] args) {
+        Human man = new Man();
+        Human woman = new Woman();
+        
+        man.eat();
+        woman.eat();
     }
 }
 ```
