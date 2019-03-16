@@ -108,3 +108,16 @@ struct super_block {
 * ...
 * s_type: 这个成员比较重要，因为其定义了应该怎么读取文件系统超级块的数据。
 * ...
+
+我们接着分析一下 `s_type` 成员的类型 `file_system_type`:
+```cpp
+struct file_system_type {
+	const char *name;
+	int fs_flags;
+	struct super_block *(*read_super) (struct super_block *, void *, int); // 读取文件系统超级块的方法
+	struct module *owner;
+	struct vfsmount *kern_mnt; /* For kernel mount, if it's FS_SINGLE fs */
+	struct file_system_type * next;
+};
+```
+其中成员 `read_super` 是一个函数指针，其指向具体文件系统应该怎么读取超级块数据，譬如 `ext2` 文件系统的 `read_super` 指向的是 `ext2_read_super` 方法。
