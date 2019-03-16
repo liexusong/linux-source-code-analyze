@@ -6,8 +6,46 @@ Linux支持多种文件系统，但提供给用户的文件操作接口却是一
 ```java
 public interface Human
 {
-    void eat();
-    void walk();
-    void speak();
+    public void eat();
+    public void walk();
+    public void speak(String content);
+}
+```
+上面定义了一个 Human 的接口，接口中有3个方法：`eat()`、`walk()` 和 `speak()`，现在我们定义一个名为 Man 和一个名为 Woman 的类来实现 Human 这个接口：
+```java
+public class Man
+{
+    public void eat()
+    {
+        System.out.println("I am man, I am eatting...");
+    }
+    
+    public void walk()
+    {
+        System.out.println("I am man, I am walking...");
+    }
+    
+    public void speak(String content)
+    {
+        System.out.println("I am man, I am speaking..." + content);
+    }
+}
+
+public class Woman
+{
+    public void eat()
+    {
+        System.out.println("I am woman, I am eatting...");
+    }
+    
+    public void walk()
+    {
+        System.out.println("I am woman, I am walking...");
+    }
+    
+    public void speak(String content)
+    {
+        System.out.println("I am woman, I am speaking..." + content);
+    }
 }
 ```
