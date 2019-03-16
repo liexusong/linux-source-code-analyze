@@ -63,4 +63,41 @@ Woman eating...
 ```
 可以看出，Man 对象和 Woman 对象都可以当成 Human 接口类型来使用。读者可以有些疑惑，为什么讲 `虚拟文件系统` 会扯到Java去了，原因是 `虚拟文件系统` 使用的方式与面向对象的接口非常相似。但我们知道，Linux是使用 `C语言` 实现的， C语言是没有接口这个概念的，那么Linux是怎么模拟接口呢？虽然C语言没有接口，但是C语言有函数指针这个概念，Linux就是使用函数指针来模拟接口的。
 
-## 虚拟文件系统实现细节
+## 虚拟文件系统实现
+在介绍虚拟文件系统实现之前，我们先来介绍几个重要的数据结构。
+
+因为Linux支持多种文件系统，所以内核必须通过一个数据结构来管理不同的文件系统，此结构称为 `超级块(super block)`，每种不同的文件系统都需要通过一个 `超级块` 管理其信息和操作，`超级块` 的定义如下：
+```cpp
+struct super_block {
+	struct list_head	s_list;		/* Keep this first */
+	kdev_t			    s_dev;
+	unsigned long		s_blocksize;
+	unsigned char		s_blocksize_bits;
+	unsigned char		s_lock;
+	unsigned char		s_dirt;
+	struct file_system_type	*s_type;
+	struct super_operations	*s_op;
+	struct dquot_operations	*dq_op;
+	unsigned long		s_flags;
+	unsigned long		s_magic;
+	struct dentry		*s_root;
+	wait_queue_head_t	s_wait;
+
+	struct list_head	s_dirty;	    /* dirty inodes */
+	struct list_head	s_files;
+
+	struct block_device	*s_bdev;
+	struct list_head	s_mounts;	    /* vfsmount(s) of this one */
+	struct quota_mount_options s_dquot;	/* Diskquota specific options */
+
+	union {
+		struct minix_sb_info	minix_sb;
+		struct ext2_sb_info	    ext2_sb;
+		...
+	} u;
+
+	struct semaphore s_vfs_rename_sem;	/* Kludge */
+
+	struct semaphore s_nfsd_free_path_sem;
+};
+```
