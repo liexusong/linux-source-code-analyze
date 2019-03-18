@@ -258,12 +258,23 @@ int open_namei(const char * pathname, int flag, int mode, struct nameidata *nd)
 如果传入的 `flag` 参数设置了 `O_CREAT` 标志，说明我们要创建一个新的文件，所以此时调用 `path_init()` 和 `path_walk()` 函数打开文件夹。`path_init()` 和 `path_walk()` 函数在Linux中用得比较多，`path_init()` 函数主要用于初始化 `struct nameidata` 结构，代码如下：
 ```cpp
 struct nameidata {
-	struct dentry *dentry;
-	struct vfsmount *mnt;
-	struct qstr last;
-	unsigned int flags;
-	int last_type;
+	struct dentry *dentry; // 当前目录的dentry结构
+	struct vfsmount *mnt;  // 目录所使用挂载点
+	struct qstr last;      // 最后一级目录的名字
+	unsigned int flags;    // 标志位
+	int last_type;         // 最后一级目录的类型
 };
+
+static inline int
+walk_init_root(const char *name, struct nameidata *nd)
+{
+	read_lock(&current->fs->lock);
+	...
+	nd->mnt = mntget(current->fs->rootmnt);
+	nd->dentry = dget(current->fs->root);
+	read_unlock(&current->fs->lock);
+	return 1;
+}
 
 int path_init(const char *name, unsigned int flags, struct nameidata *nd)
 {
