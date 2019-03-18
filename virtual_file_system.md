@@ -208,3 +208,7 @@ struct inode {
 * ...
 
 有同学可能会问，为什么已经有 `dentry` 结构了还需要定义一个 `inode` 结构？这是因为在Linux中，不同的路径可以指向同一个文件，譬如硬连接。所以说 `dentry` 只能表示一个路径，而 `inode` 才能代表一个真实目录或者文件，我们看到 `inode` 结构中有个 `i_dentry` 的链表就是用于保存指向同一个文件或者目录的所有 `dentry`。
+
+我们通过一张图片来描述一下这三个数据结构的关系：
+[vfs structs](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vfs_structs.jpg)
+
