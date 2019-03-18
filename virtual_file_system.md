@@ -234,7 +234,47 @@ struct file *filp_open(const char * filename, int flags, int mode)
 	return ERR_PTR(error);
 }
 ```
-`filp_open()` 函数分别调用了 `open_namei()` 和 `dentry_open()` 这两个函数，我们先来分析 `open_namei()` 这个函数的实现：
+`filp_open()` 函数分别调用了 `open_namei()` 和 `dentry_open()` 这两个函数，我们先来分析 `open_namei()` 这个函数的实现，由于 `open_namei()` 函数比较繁琐，所以我们分段来分析这个函数：
 ```cpp
+int open_namei(const char * pathname, int flag, int mode, struct nameidata *nd)
+{
+	int acc_mode, error = 0;
+	struct inode *inode;
+	struct dentry *dentry;
+	struct dentry *dir;
+	int count = 0;
 
+	acc_mode = ACC_MODE(flag);
+
+	if (!(flag & O_CREAT)) {
+		if (path_init(pathname, lookup_flags(flag), nd))
+			error = path_walk(pathname, nd);
+		if (error)
+			return error;
+		dentry = nd->dentry;
+		goto ok;
+	}
+```
+如果传入的 `flag` 参数设置了 `O_CREAT` 标志，说明我们要创建一个新的文件，所以此时调用 `path_init()` 和 `path_walk()` 函数打开文件夹。`path_init()` 和 `path_walk()` 函数在Linux中用得比较多，`path_init()` 函数主要用于初始化 `struct nameidata` 结构，代码如下：
+```cpp
+struct nameidata {
+	struct dentry *dentry;
+	struct vfsmount *mnt;
+	struct qstr last;
+	unsigned int flags;
+	int last_type;
+};
+
+int path_init(const char *name, unsigned int flags, struct nameidata *nd)
+{
+	nd->last_type = LAST_ROOT; /* if there are only slashes... */
+	nd->flags = flags;
+	if (*name=='/') // 如果是绝对路径
+		return walk_init_root(name,nd);
+	read_lock(&current->fs->lock);
+	nd->mnt = mntget(current->fs->pwdmnt);
+	nd->dentry = dget(current->fs->pwd);
+	read_unlock(&current->fs->lock);
+	return 1;
+}
 ```
