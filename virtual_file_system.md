@@ -242,3 +242,4 @@ struct file_operations minix_file_operations = {
 	fsync:		minix_sync_file,
 };
 ```
+当对 `minix` 文件系统下的文件进行 `read()` 操作时，实际上调用的是 `generic_file_read()` 函数。
