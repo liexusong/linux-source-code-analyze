@@ -213,3 +213,24 @@ out_error:
 }
 ```
 `sys_open()` 首先会调用 `get_unused_fd()` 获取一个进程没有使用的文件句柄fd，然后调用 `filp_open()` 打开文件并返回一个类型为 `struct file` 的结构f，最后通过调用 `fd_install()` 把文件句柄fd与文件结构f关联起来。
+
+我们主要来分析一下 `filp_open()` 函数的实现，代码如下：
+```cpp
+struct file *filp_open(const char * filename, int flags, int mode)
+{
+	int namei_flags, error;
+	struct nameidata nd;
+
+	namei_flags = flags;
+	if ((namei_flags+1) & O_ACCMODE)
+		namei_flags++;
+	if (namei_flags & O_TRUNC)
+		namei_flags |= 2;
+
+	error = open_namei(filename, namei_flags, mode, &nd);
+	if (!error)
+		return dentry_open(nd.dentry, nd.mnt, flags);
+
+	return ERR_PTR(error);
+}
+```
