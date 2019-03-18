@@ -242,4 +242,7 @@ struct file_operations minix_file_operations = {
 	fsync:		minix_sync_file,
 };
 ```
-当对 `minix` 文件系统下的文件进行 `read()` 操作时，实际上调用的是 `generic_file_read()` 函数。
+当对 `minix` 文件系统下的文件进行 `read()` 操作时，实际上调用的是 `generic_file_read()` 函数，后面我们还会对这个过程进行详细的解释。
+
+### 具体实现
+那么内核是怎么找到文件的 `inode` 结构呢？
