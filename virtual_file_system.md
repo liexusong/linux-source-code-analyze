@@ -233,3 +233,12 @@ struct file_operations {
 	ssize_t (*writev) (struct file *, const struct iovec *, unsigned long, loff_t *);
 };
 ```
+从上面的结构可以看出，对文件的每个操作都有一个对应的接口与之相关联，例如 `minix` 文件系统只提供了 `read()`、`write()`、`mmap()` 和 `fsync()` 相关的接口，定义如下：
+```cpp
+struct file_operations minix_file_operations = {
+	read:		generic_file_read,
+	write:		generic_file_write,
+	mmap:		generic_file_mmap,
+	fsync:		minix_sync_file,
+};
+```
