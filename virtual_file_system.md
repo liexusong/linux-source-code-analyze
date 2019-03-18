@@ -289,3 +289,5 @@ int path_init(const char *name, unsigned int flags, struct nameidata *nd)
 	return 1;
 }
 ```
+如果要打开的文件是相对路径，那么就把 `struct nameidata` 结构的 `mnt` 成员设置为工作目录的文件系统挂载点（暂时不知道不禁要，后面会解释），把 `dentry` 成员设置为工作目录的目录项结构。如果要打开文件是绝对路径，那么就把 `struct nameidata` 结构的 `mnt` 成员设置为根目录的文件系统挂载点，把 `dentry` 成员设置为根目录的目录项结构。
+
