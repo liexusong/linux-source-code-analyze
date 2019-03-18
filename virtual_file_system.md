@@ -183,4 +183,33 @@ struct file_operations minix_file_operations = {
 当对 `minix` 文件系统下的文件进行 `read()` 操作时，实际上调用的是 `generic_file_read()` 函数，后面我们还会对这个过程进行详细的解释。
 
 ## 具体实现
-那么内核是怎么找到文件的 `inode` 结构呢？
+那么内核是怎么找到文件的 `inode` 结构呢？一般来说，要使用一个文件时必须先打开文件，而Linux提供打开文件的系统调用是 `open()`，而 `open()` 最终会调用内核态的 `sys_open()` 函数：
+```cpp
+asmlinkage long sys_open(const char * filename, int flags, int mode)
+{
+	char * tmp;
+	int fd, error;
+
+	tmp = getname(filename);
+	fd = PTR_ERR(tmp);
+	if (!IS_ERR(tmp)) {
+		fd = get_unused_fd();
+		if (fd >= 0) {
+			struct file *f = filp_open(tmp, flags, mode);
+			error = PTR_ERR(f);
+			if (IS_ERR(f))
+				goto out_error;
+			fd_install(fd, f);
+		}
+out:
+		putname(tmp);
+	}
+	return fd;
+
+out_error:
+	put_unused_fd(fd);
+	fd = error;
+	goto out;
+}
+```
+`sys_open()` 首先会调用 `get_unused_fd()` 获取一个进程没有使用的文件句柄fd，然后调用 `filp_open()` 打开文件并返回一个类型为 `struct file` 的结构f，最后通过调用 `fd_install()` 把文件句柄fd与文件结构f关联起来。
