@@ -234,3 +234,7 @@ struct file *filp_open(const char * filename, int flags, int mode)
 	return ERR_PTR(error);
 }
 ```
+`filp_open()` 函数分别调用了 `open_namei()` 和 `dentry_open()` 这两个函数，我们先来分析 `open_namei()` 这个函数的实现：
+```cpp
+
+```
