@@ -289,5 +289,20 @@ int path_init(const char *name, unsigned int flags, struct nameidata *nd)
 	return 1;
 }
 ```
-如果要打开的文件是相对路径，那么就把 `struct nameidata` 结构的 `mnt` 成员设置为工作目录的文件系统挂载点（暂时不知道不禁要，后面会解释），把 `dentry` 成员设置为工作目录的目录项结构。如果要打开文件是绝对路径，那么就把 `struct nameidata` 结构的 `mnt` 成员设置为根目录的文件系统挂载点，把 `dentry` 成员设置为根目录的目录项结构。
+如果要打开的文件是相对路径，那么就把 `struct nameidata` 结构的 `mnt` 成员设置为工作目录的文件系统挂载点（后面会解释），把 `dentry` 成员设置为工作目录的目录项结构。如果要打开文件是绝对路径，那么就把 `struct nameidata` 结构的 `mnt` 成员设置为根目录的文件系统挂载点，把 `dentry` 成员设置为根目录的目录项结构。
 
+接下来我们分析一下 `path_walk()` 函数的实现，因为 `path_walk()` 的实现比较繁琐，所以这里只分析具体的流程。`path_walk()` 会按照路径一级一级地获取其对应的 `dentry`，然后保存到 `struct nameidata` 结构的 `dentry` 成员中。而获取目录的 `dentry` 结构是通过 `cached_lookup()` 和 `real_lookup()` 这两个函数去完成，`cached_lookup()` 会去缓存中搜索目录的 `dentry` 结构是否存在，而 `real_lookup()` 会去磁盘中读取目录的 `dentry` 结构，我们来看看 `path_walk()` 函数的源码：
+```cpp
+int path_walk(const char * name, struct nameidata *nd)
+{
+	...
+	dentry = cached_lookup(nd->dentry, &this, LOOKUP_CONTINUE);   // 从缓存中读取目录的dentry结构
+	if (!dentry) { // 如果缓存中没有
+		dentry = real_lookup(nd->dentry, &this, LOOKUP_CONTINUE); // 从磁盘中读取目录的dentry结构
+		err = PTR_ERR(dentry);
+		if (IS_ERR(dentry))
+			break;
+	}
+	...
+}
+```
