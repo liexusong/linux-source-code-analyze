@@ -6,6 +6,36 @@
 public interface VFS {
     public Buffer read(File fd, int size);
     public bool write(File fd, Buffer buf);
-    public bool lseek(File fd, int offset);
+    public bool seek(File fd, int offset);
+}
+```
+在上面，我们定义了一个名为 `VFS` 的接口，然后声名了3个方法，分别为 `read()`、`write()` 和 `seek()`。如果一个类实现了这个接口，那么就可以把它当做成 `VFS` 接口使用。譬如我们分别定义一个 `Ext2` 和 `Ext3` 类来实现 `VFS` 接口：
+```java
+public class Ext2 implements VFS {
+    public Buffer read(File fd, int size) {
+       // code here...
+    }
+    
+    public bool write(File fd, Buffer buf) {
+        // code here...
+    }
+    
+    public bool seek(File fd, int offset) {
+        // code here...
+    }
+}
+
+public class Ext3 implements VFS {
+    public Buffer read(File fd, int size) {
+       // code here...
+    }
+    
+    public bool write(File fd, Buffer buf) {
+        // code here...
+    }
+    
+    public bool seek(File fd, int offset) {
+        // code here...
+    }
 }
 ```
