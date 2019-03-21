@@ -39,3 +39,18 @@ public class Ext3 implements VFS {
     }
 }
 ```
+这样，我们就可以使用同一接口来分别访问 Ext2 和 Ext3 了：
+```java
+public class Main {
+    public static void main(String[] args) {
+        VFS fs;
+        Ext2 ext2 = new Ext2();
+        Ext3 ext3 = new Ext3();
+        
+        fs = ext2;
+        buffer = fs.read(file, size);
+        fs = ext3;
+        buffer = fs.read(file, size);
+    }
+}
+```
