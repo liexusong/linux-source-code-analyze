@@ -12,3 +12,35 @@
 因为要为不同类型的文件系统定义统一的接口层，所以这些文件系统必须按照 VFS 的规范来编写程序，下面先来介绍一下在 VFS 中用于管理文件系统的数据结构。
 
 ### 超级块(super block)
+因为Linux支持多文件系统，所以在内核中必须通过一个数据结构来描述具体文件系统的一些信息和相关的操作等，VFS 定义了一个名为 `超级块（super_block）` 的数据结构来描述具体的文件系统，其定义如下（由于super_block的成员比较多，所以这里只列出部分）：
+```cpp
+struct super_block {
+    struct list_head    s_list;     /* Keep this first */
+    kdev_t              s_dev;         // 设备号
+    unsigned long       s_blocksize;   // 数据块大小
+    unsigned char       s_blocksize_bits;
+    unsigned char       s_lock;
+    unsigned char       s_dirt;       // 是否脏
+    struct file_system_type *s_type;  // 文件系统类型
+    struct super_operations *s_op;    // 超级块相关的操作列表
+    struct dquot_operations *dq_op;
+    unsigned long       s_flags;
+    unsigned long       s_magic;
+    struct dentry       *s_root;      // 挂载的根目录
+    wait_queue_head_t   s_wait;
+
+    struct list_head    s_dirty;    /* dirty inodes */
+    struct list_head    s_files;
+
+    struct block_device *s_bdev;
+    struct list_head    s_mounts;
+    struct quota_mount_options s_dquot;
+
+    union {
+        struct minix_sb_info    minix_sb;
+        struct ext2_sb_info ext2_sb;
+        ...
+    } u;
+    ...
+};
+```
