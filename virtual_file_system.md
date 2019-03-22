@@ -144,14 +144,14 @@ struct dentry_operations {
 
 struct dentry {
     ...
-    struct inode  * d_inode;    /* Where the name belongs to - NULL is negative */
-    struct dentry * d_parent;   /* parent directory */
+    struct inode  * d_inode;    // 目录项对应的inode
+    struct dentry * d_parent;   // 当前目录项对应的父目录
     ...
-    struct qstr d_name;
-    unsigned long d_time;       /* used by d_revalidate */
+    struct qstr d_name;         // 目录的名字
+    unsigned long d_time;
     struct dentry_operations  *d_op; // 目录项的辅助方法
-    struct super_block * d_sb;  /* The root of the dentry tree */
+    struct super_block * d_sb;       // 所在文件系统的超级块对象
     ...
-    unsigned char d_iname[DNAME_INLINE_LEN]; /* small names */
+    unsigned char d_iname[DNAME_INLINE_LEN]; // 当目录名不超过16个字符时使用
 };
 ```
