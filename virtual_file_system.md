@@ -128,7 +128,7 @@ struct inode {
 
 我们应该重点关注 `i_op` 和 `i_fop` 这两个成员。
 
-`i_op` 成员定义了没有打开文件前对文件的操作方法列表，譬如 `open()`系统调用会触发 `inode->i_op->create()` 方法，而 `link()` 系统调用会触发 `inode->i_op->link()` 方法。
+`i_op` 成员定义对目录相关的操作方法列表，譬如 `mkdir()`系统调用会触发 `inode->i_op->mkdir()` 方法，而 `link()` 系统调用会触发 `inode->i_op->link()` 方法。
 
 而 `i_fop` 成员则定义了对打开文件后对文件的操作方法列表，譬如 `read()` 系统调用会触发 `inode->i_fop->read()` 方法，而 `write()` 系统调用会触发 `inode->i_fop->write()` 方法。
 
