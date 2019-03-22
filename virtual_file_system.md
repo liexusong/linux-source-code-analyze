@@ -14,6 +14,26 @@
 ### 超级块(super block)
 因为Linux支持多文件系统，所以在内核中必须通过一个数据结构来描述具体文件系统的一些信息和相关的操作等，VFS 定义了一个名为 `超级块（super_block）` 的数据结构来描述具体的文件系统，其定义如下（由于super_block的成员比较多，所以这里只列出部分）：
 ```cpp
+struct file_system_type {
+    const char *name;
+    int fs_flags;
+    struct super_block *(*read_super) (struct super_block *, void *, int); // 读取设备中文件系统超级块的方法
+    ...
+};
+
+struct super_operations {
+    void (*read_inode) (struct inode *);
+    void (*write_inode) (struct inode *, int);
+    void (*put_inode) (struct inode *);
+    void (*delete_inode) (struct inode *);
+    void (*put_super) (struct super_block *);
+    void (*write_super) (struct super_block *);
+    int (*statfs) (struct super_block *, struct statfs *);
+    int (*remount_fs) (struct super_block *, int *, char *);
+    void (*clear_inode) (struct inode *);
+    void (*umount_begin) (struct super_block *);
+};
+
 struct super_block {
     struct list_head    s_list;     /* Keep this first */
     kdev_t              s_dev;         // 设备号
@@ -44,3 +64,10 @@ struct super_block {
     ...
 };
 ```
+下面我们介绍一下一些比较重要的成员：
+* s_dev：用于保存设备的设备号
+* s_blocksize：用于保存文件系统的数据块大小（文件系统是以数据块为单位的）
+* s_type：文件系统的类型（提供了读取设备中文件系统超级块的方法）
+* s_op：超级块相关的操作列表
+* s_root：挂载的根目录
+
