@@ -132,7 +132,8 @@ struct inode {
 
 而 `i_fop` 成员则定义了对打开文件后对文件的操作方法列表，譬如 `read()` 系统调用会触发 `inode->i_fop->read()` 方法，而 `write()` 系统调用会触发 `inode->i_fop->write()` 方法。
 
-    上面的说法有点不当，因为打开文件后，对文件的操作实体是 file 结构，
-    而 file 结构会复制 inode 的 i_fop 成员到其 f_op 成员中，
+    上面的说法有点不当，因为打开文件后，对文件的操作实体是 file 结构。
+    而打开文件时， file 结构会复制 inode 的 i_fop 成员到其 f_op 成员中，
     所以当调用 open() 系统调用时真实被触发的是 file->f_op->read()，但其实是一样的。
 
+### 目录项（dentry）
