@@ -9,7 +9,7 @@
 下面我们开始分析 `虚拟文件系统` 的实现原理。
 
 ## 重要的数据结构
-因为要为不同类型的文件系统定义统一的接口层，所以这些文件系统必须按照 VFS 的规范来编写程序，下面先来介绍一下在 VFS 中用于管理文件系统的数据结构。
+因为要为不同类型的文件系统定义统一的接口层，所以这些文件系统必须按照 VFS 的规范来编写程序，所以 VFS 定义了一些数据结构来管理不同的文件系统。我们必须先了解这些数据结构的定义和作用，这样在分析源码时遇到它们也不至于一脸愕然。
 
 ### 超级块(super block)
 因为Linux支持多文件系统，所以在内核中必须通过一个数据结构来描述具体文件系统的一些信息和相关的操作等，VFS 定义了一个名为 `超级块（super_block）` 的数据结构来描述具体的文件系统，也就是说内核是通过超级块来认知具体的文件系统的，其定义如下（由于super_block的成员比较多，所以这里只列出部分）：
@@ -28,10 +28,7 @@ struct super_operations {
     void (*delete_inode) (struct inode *);      // 删除磁盘中的一个inode
     void (*put_super) (struct super_block *);   // 释放超级块占用的内存
     void (*write_super) (struct super_block *); // 把超级块写入到磁盘中
-    int (*statfs) (struct super_block *, struct statfs *);
-    int (*remount_fs) (struct super_block *, int *, char *);
-    void (*clear_inode) (struct inode *);
-    void (*umount_begin) (struct super_block *);
+    ...
 };
 
 struct super_block {
@@ -80,18 +77,7 @@ struct inode_operations {
     int (*link) (struct dentry *,struct inode *,struct dentry *);
     int (*unlink) (struct inode *,struct dentry *);
     int (*symlink) (struct inode *,struct dentry *,const char *);
-    int (*mkdir) (struct inode *,struct dentry *,int);
-    int (*rmdir) (struct inode *,struct dentry *);
-    int (*mknod) (struct inode *,struct dentry *,int,int);
-    int (*rename) (struct inode *, struct dentry *,
-            struct inode *, struct dentry *);
-    int (*readlink) (struct dentry *, char *,int);
-    int (*follow_link) (struct dentry *, struct nameidata *);
-    void (*truncate) (struct inode *);
-    int (*permission) (struct inode *, int);
-    int (*revalidate) (struct dentry *);
-    int (*setattr) (struct dentry *, struct iattr *);
-    int (*getattr) (struct dentry *, struct iattr *);
+    ...
 };
 
 struct file_operations {
@@ -99,18 +85,7 @@ struct file_operations {
     loff_t (*llseek) (struct file *, loff_t, int);
     ssize_t (*read) (struct file *, char *, size_t, loff_t *);
     ssize_t (*write) (struct file *, const char *, size_t, loff_t *);
-    int (*readdir) (struct file *, void *, filldir_t);
-    unsigned int (*poll) (struct file *, struct poll_table_struct *);
-    int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
-    int (*mmap) (struct file *, struct vm_area_struct *);
-    int (*open) (struct inode *, struct file *);
-    int (*flush) (struct file *);
-    int (*release) (struct inode *, struct file *);
-    int (*fsync) (struct file *, struct dentry *, int datasync);
-    int (*fasync) (int, struct file *, int);
-    int (*lock) (struct file *, int, struct file_lock *);
-    ssize_t (*readv) (struct file *, const struct iovec *, unsigned long, loff_t *);
-    ssize_t (*writev) (struct file *, const struct iovec *, unsigned long, loff_t *);
+    ...
 };
 
 struct inode {
@@ -139,5 +114,13 @@ struct inode {
     } u;
 };
 ```
-
-
+下面也介绍一下 `inode` 中几个比较重要的成员：
+* i_uid：文件所属的用户
+* i_gid：文件所属的组
+* i_rdev：文件所在的设备号
+* i_size：文件的大小
+* i_atime：文件的最后访问时间
+* i_mtime：文件的最后修改时间
+* i_ctime：文件的创建时间
+* i_op：inode相关的操作列表
+* i_fop：文件相关的操作列表
