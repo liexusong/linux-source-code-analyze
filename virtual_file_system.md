@@ -12,7 +12,7 @@
 因为要为不同类型的文件系统定义统一的接口层，所以这些文件系统必须按照 VFS 的规范来编写程序，下面先来介绍一下在 VFS 中用于管理文件系统的数据结构。
 
 ### 超级块(super block)
-因为Linux支持多文件系统，所以在内核中必须通过一个数据结构来描述具体文件系统的一些信息和相关的操作等，VFS 定义了一个名为 `超级块（super_block）` 的数据结构来描述具体的文件系统，其定义如下（由于super_block的成员比较多，所以这里只列出部分）：
+因为Linux支持多文件系统，所以在内核中必须通过一个数据结构来描述具体文件系统的一些信息和相关的操作等，VFS 定义了一个名为 `超级块（super_block）` 的数据结构来描述具体的文件系统，也就是说内核是通过超级块来认知具体的文件系统的，其定义如下（由于super_block的成员比较多，所以这里只列出部分）：
 ```cpp
 struct file_system_type {
     const char *name;
@@ -72,3 +72,72 @@ struct super_block {
 * s_root：挂载的根目录
 
 ### 索引节点（inode）
+`索引节点（inode）` 用于描述一个文件的meta（元）信息，其包含的是诸如文件的大小、拥有者、创建时间、磁盘位置等和文件相关的信息。`inode` 的定义如下（由于inode的成员也是非常多，所以这里也只列出部分成员，具体可以参考Linux源码）：
+```cpp
+struct inode_operations {
+    int (*create) (struct inode *,struct dentry *,int);
+    struct dentry * (*lookup) (struct inode *,struct dentry *);
+    int (*link) (struct dentry *,struct inode *,struct dentry *);
+    int (*unlink) (struct inode *,struct dentry *);
+    int (*symlink) (struct inode *,struct dentry *,const char *);
+    int (*mkdir) (struct inode *,struct dentry *,int);
+    int (*rmdir) (struct inode *,struct dentry *);
+    int (*mknod) (struct inode *,struct dentry *,int,int);
+    int (*rename) (struct inode *, struct dentry *,
+            struct inode *, struct dentry *);
+    int (*readlink) (struct dentry *, char *,int);
+    int (*follow_link) (struct dentry *, struct nameidata *);
+    void (*truncate) (struct inode *);
+    int (*permission) (struct inode *, int);
+    int (*revalidate) (struct dentry *);
+    int (*setattr) (struct dentry *, struct iattr *);
+    int (*getattr) (struct dentry *, struct iattr *);
+};
+
+struct file_operations {
+    struct module *owner;
+    loff_t (*llseek) (struct file *, loff_t, int);
+    ssize_t (*read) (struct file *, char *, size_t, loff_t *);
+    ssize_t (*write) (struct file *, const char *, size_t, loff_t *);
+    int (*readdir) (struct file *, void *, filldir_t);
+    unsigned int (*poll) (struct file *, struct poll_table_struct *);
+    int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
+    int (*mmap) (struct file *, struct vm_area_struct *);
+    int (*open) (struct inode *, struct file *);
+    int (*flush) (struct file *);
+    int (*release) (struct inode *, struct file *);
+    int (*fsync) (struct file *, struct dentry *, int datasync);
+    int (*fasync) (int, struct file *, int);
+    int (*lock) (struct file *, int, struct file_lock *);
+    ssize_t (*readv) (struct file *, const struct iovec *, unsigned long, loff_t *);
+    ssize_t (*writev) (struct file *, const struct iovec *, unsigned long, loff_t *);
+};
+
+struct inode {
+    ...
+    unsigned long       i_ino;
+    atomic_t            i_count;
+    kdev_t              i_dev;
+    umode_t             i_mode;
+    nlink_t             i_nlink;
+    uid_t               i_uid;
+    gid_t               i_gid;
+    kdev_t              i_rdev;
+    loff_t              i_size;
+    time_t              i_atime;
+    time_t              i_mtime;
+    time_t              i_ctime;
+    ...
+    struct inode_operations *i_op;
+    struct file_operations  *i_fop; /* former ->i_op->default_file_ops */
+    struct super_block      *i_sb;
+    ...
+    union {
+        struct minix_inode_info     minix_i;
+        struct ext2_inode_info      ext2_i;
+        ...
+    } u;
+};
+```
+
+
