@@ -104,7 +104,7 @@ struct inode {
     time_t              i_ctime;
     ...
     struct inode_operations *i_op;
-    struct file_operations  *i_fop; /* former ->i_op->default_file_ops */
+    struct file_operations  *i_fop;
     struct super_block      *i_sb;
     ...
     union {
@@ -124,3 +124,13 @@ struct inode {
 * i_ctime：文件的创建时间
 * i_op：inode相关的操作列表
 * i_fop：文件相关的操作列表
+* i_sb：文件所在文件系统的超级块
+
+我们应该重点关注 `i_op` 和 `i_fop` 这两个成员。
+
+`i_op` 成员定义了没有打开文件前对文件的操作方法列表，譬如 `open()`系统调用会触发 `inode->i_op->create()` 方法，而 `link()` 系统调用会触发 `inode->i_op->link()` 方法。
+
+而 `i_fop` 成员则定义了对打开文件后对文件的操作方法列表，譬如 `read()` 系统调用会触发 `inode->i_fop->read()` 方法，而 `write()` 系统调用会触发 `inode->i_fop->write()` 方法。
+
+    这种说法有点不妥，因为打开文件后，对文件的主要操作实体是 file 结构，而 file 会复制 inode 的 i_fop 成员到其 f_op 成员中。所以当调用 open() 系统调用时真实被触发的是 file->f_op->read()。
+
