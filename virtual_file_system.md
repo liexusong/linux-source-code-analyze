@@ -22,12 +22,12 @@ struct file_system_type {
 };
 
 struct super_operations {
-    void (*read_inode) (struct inode *);
-    void (*write_inode) (struct inode *, int);
-    void (*put_inode) (struct inode *);
-    void (*delete_inode) (struct inode *);
-    void (*put_super) (struct super_block *);
-    void (*write_super) (struct super_block *);
+    void (*read_inode) (struct inode *);        // 把磁盘中的inode数据读取入到内存中
+    void (*write_inode) (struct inode *, int);  // 把inode的数据写入到磁盘中
+    void (*put_inode) (struct inode *);         // 释放inode占用的内存
+    void (*delete_inode) (struct inode *);      // 删除磁盘中的一个inode
+    void (*put_super) (struct super_block *);   // 释放超级块占用的内存
+    void (*write_super) (struct super_block *); // 把超级块写入到磁盘中
     int (*statfs) (struct super_block *, struct statfs *);
     int (*remount_fs) (struct super_block *, int *, char *);
     void (*clear_inode) (struct inode *);
@@ -71,3 +71,4 @@ struct super_block {
 * s_op：超级块相关的操作列表
 * s_root：挂载的根目录
 
+### 索引节点（inode）
