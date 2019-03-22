@@ -126,12 +126,32 @@ struct inode {
 * i_fop：文件相关的操作列表
 * i_sb：文件所在文件系统的超级块
 
-我们应该重点关注 `i_op` 和 `i_fop` 这两个成员。
-
-`i_op` 成员定义对目录相关的操作方法列表，譬如 `mkdir()`系统调用会触发 `inode->i_op->mkdir()` 方法，而 `link()` 系统调用会触发 `inode->i_op->link()` 方法。
-
-而 `i_fop` 成员则定义了对打开文件后对文件的操作方法列表，譬如 `read()` 系统调用会触发 `inode->i_fop->read()` 方法，而 `write()` 系统调用会触发 `inode->i_fop->write()` 方法。
+我们应该重点关注 `i_op` 和 `i_fop` 这两个成员。`i_op` 成员定义对目录相关的操作方法列表，譬如 `mkdir()`系统调用会触发 `inode->i_op->mkdir()` 方法，而 `link()` 系统调用会触发 `inode->i_op->link()` 方法。而 `i_fop` 成员则定义了对打开文件后对文件的操作方法列表，譬如 `read()` 系统调用会触发 `inode->i_fop->read()` 方法，而 `write()` 系统调用会触发 `inode->i_fop->write()` 方法。
 
     上面的说法有点不当，因为打开文件后，对文件的操作实体是 file 结构。而打开文件时， file 结构会复制 inode 的 i_fop 成员到其 f_op 成员中，所以当调用 open() 系统调用时真实被触发的是 file->f_op->read()，但其实是一样的。
 
 ### 目录项（dentry）
+目录项的主要作用是方便查找文件。一个路径的各个组成部分，不管是目录还是普通的文件，都是一个目录项对象。如，在路径 `/home/liexusong/example.c` 中，目录 `/`, `home/`, `liexusong/` 和文件 `example.c` 都对应一个目录项对象。不同于前面的两个对象，目录项对象没有对应的磁盘数据结构，VFS 在遍历路径名的过程中现场将它们逐个地解析成目录项对象。其定义如下：
+```cpp
+struct dentry_operations {
+    int (*d_revalidate)(struct dentry *, int);
+    int (*d_hash) (struct dentry *, struct qstr *);
+    int (*d_compare) (struct dentry *, struct qstr *, struct qstr *);
+    int (*d_delete)(struct dentry *);
+    void (*d_release)(struct dentry *);
+    void (*d_iput)(struct dentry *, struct inode *);
+};
+
+struct dentry {
+    ...
+    struct inode  * d_inode;    /* Where the name belongs to - NULL is negative */
+    struct dentry * d_parent;   /* parent directory */
+    ...
+    struct qstr d_name;
+    unsigned long d_time;       /* used by d_revalidate */
+    struct dentry_operations  *d_op; // 目录项的辅助方法
+    struct super_block * d_sb;  /* The root of the dentry tree */
+    ...
+    unsigned char d_iname[DNAME_INLINE_LEN]; /* small names */
+};
+```
