@@ -12,8 +12,7 @@
     * [物理内存管理(下)](https://github.com/liexusong/linux-source-code-analyze/blob/master/physical-memory-managemen-3.md)
     * [虚拟内存管理](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual-memory-managemen.md)
     * [内存交换](https://github.com/liexusong/linux-source-code-analyze/blob/master/memory_swap.md)
-* 硬中断
-* 软中断
+* 中断机制
 * 系统调用
 * 文件系统
     * [虚拟文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_file_system.md)
