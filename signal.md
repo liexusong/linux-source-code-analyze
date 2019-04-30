@@ -427,3 +427,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
 
 答案先返回到用户态执行信号处理程序，执行完信号处理程序后再返回到内核态，再在内核态完成收尾工作。听起来有点绕，事实也的确是这样。下面通过一副图片来直观的展示这个过程（图片来源网络）：
 ![signal](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/signal1.png)
+
+为了达到这个目的，Linux进行了一个十分崎岖的过程。我们知道，从内核态返回到用户态时，CPU要从内核栈中找到返回到用户态的地址（就是调用系统调用的下一条代码指令地址），Linux为了先让信号处理程序执行，所以就需要把这个返回地址修改为信号处理程序的入口，这样当从系统调用返回到用户态时，就可以执行信号处理程序了。
+
+所以，`handle_signal()` 调用了 `setup_frame()` 函数来构建这个过程的环境（其实就是修改内核栈和用户栈相应的数据来完成）。
