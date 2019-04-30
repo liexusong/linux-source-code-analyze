@@ -289,4 +289,24 @@ sys_kill()
 ```
 
 ### 内核触发信号处理函数
-上面介绍了怎么发生一个信号给指定的进程，但是什么时候会触发信号相应的处理函数呢？
+上面介绍了怎么发生一个信号给指定的进程，但是什么时候会触发信号相应的处理函数呢？为了尽快让信号得到处理，Linux把信号处理过程放置在从内核态返回到用户态的过程中，就是在 `ret_from_sys_call` 处：
+```asm
+ENTRY(ret_from_sys_call)
+	...
+ret_with_reschedule:
+	...
+	cmpl $0, sigpending(%ebx)
+	jne signal_return
+restore_all:
+	RESTORE_ALL
+
+	ALIGN
+signal_return:
+	sti
+	testl $(VM_MASK),EFLAGS(%esp)
+	movl %esp,%eax
+	jne v86_signal_return
+	xorl %edx,%edx
+	call SYMBOL_NAME(do_signal)
+	jmp restore_all
+```
