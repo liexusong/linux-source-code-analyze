@@ -116,3 +116,93 @@ sys_kill(int pid, int sig)
 	return kill_something_info(sig, &info, pid);
 }
 ```
+`sys_kill()` 的代码比较简单，首先初始化 `info` 变量的成员，接着调用 `kill_something_info()` 函数来处理发送信号的操作。`kill_something_info()` 函数的代码如下：
+```cpp
+static int kill_something_info(int sig, struct siginfo *info, int pid)
+{
+	if (!pid) {
+		return kill_pg_info(sig, info, current->pgrp);
+	} else if (pid == -1) {
+		int retval = 0, count = 0;
+		struct task_struct * p;
+
+		read_lock(&tasklist_lock);
+		for_each_task(p) {
+			if (p->pid > 1 && p != current) {
+				int err = send_sig_info(sig, info, p);
+				++count;
+				if (err != -EPERM)
+					retval = err;
+			}
+		}
+		read_unlock(&tasklist_lock);
+		return count ? retval : -ESRCH;
+	} else if (pid < 0) {
+		return kill_pg_info(sig, info, -pid);
+	} else {
+		return kill_proc_info(sig, info, pid);
+	}
+}
+```
+`kill_something_info()` 函数根据传入`pid` 的不同来进行不同的操作，有如下4中可能：
+* `pid` 等于0时，表示信号将送往所有与调用 `kill()` 的那个进程属同一个使用组的进程。
+* `pid` 大于零时，`pid` 是信号要送往的进程ID。
+* `pid` 等于-1时，信号将送往调用进程有权给其发送信号的所有进程，除了进程1(init)。
+* `pid` 小于-1时，信号将送往以-pid为组标识的进程。
+
+我们这里只分析 `pid` 大于0的情况，从上面的代码可以知道，当 `pid` 大于0时，会调用 `kill_proc_info()` 函数来处理信号发送操作，其代码如下：
+```cpp
+inline int
+kill_proc_info(int sig, struct siginfo *info, pid_t pid)
+{
+	int error;
+	struct task_struct *p;
+
+	read_lock(&tasklist_lock);
+	p = find_task_by_pid(pid);
+	error = -ESRCH;
+	if (p)
+		error = send_sig_info(sig, info, p);
+	read_unlock(&tasklist_lock);
+	return error;
+}
+```
+`kill_proc_info()` 首先通过调用 `find_task_by_pid()` 函数来获得 `pid` 对应的进程管理结构，然后通过 `send_sig_info()` 函数来发送信号给此进程，`send_sig_info()` 函数代码如下：
+```cpp
+int
+send_sig_info(int sig, struct siginfo *info, struct task_struct *t)
+{
+    unsigned long flags;
+    int ret;
+
+    ret = -EINVAL;
+    if (sig < 0 || sig > _NSIG)
+        goto out_nolock;
+
+    ret = -EPERM;
+    if (bad_signal(sig, info, t))
+        goto out_nolock;
+
+    ret = 0;
+    if (!sig || !t->sig)
+        goto out_nolock;
+
+    spin_lock_irqsave(&t->sigmask_lock, flags);
+    handle_stop_signal(sig, t);
+
+    if (ignored_signal(sig, t))
+        goto out;
+
+    if (sig < SIGRTMIN && sigismember(&t->pending.signal, sig))
+        goto out;
+
+    ret = deliver_signal(sig, info, t);
+out:
+    spin_unlock_irqrestore(&t->sigmask_lock, flags);
+    if ((t->state & TASK_INTERRUPTIBLE) && signal_pending(t))
+        wake_up_process(t);
+out_nolock:
+
+    return ret;
+}
+```
