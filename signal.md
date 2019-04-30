@@ -403,23 +403,7 @@ static void
 handle_signal(unsigned long sig, struct k_sigaction *ka,
 	      siginfo_t *info, sigset_t *oldset, struct pt_regs * regs)
 {
-	if (regs->orig_eax >= 0) {
-		switch (regs->eax) {
-			case -ERESTARTNOHAND:
-				regs->eax = -EINTR;
-				break;
-
-			case -ERESTARTSYS:
-				if (!(ka->sa.sa_flags & SA_RESTART)) {
-					regs->eax = -EINTR;
-					break;
-				}
-			case -ERESTARTNOINTR:
-				regs->eax = regs->orig_eax;
-				regs->eip -= 2;
-		}
-	}
-
+	...
 	if (ka->sa.sa_flags & SA_SIGINFO)
 		setup_rt_frame(sig, ka, info, oldset, regs);
 	else
@@ -437,3 +421,4 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
 	}
 }
 ```
+由于信号处理程序是由用户提供的，所以代码在用户态中。而从内核态回到用户态前还是属于内核态，内核态是不能执行用户态的函数的，那么怎么办？答案就是在用户态栈空间构建一个框架，当从内核态返回到用户态时自动触发信号处理程序。
