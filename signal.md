@@ -265,6 +265,8 @@ static int send_signal(int sig, struct siginfo *info, struct sigpending *signals
 
 `send_signal()` 首先调用 `kmem_cache_alloc()` 函数来申请一个类型为 `struct sigqueue` 的队列节点，然后把节点添加到 `pending` 队列中，接着根据参数 `info` 的值来进行不同的操作，最后通过 `sigaddset()` 函数来设置信号对应的标志位，表示进程接收到该信号。
 
+`signal_wake_up()` 函数会把进程的 `sigpending` 成员变量设置为1，表示有信号需要处理，如果进程是睡眠可中断状态还会唤醒进程。
+
 至此，发送信号的流程已经完成，我们通过以下的调用链来更加具体的理解此过程：
 ```text
 kill()   
@@ -285,3 +287,5 @@ sys_kill()
                                                    |          |---> sigaddset()
                                                    |---> signal_wake_up()
 ```
+
+### 内核触发信号处理函数
