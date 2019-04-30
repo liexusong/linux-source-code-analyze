@@ -201,8 +201,87 @@ out:
     spin_unlock_irqrestore(&t->sigmask_lock, flags);
     if ((t->state & TASK_INTERRUPTIBLE) && signal_pending(t))
         wake_up_process(t);
-out_nolock:
 
+out_nolock:
     return ret;
 }
+```
+`send_sig_info()` 首先调用 `bad_signal()` 函数来检查是否有权发送信号给进程，然后调用 `ignored_signal()` 函数来检查信号是否被忽略，接着调用 `deliver_signal()` 函数开始发送信号，最后如果进程是睡眠状态就唤醒进程。我们接着来分析 `deliver_signal()` 函数：
+```cpp
+static int deliver_signal(int sig, struct siginfo *info, struct task_struct *t)
+{
+	int retval = send_signal(sig, info, &t->pending);
+
+	if (!retval && !sigismember(&t->blocked, sig))
+		signal_wake_up(t);
+
+	return retval;
+}
+```
+`deliver_signal()` 首先调用 `send_signal()` 函数进行信号的发送，然后调用 `signal_wake_up()` 函数唤醒进程。我们来分析一下最重要的函数 `send_signal()`：
+```cpp
+static int send_signal(int sig, struct siginfo *info, struct sigpending *signals)
+{
+    struct sigqueue * q = NULL;
+
+    if (atomic_read(&nr_queued_signals) < max_queued_signals) {
+        q = kmem_cache_alloc(sigqueue_cachep, GFP_ATOMIC);
+    }
+
+    if (q) {
+        atomic_inc(&nr_queued_signals);
+        q->next = NULL;
+        *signals->tail = q;
+        signals->tail = &q->next;
+        switch ((unsigned long) info) {
+            case 0:
+                q->info.si_signo = sig;
+                q->info.si_errno = 0;
+                q->info.si_code = SI_USER;
+                q->info.si_pid = current->pid;
+                q->info.si_uid = current->uid;
+                break;
+            case 1:
+                q->info.si_signo = sig;
+                q->info.si_errno = 0;
+                q->info.si_code = SI_KERNEL;
+                q->info.si_pid = 0;
+                q->info.si_uid = 0;
+                break;
+            default:
+                copy_siginfo(&q->info, info);
+                break;
+        }
+    } else if (sig >= SIGRTMIN && info && (unsigned long)info != 1
+           && info->si_code != SI_USER) {
+        return -EAGAIN;
+    }
+
+    sigaddset(&signals->signal, sig);
+    return 0;
+}
+```
+`send_signal()` 函数虽然比较长，但逻辑还是比较简单的。在 `信号处理相关的数据结构` 一节我们介绍过进程管理结构 `task_struct` 有个 `pending` 的成员变量，其用于保存接收到的信号队列。`send_signal()` 函数的第三个参数就是进程管理结构的 `pending` 成员变量。
+
+`send_signal()` 首先调用 `kmem_cache_alloc()` 函数来申请一个类型为 `struct sigqueue` 的队列节点，然后把节点添加到 `pending` 队列中，接着根据参数 `info` 的值来进行不同的操作，最后通过 `sigaddset()` 函数来设置信号对应的标志位，表示进程接收到该信号。
+
+至此，发送信号的流程已经完成，我们通过以下的调用链来更加具体的理解此过程：
+```text
+kill()   
+  |                    User Space
+---------------------------------------------------------------------
+  |                    Kernel Space
+sys_kill()
+  |---> kill_something_info()
+               |---> kill_proc_info()
+                           |---> find_task_by_pid()
+                           |---> send_sig_info()
+                                       |---> bad_signal()
+                                       |---> handle_stop_signal()
+                                       |---> ignored_signal()
+                                       |---> deliver_signal()
+                                                   |---> send_signal()
+                                                   |          |---> kmem_cache_alloc()
+                                                   |          |---> sigaddset()
+                                                   |---> signal_wake_up()
 ```
