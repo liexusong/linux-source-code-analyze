@@ -295,14 +295,14 @@ ENTRY(ret_from_sys_call)
 	...
 ret_with_reschedule:
 	...
-	cmpl $0, sigpending(%ebx)
-	jne signal_return
+	cmpl $0, sigpending(%ebx)  # 检查进程的sigpending成员是否等于1
+	jne signal_return          # 如果是就跳转到 signal_return 处执行
 restore_all:
 	RESTORE_ALL
 
 	ALIGN
 signal_return:
-	sti
+	sti                        # 开启硬件中断
 	testl $(VM_MASK),EFLAGS(%esp)
 	movl %esp,%eax
 	jne v86_signal_return
