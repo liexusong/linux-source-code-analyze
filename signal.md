@@ -295,18 +295,145 @@ ENTRY(ret_from_sys_call)
 	...
 ret_with_reschedule:
 	...
-	cmpl $0, sigpending(%ebx)  # 检查进程的sigpending成员是否等于1
-	jne signal_return          # 如果是就跳转到 signal_return 处执行
+	cmpl $0, sigpending(%ebx)  // 检查进程的sigpending成员是否等于1
+	jne signal_return          // 如果是就跳转到 signal_return 处执行
 restore_all:
 	RESTORE_ALL
 
 	ALIGN
 signal_return:
-	sti                        # 开启硬件中断
+	sti                             // 开启硬件中断
 	testl $(VM_MASK),EFLAGS(%esp)
 	movl %esp,%eax
 	jne v86_signal_return
 	xorl %edx,%edx
-	call SYMBOL_NAME(do_signal)
+	call SYMBOL_NAME(do_signal)    // 调用do_signal()函数进行处理
 	jmp restore_all
+```
+由于这是一段汇编代码，有点不太直观，所以我在代码中进行了注释。主要的逻辑就是首先检查进程的 `sigpending` 成员是否等于1，如果是调用 `do_signal()` 函数进行处理，由于 `do_signal()` 函数代码比较长，所以我们分段来说明，如下：
+```cpp
+int do_signal(struct pt_regs *regs, sigset_t *oldset)
+{
+	siginfo_t info;
+	struct k_sigaction *ka;
+
+	if ((regs->xcs & 3) != 3)
+		return 1;
+
+	if (!oldset)
+		oldset = &current->blocked;
+
+	for (;;) {
+		unsigned long signr;
+
+		spin_lock_irq(&current->sigmask_lock);
+		signr = dequeue_signal(&current->blocked, &info);
+		spin_unlock_irq(&current->sigmask_lock);
+
+		if (!signr)
+			break;
+
+```
+上面这段代码的主要逻辑是通过 `dequeue_signal()` 函数获取到进程接收队列中的一个信号，如果没有信号，那么就跳出循环。我们接着来分析：
+```cpp
+		ka = &current->sig->action[signr-1];
+		if (ka->sa.sa_handler == SIG_IGN) {
+			if (signr != SIGCHLD)
+				continue;
+			/* Check for SIGCHLD: it's special.  */
+			while (sys_wait4(-1, NULL, WNOHANG, NULL) > 0)
+				/* nothing */;
+			continue;
+		}
+```
+上面这段代码首先获取到信号对应的处理方法，如果对此信号的处理是忽略的话，那么就直接跳过。
+```cpp
+		if (ka->sa.sa_handler == SIG_DFL) {
+			int exit_code = signr;
+
+			/* Init gets no signals it doesn't want.  */
+			if (current->pid == 1)
+				continue;
+
+			switch (signr) {
+			case SIGCONT: case SIGCHLD: case SIGWINCH:
+				continue;
+
+			case SIGTSTP: case SIGTTIN: case SIGTTOU:
+				if (is_orphaned_pgrp(current->pgrp))
+					continue;
+				/* FALLTHRU */
+
+			case SIGSTOP:
+				current->state = TASK_STOPPED;
+				current->exit_code = signr;
+				if (!(current->p_pptr->sig->action[SIGCHLD-1].sa.sa_flags & SA_NOCLDSTOP))
+					notify_parent(current, SIGCHLD);
+				schedule();
+				continue;
+
+			case SIGQUIT: case SIGILL: case SIGTRAP:
+			case SIGABRT: case SIGFPE: case SIGSEGV:
+			case SIGBUS: case SIGSYS: case SIGXCPU: case SIGXFSZ:
+				if (do_coredump(signr, regs))
+					exit_code |= 0x80;
+				/* FALLTHRU */
+
+			default:
+				sigaddset(&current->pending.signal, signr);
+				recalc_sigpending(current);
+				current->flags |= PF_SIGNALED;
+				do_exit(exit_code);
+				/* NOTREACHED */
+			}
+		}
+		...
+		handle_signal(signr, ka, &info, oldset, regs);
+		return 1;
+	}
+	...
+	return 0;
+}
+```
+上面的代码表示，如果指定为默认的处理方法，那么就使用系统的默认处理方法去处理信号，比如 `SIGSEGV` 信号的默认处理方法就是使用 `do_coredump()` 函数来生成一个 `core dump` 文件，并且通过调用 `do_exit()` 函数退出进程。
+
+如果指定了自定义的处理方法，那么就通过 `handle_signal()` 函数去进行处理，`handle_signal()` 函数代码如下：
+```cpp
+static void
+handle_signal(unsigned long sig, struct k_sigaction *ka,
+	      siginfo_t *info, sigset_t *oldset, struct pt_regs * regs)
+{
+	if (regs->orig_eax >= 0) {
+		switch (regs->eax) {
+			case -ERESTARTNOHAND:
+				regs->eax = -EINTR;
+				break;
+
+			case -ERESTARTSYS:
+				if (!(ka->sa.sa_flags & SA_RESTART)) {
+					regs->eax = -EINTR;
+					break;
+				}
+			case -ERESTARTNOINTR:
+				regs->eax = regs->orig_eax;
+				regs->eip -= 2;
+		}
+	}
+
+	if (ka->sa.sa_flags & SA_SIGINFO)
+		setup_rt_frame(sig, ka, info, oldset, regs);
+	else
+		setup_frame(sig, ka, oldset, regs);
+
+	if (ka->sa.sa_flags & SA_ONESHOT)
+		ka->sa.sa_handler = SIG_DFL;
+
+	if (!(ka->sa.sa_flags & SA_NODEFER)) {
+		spin_lock_irq(&current->sigmask_lock);
+		sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
+		sigaddset(&current->blocked,sig);
+		recalc_sigpending(current);
+		spin_unlock_irq(&current->sigmask_lock);
+	}
+}
 ```
