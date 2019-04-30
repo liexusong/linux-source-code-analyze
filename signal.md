@@ -271,7 +271,7 @@ static int send_signal(int sig, struct siginfo *info, struct sigpending *signals
 ```text
 kill()   
   |                    User Space
----------------------------------------------------------------------
+---------------------------------------------------------------------------------------
   |                    Kernel Space
 sys_kill()
   |---> kill_something_info()
