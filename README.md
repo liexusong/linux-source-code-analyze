@@ -17,5 +17,6 @@
 * 文件系统
     * [虚拟文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_file_system.md)
 * 进程间通信
+    * 信号
 * 网络
     * [Socket族接口层](https://github.com/liexusong/linux-source-code-analyze/blob/master/socket_interface.md)
