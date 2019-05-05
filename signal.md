@@ -506,3 +506,62 @@ badframe:
 其中最重要的是调用 `restore_sigcontext()` 恢复原来内核栈的内容，要恢复原来内核栈的内容首先是要指定原来内核栈的内容，所以先要保存原来内核栈的内容。保存原来内核栈的内容也是在 `setup_frame()` 函数中，`setup_frame()` 函数把原来内核栈的内容保存到用户栈中（也就是上面所说的 `帧` 中）。`restore_sigcontext()` 函数就是从用户栈中读取原来内核栈的数据，然后恢复之。保存内核栈内容主要由 `setup_sigcontext()` 函数完成，有兴趣可以查阅代码，这里就不做详细说明了。
 
 这样，当从 `sigreturn()` 系统调用返回时，就可以按原来的路径返回到用户程序的下一个执行点（比如调用系统调用的下一行代码）。
+
+### 设置信号处理程序
+最后我们来分析一下怎么设置一个信号处理程序。
+
+用户可以通过 `signal()` 系统调用设置一个信号处理程序，我们来看看 `signal()` 系统调用的代码：
+```cpp
+asmlinkage unsigned long
+sys_signal(int sig, __sighandler_t handler)
+{
+	struct k_sigaction new_sa, old_sa;
+	int ret;
+
+	new_sa.sa.sa_handler = handler;
+	new_sa.sa.sa_flags = SA_ONESHOT | SA_NOMASK;
+
+	ret = do_sigaction(sig, &new_sa, &old_sa);
+
+	return ret ? ret : (unsigned long)old_sa.sa.sa_handler;
+}
+```
+代码比较简单，就是先设置一个新的 `struct k_sigaction` 结构，把其 `sa.sa_handler` 字段设置为用户自定义的处理程序。然后通过 `do_sigaction()` 函数进行设置，代码如下：
+```cpp
+int
+do_sigaction(int sig, const struct k_sigaction *act, struct k_sigaction *oact)
+{
+    struct k_sigaction *k;
+
+    if (sig < 1 || sig > _NSIG ||
+        (act && (sig == SIGKILL || sig == SIGSTOP)))
+        return -EINVAL;
+
+    k = &current->sig->action[sig-1];
+
+    spin_lock(&current->sig->siglock);
+
+    if (oact)
+        *oact = *k;
+
+    if (act) {
+        *k = *act;
+        sigdelsetmask(&k->sa.sa_mask, sigmask(SIGKILL) | sigmask(SIGSTOP));
+        
+        if (k->sa.sa_handler == SIG_IGN
+            || (k->sa.sa_handler == SIG_DFL
+            && (sig == SIGCONT ||
+                sig == SIGCHLD ||
+                sig == SIGWINCH))) {
+            spin_lock_irq(&current->sigmask_lock);
+            if (rm_sig_from_queue(sig, current))
+                recalc_sigpending(current);
+            spin_unlock_irq(&current->sigmask_lock);
+        }
+    }
+
+    spin_unlock(&current->sig->siglock);
+    return 0;
+}
+```
+这个函数也不难，我们上面介绍过，进程管理结构中有个 `sig` 的字段，它是一个 `struct k_sigaction` 结构的数组，每个元素保存着对应信号的处理程序，所以 `do_sigaction()` 函数就是修改这个信号处理程序。
