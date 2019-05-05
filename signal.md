@@ -426,11 +426,13 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
 由于信号处理程序是由用户提供的，所以信号处理程序的代码是在用户态的。而从系统调用返回到用户态前还是属于内核态，CPU是禁止内核态执行用户态代码的，那么怎么办？
 
 答案先返回到用户态执行信号处理程序，执行完信号处理程序后再返回到内核态，再在内核态完成收尾工作。听起来有点绕，事实也的确是这样。下面通过一副图片来直观的展示这个过程（图片来源网络）：
+
 ![signal](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/signal1.png)
 
 为了达到这个目的，Linux经历了一个十分崎岖的过程。我们知道，从内核态返回到用户态时，CPU要从内核栈中找到返回到用户态的地址（就是调用系统调用的下一条代码指令地址），Linux为了先让信号处理程序执行，所以就需要把这个返回地址修改为信号处理程序的入口，这样当从系统调用返回到用户态时，就可以执行信号处理程序了。
 
 所以，`handle_signal()` 调用了 `setup_frame()` 函数来构建这个过程的运行环境（其实就是修改内核栈和用户栈相应的数据来完成）。我们先来看看内核栈的内存布局图：
+
 ![signal-kernel-stack](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/signal-kernel-stack.png)
 
 图中的 `eip` 就是内核态返回到用户态后开始执行的第一条指令地址，所以把 `eip` 改成信号处理程序的地址就可以在内核态返回到用户态的时候自动执行信号处理程序了。我们看看 `setup_frame()` 函数其中有一行代码就是修改 `eip` 的值，如下：
@@ -439,7 +441,68 @@ static void setup_frame(int sig, struct k_sigaction *ka,
 			sigset_t *set, struct pt_regs * regs)
 {
     ...
-    regs->eip = (unsigned long) ka->sa.sa_handler;
+    regs->eip = (unsigned long) ka->sa.sa_handler; // regs是内核栈中保存的寄存器集合
     ...
 }
 ```
+现在可以在内核态返回到用户态时自动执行信号处理程序了，但是当信号处理程序执行完怎么返回到内核态呢？Linux的做法就是在用户态栈空间构建一个 `Frame（帧）`（我也不知道为什么要这样叫），构建这个帧的目的就是为了执行完信号处理程序后返回到内核态，并恢复原来内核栈的内容。返回到内核态的方式是调用一个名为 `sigreturn()` 系统调用，然后再 `sigreturn()` 中恢复原来内核栈的内容。
+
+怎样能在执行完信号处理程序后调用 `sigreturn()` 系统调用呢？其实跟前面修改内核栈 `eip` 的值一样，这里修改的是用户栈 `eip` 的值，修改后跳转到一个执行下面代码的地方（用户栈的某一处）：
+```asm
+popl %eax 
+movl $__NR_sigreturn,%eax 
+int $0x80
+```
+从上面的汇编代码可以知道，这里就是调用了 `sigreturn()` 系统调用。修改用户栈的代码在 `setup_frame()` 中，代码如下：
+```cpp
+static void setup_frame(int sig, struct k_sigaction *ka,
+			sigset_t *set, struct pt_regs * regs)
+{
+	...
+		err |= __put_user(frame->retcode, &frame->pretcode);
+		/* This is popl %eax ; movl $,%eax ; int $0x80 */
+		err |= __put_user(0xb858, (short *)(frame->retcode+0));
+		err |= __put_user(__NR_sigreturn, (int *)(frame->retcode+2));
+		err |= __put_user(0x80cd, (short *)(frame->retcode+6));
+	...
+}
+```
+这几行代码比较难懂，其实就是修改信号程序程序返回后要执行代码的地址。修改后如下图：
+
+![signal-user-stack](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/signal-user-stack.png)
+
+这样执行完信号处理程序后就会调用 `sigreturn()`，而 `sigreturn()` 要做的工作就是恢复原来内核栈的内容了，我们来看看 `sigreturn()` 的代码：
+```cpp
+asmlinkage int sys_sigreturn(unsigned long __unused)
+{
+	struct pt_regs *regs = (struct pt_regs *) &__unused;
+	struct sigframe *frame = (struct sigframe *)(regs->esp - 8);
+	sigset_t set;
+	int eax;
+
+	if (verify_area(VERIFY_READ, frame, sizeof(*frame)))
+		goto badframe;
+	if (__get_user(set.sig[0], &frame->sc.oldmask)
+	    || (_NSIG_WORDS > 1
+		&& __copy_from_user(&set.sig[1], &frame->extramask,
+				    sizeof(frame->extramask))))
+		goto badframe;
+
+	sigdelsetmask(&set, ~_BLOCKABLE);
+	spin_lock_irq(&current->sigmask_lock);
+	current->blocked = set;
+	recalc_sigpending(current);
+	spin_unlock_irq(&current->sigmask_lock);
+
+	if (restore_sigcontext(regs, &frame->sc, &eax))
+		goto badframe;
+	return eax;
+
+badframe:
+	force_sig(SIGSEGV, current);
+	return 0;
+}
+```
+其中最重要的是调用 `restore_sigcontext()` 恢复原来内核栈的内容，要恢复原来内核栈的内容首先是要指定原来内核栈的内容，所以先要保存原来内核栈的内容。保存原来内核栈的内容也是在 `setup_frame()` 函数中，`setup_frame()` 函数把原来内核栈的内容保存到用户栈中（也就是上面所说的 `帧` 中）。`restore_sigcontext()` 函数就是从用户栈中读取原来内核栈的数据，然后恢复之。保存内核栈内容主要由 `setup_sigcontext()` 函数完成，有兴趣可以查阅代码，这里就不做详细说明了。
+
+这样，当从 `sigreturn()` 系统调用返回时，就可以按原来的路径返回到用户程序的下一个执行点（比如调用系统调用的下一行代码）。
