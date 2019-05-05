@@ -431,4 +431,15 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
 为了达到这个目的，Linux经历了一个十分崎岖的过程。我们知道，从内核态返回到用户态时，CPU要从内核栈中找到返回到用户态的地址（就是调用系统调用的下一条代码指令地址），Linux为了先让信号处理程序执行，所以就需要把这个返回地址修改为信号处理程序的入口，这样当从系统调用返回到用户态时，就可以执行信号处理程序了。
 
 所以，`handle_signal()` 调用了 `setup_frame()` 函数来构建这个过程的运行环境（其实就是修改内核栈和用户栈相应的数据来完成）。我们先来看看内核栈的内存布局图：
+![signal-kernel-stack](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/signal-kernel-stack.png)
 
+图中的 `eip` 就是内核态返回到用户态后开始执行的第一条指令地址，所以把 `eip` 改成信号处理程序的地址就可以在内核态返回到用户态的时候自动执行信号处理程序了。我们看看 `setup_frame()` 函数其中有一行代码就是修改 `eip` 的值，如下：
+```cpp
+static void setup_frame(int sig, struct k_sigaction *ka,
+			sigset_t *set, struct pt_regs * regs)
+{
+    ...
+    regs->eip = (unsigned long) ka->sa.sa_handler;
+    ...
+}
+```
