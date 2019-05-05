@@ -564,4 +564,4 @@ do_sigaction(int sig, const struct k_sigaction *act, struct k_sigaction *oact)
     return 0;
 }
 ```
-这个函数也不难，我们上面介绍过，进程管理结构中有个 `sig` 的字段，它是一个 `struct k_sigaction` 结构的数组，每个元素保存着对应信号的处理程序，所以 `do_sigaction()` 函数就是修改这个信号处理程序。
+这个函数也不难，我们上面介绍过，进程管理结构中有个 `sig` 的字段，它是一个 `struct k_sigaction` 结构的数组，每个元素保存着对应信号的处理程序，所以 `do_sigaction()` 函数就是修改这个信号处理程序。代码 `k = &current->sig->action[sig-1]` 就是获取对应信号的处理程序，然后把其设置为新的信号处理程序即可。
