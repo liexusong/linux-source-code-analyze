@@ -13,6 +13,7 @@
     * [虚拟内存管理](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual-memory-managemen.md)
     * [内存交换](https://github.com/liexusong/linux-source-code-analyze/blob/master/memory_swap.md)
 * 中断机制
+    * [硬件相关知识](https://github.com/liexusong/linux-source-code-analyze/blob/master/interrupt_hardware.md)
 * 系统调用
 * 文件系统
     * [虚拟文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_file_system.md)
