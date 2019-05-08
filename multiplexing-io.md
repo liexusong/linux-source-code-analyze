@@ -189,3 +189,18 @@ unsigned int tcp_poll(struct file * file, struct socket *sock, poll_table *wait)
 最后这段代码的作用是，如果监听的socket集合中有可读写的socket，那么就直接返回（retval不为0时）。另外，如果调用 `select()` 时超时了，或者进程接收到信号，也需要返回。
 
 否则，通过调用 `schedule_timeout()` 来进行一次进程调度。因为前面把进程的运行状态设置成 `TASK_INTERRUPTIBLE`，所以进行进程调度时就会把当前进程从运行队列中移除，进程进入休眠状态。那么什么时候进程才会变回运行状态呢？
+
+前面我们说过，每个socket都有个等待队列，所以当socket可读写时便会把队列中的进程唤醒。这里分析一下当socket变成可读时，怎么唤醒等待队列中的进程的。
+
+网卡接收到数据时，会进行一系列的接收数据操作，对于TCP协议来说，接收数据的调用链是： `tcp_v4_rcv() -> tcp_data() -> tcp_data_queue() -> sock_def_readable()`，我们来看看 `sock_def_readable()` 函数的实现：
+```cpp
+void sock_def_readable(struct sock *sk, int len)
+{
+    read_lock(&sk->callback_lock);
+    if (sk->sleep && waitqueue_active(sk->sleep))
+        wake_up_interruptible(sk->sleep);
+    sk_wake_async(sk,1,POLL_IN);
+    read_unlock(&sk->callback_lock);
+}
+```
+可以看出 `sock_def_readable()` 函数最终会调用 `wake_up_interruptible()` 函数来把等待队列中的进程唤醒，这时调用 `select()` 的进程从休眠状态变回运行状态。
