@@ -87,3 +87,62 @@ out_nofds:
     return ret;
 }
 ```
+`sys_select()` 函数主要把用户态的参数复制到内核态，然后再通过调用 `do_select()` 函数进行监听操作， `do_select()` 函数实现如下：
+```cpp
+int do_select(int n, fd_set_bits *fds, long *timeout)
+{
+    poll_table table, *wait;
+    int retval, i, off;
+    long __timeout = *timeout;
+    ...
+    poll_initwait(&table);
+    wait = &table;
+    if (!__timeout)
+        wait = NULL;
+    retval = 0;
+
+    for (;;) {
+        set_current_state(TASK_INTERRUPTIBLE);
+        for (i = 0 ; i < n; i++) {
+            ...
+            file = fget(i);
+            mask = POLLNVAL;
+            if (file) {
+                mask = DEFAULT_POLLMASK;
+                if (file->f_op && file->f_op->poll)
+                    mask = file->f_op->poll(file, wait);
+                fput(file);
+            }
+            if ((mask & POLLIN_SET) && ISSET(bit, __IN(fds,off))) {
+                SET(bit, __RES_IN(fds,off));
+                retval++;
+                wait = NULL;
+            }
+            if ((mask & POLLOUT_SET) && ISSET(bit, __OUT(fds,off))) {
+                SET(bit, __RES_OUT(fds,off));
+                retval++;
+                wait = NULL;
+            }
+            if ((mask & POLLEX_SET) && ISSET(bit, __EX(fds,off))) {
+                SET(bit, __RES_EX(fds,off));
+                retval++;
+                wait = NULL;
+            }
+        }
+        wait = NULL;
+        if (retval || !__timeout || signal_pending(current))
+            break;
+        if(table.error) {
+            retval = table.error;
+            break;
+        }
+        __timeout = schedule_timeout(__timeout);
+    }
+    current->state = TASK_RUNNING;
+
+    poll_freewait(&table);
+
+    *timeout = __timeout;
+    return retval;
+}
+```
