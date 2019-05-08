@@ -186,3 +186,6 @@ unsigned int tcp_poll(struct file * file, struct socket *sock, poll_table *wait)
     return retval;
 }
 ```
+最后这段代码的作用是，如果监听的socket集合中有可读写的socket，那么就直接返回（retval不为0时）。另外，如果调用 `select()` 时超时了，或者进程接收到信号，也需要返回。
+
+否则，通过调用 `schedule_timeout()` 来进行一次进程调度。因为前面把进程的运行状态设置成 `TASK_INTERRUPTIBLE`，所以进行进程调度时就会把当前进程从运行队列中移除，进程进入休眠状态。那么什么时候进程才会变回运行状态呢？
