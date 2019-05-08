@@ -103,6 +103,6 @@ int do_select(int n, fd_set_bits *fds, long *timeout)
 ```
 上面这段代码主要通过调用 `poll_initwait()` 函数来初始化类型为 `poll_table` 结构的变量 `table`。要理解 `poll_table` 结构的作用，我们先来看看下面的知识点：
 
-    因为每个socket都有个等待队列，当某个进程需要对socket进行读写的时候，如果发现此socket并不能读写，那么就可以添加到此socket的等待队列中进行休眠，当此socket可以读写时再唤醒队列中的进程。
-    
-    
+> 因为每个socket都有个等待队列，当某个进程需要对socket进行读写的时候，如果发现此socket并不能读写，
+> 那么就可以添加到此socket的等待队列中进行休眠，当此socket可以读写时再唤醒队列中的进程。  
+
