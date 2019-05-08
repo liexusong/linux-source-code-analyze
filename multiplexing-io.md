@@ -106,3 +106,83 @@ int do_select(int n, fd_set_bits *fds, long *timeout)
 > 因为每个socket都有个等待队列，当某个进程需要对socket进行读写的时候，如果发现此socket并不能读写，
 > 那么就可以添加到此socket的等待队列中进行休眠，当此socket可以读写时再唤醒队列中的进程。  
 
+而 `poll_table` 结构就是为了把进程添加到socket的等待队列中而创造的，我们先跳过这部分，后面分析到socket相关的知识点再来说明。
+
+我们接着分析 `do_select()` 函数的实现：
+```cpp
+    for (;;) {
+        set_current_state(TASK_INTERRUPTIBLE);
+        for (i = 0 ; i < n; i++) {
+            ...
+            file = fget(i);
+            mask = POLLNVAL;
+            if (file) {
+                mask = DEFAULT_POLLMASK;
+                if (file->f_op && file->f_op->poll)
+                    mask = file->f_op->poll(file, wait);
+                fput(file);
+            }
+```
+这段代码首先通过调用文件句柄的 `poll()` 接口来检查文件是否能够进行IO操作，对于socket来说，这个 `poll()` 接口就是 `sock_poll()`，所以我们来看看 `sock_poll()` 函数的实现：
+```cpp
+static unsigned int sock_poll(struct file *file, poll_table * wait)
+{
+    struct socket *sock;
+
+    sock = socki_lookup(file->f_dentry->d_inode);
+    return sock->ops->poll(file, sock, wait);
+}
+```
+`sock_poll()` 函数的实现很简单，首先通过 `socki_lookup()` 函数来把文件句柄转换成socket结构，接着调用socket结构的 `poll()` 接口，而对应 `TCP` 类型的socket，这个接口对应的是 `tcp_poll()` 函数，实现如下：
+```cpp
+unsigned int tcp_poll(struct file * file, struct socket *sock, poll_table *wait)
+{
+    unsigned int mask;
+    struct sock *sk = sock->sk;
+    struct tcp_opt *tp = &(sk->tp_pinfo.af_tcp);
+
+    poll_wait(file, sk->sleep, wait); // 把文件添加到sk->sleep队列中进行等待
+    ...
+    return mask;
+}
+```
+`tcp_poll()` 函数通过调用 `poll_wait()` 函数把进程添加到socket的等待队列中。然后检测socket是否可读写，并通过mask返回可读写的状态。所以在 `do_select()` 函数中的 `mask = file->f_op->poll(file, wait);` 这行代码其实调用的是 `tcp_poll()` 函数。
+
+接着分析 `do_select()` 函数：
+```cpp
+            if ((mask & POLLIN_SET) && ISSET(bit, __IN(fds,off))) {
+                SET(bit, __RES_IN(fds,off));
+                retval++;
+                wait = NULL;
+            }
+            if ((mask & POLLOUT_SET) && ISSET(bit, __OUT(fds,off))) {
+                SET(bit, __RES_OUT(fds,off));
+                retval++;
+                wait = NULL;
+            }
+            if ((mask & POLLEX_SET) && ISSET(bit, __EX(fds,off))) {
+                SET(bit, __RES_EX(fds,off));
+                retval++;
+                wait = NULL;
+            }
+```
+因为 `mask` 变量保存了socket的可读写状态，所以上面这段代码主要通过判断socket的可读写状态来把socket放置到合适的返回集合中。如果socket可读，那么就把socket放置到可读集合中，如果socket可写，那么就放置到可写集合中。
+
+```cpp
+        wait = NULL;
+        if (retval || !__timeout || signal_pending(current))
+            break;
+        if(table.error) {
+            retval = table.error;
+            break;
+        }
+        __timeout = schedule_timeout(__timeout);
+    }
+    current->state = TASK_RUNNING;
+
+    poll_freewait(&table);
+
+    *timeout = __timeout;
+    return retval;
+}
+```
