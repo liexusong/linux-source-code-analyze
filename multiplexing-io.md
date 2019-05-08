@@ -87,7 +87,7 @@ out_nofds:
     return ret;
 }
 ```
-`sys_select()` 函数主要把用户态的参数复制到内核态，然后再通过调用 `do_select()` 函数进行监听操作， `do_select()` 函数实现如下：
+`sys_select()` 函数主要把用户态的参数复制到内核态，然后再通过调用 `do_select()` 函数进行监听操作， `do_select()` 函数实现如下（由于实现有点复杂，所以我们分段来分析）：
 ```cpp
 int do_select(int n, fd_set_bits *fds, long *timeout)
 {
@@ -100,49 +100,9 @@ int do_select(int n, fd_set_bits *fds, long *timeout)
     if (!__timeout)
         wait = NULL;
     retval = 0;
-
-    for (;;) {
-        set_current_state(TASK_INTERRUPTIBLE);
-        for (i = 0 ; i < n; i++) {
-            ...
-            file = fget(i);
-            mask = POLLNVAL;
-            if (file) {
-                mask = DEFAULT_POLLMASK;
-                if (file->f_op && file->f_op->poll)
-                    mask = file->f_op->poll(file, wait);
-                fput(file);
-            }
-            if ((mask & POLLIN_SET) && ISSET(bit, __IN(fds,off))) {
-                SET(bit, __RES_IN(fds,off));
-                retval++;
-                wait = NULL;
-            }
-            if ((mask & POLLOUT_SET) && ISSET(bit, __OUT(fds,off))) {
-                SET(bit, __RES_OUT(fds,off));
-                retval++;
-                wait = NULL;
-            }
-            if ((mask & POLLEX_SET) && ISSET(bit, __EX(fds,off))) {
-                SET(bit, __RES_EX(fds,off));
-                retval++;
-                wait = NULL;
-            }
-        }
-        wait = NULL;
-        if (retval || !__timeout || signal_pending(current))
-            break;
-        if(table.error) {
-            retval = table.error;
-            break;
-        }
-        __timeout = schedule_timeout(__timeout);
-    }
-    current->state = TASK_RUNNING;
-
-    poll_freewait(&table);
-
-    *timeout = __timeout;
-    return retval;
-}
 ```
+上面这段代码主要通过调用 `poll_initwait()` 函数来初始化类型为 `poll_table` 结构的变量 `table`。要理解 `poll_table` 结构的作用，我们先来看看下面的知识点：
+
+    因为每个socket都有个等待队列，当某个进程需要对socket进行读写的时候，如果发现此socket并不能读写，那么就可以添加到此socket的等待队列中进行休眠，当此socket可以读写时再唤醒队列中的进程。
+    
+    
