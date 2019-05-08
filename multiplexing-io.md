@@ -33,3 +33,57 @@ int socket_can_read(int fd)
 通过上面的函数，可以监听一个socket句柄是否可读。
 
 ### select系统调用的实现
+接下来我们分析一下 `select` 系统调用的实现，用户程序通过调用 `select` 系统调用后会进入到内核态并且调用 `sys_select()` 函数，`sys_select()` 函数的实现如下：
+```cpp
+asmlinkage long
+sys_select(int n, fd_set *inp, fd_set *outp, fd_set *exp, struct timeval *tvp)
+{
+    fd_set_bits fds;
+    char *bits;
+    long timeout;
+    int ret, size;
+
+    timeout = MAX_SCHEDULE_TIMEOUT;
+    if (tvp) {
+        time_t sec, usec;
+        ...
+        if ((unsigned long) sec < MAX_SELECT_SECONDS) {
+            timeout = ROUND_UP(usec, 1000000/HZ);
+            timeout += sec * (unsigned long) HZ;
+        }
+    }
+
+    if (n > current->files->max_fdset)
+        n = current->files->max_fdset;
+
+    ret = -ENOMEM;
+    size = FDS_BYTES(n);
+    bits = select_bits_alloc(size);
+
+    fds.in = (unsigned long *)bits;
+    fds.out = (unsigned long *)(bits + size);
+    fds.ex = (unsigned long *)(bits + 2*size);
+    fds.res_in = (unsigned long *)(bits + 3*size);
+    fds.res_out = (unsigned long *)(bits + 4*size);
+    fds.res_ex = (unsigned long *)(bits + 5*size);
+
+    if ((ret = get_fd_set(n, inp, fds.in)) ||
+        (ret = get_fd_set(n, outp, fds.out)) ||
+        (ret = get_fd_set(n, exp, fds.ex)))
+        goto out;
+    zero_fd_set(n, fds.res_in);
+    zero_fd_set(n, fds.res_out);
+    zero_fd_set(n, fds.res_ex);
+
+    ret = do_select(n, &fds, &timeout);
+    ...
+    set_fd_set(n, inp, fds.res_in);
+    set_fd_set(n, outp, fds.res_out);
+    set_fd_set(n, exp, fds.res_ex);
+
+out:
+    select_bits_free(bits, size);
+out_nofds:
+    return ret;
+}
+```
