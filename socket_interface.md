@@ -162,3 +162,21 @@ out_release:
     return retval;
 }
 ```
+从上面的代码可以发现，`sys_socket()` 函数的定义跟 `socket()` 系统调用的参数是一致的，`sys_socket()` 函数会返回一个文件描述符。另外，在Linux内核中，通过 `struct socket` 结构来描述一个 Socket 对象。我们来看看 `struct socket` 结构的定义：
+```cpp
+struct socket
+{
+    socket_state         state;
+
+    unsigned long        flags;
+    struct proto_ops     *ops;
+    struct inode         *inode;
+    struct fasync_struct *fasync_list;
+    struct file          *file;
+    struct sock          *sk;
+    wait_queue_head_t    wait;
+
+    short                type;
+    unsigned char        passcred;
+};
+```
