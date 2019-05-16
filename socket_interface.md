@@ -137,3 +137,28 @@ asmlinkage long sys_socketcall(int call, unsigned long *args)
 通过下面一幅图来展示 `Socket族系统调用` 的原理：
 ![socket interfaces](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/socket_interface.jpg)
 
+### sys_socket()函数
+接下来我们分析一下创建Socket的函数 `sys_socket()`，源码如下：
+```cpp
+asmlinkage long sys_socket(int family, int type, int protocol)
+{
+    int retval;
+    struct socket *sock;
+
+    retval = sock_create(family, type, protocol, &sock);
+    if (retval < 0)
+        goto out;
+
+    retval = sock_map_fd(sock);
+    if (retval < 0)
+        goto out_release;
+
+out:
+    /* It may be already another descriptor 8) Not kernel problem. */
+    return retval;
+
+out_release:
+    sock_release(sock);
+    return retval;
+}
+```
