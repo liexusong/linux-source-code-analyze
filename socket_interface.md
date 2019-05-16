@@ -31,7 +31,7 @@ ENTRY (P(__,socket))
     movl $SYS_ify(socketcall), %eax
 
     movl $P(SOCKOP_,socket), %ebx
-    lea 4(%esp), %ecx  # 获取socket函数第一个参数的地址
+    lea 4(%esp), %ecx                      // 获取socket函数第一个参数的地址
 
     int $0x80
 
