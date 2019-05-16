@@ -134,5 +134,6 @@ asmlinkage long sys_socketcall(int call, unsigned long *args)
 
 所以从中得到，当在用户态调用 `socket()` 函数时实际调用的是 `sys_socket()` 内核函数，其他的 `Socket族系统调用` 道理与 `socket()` 系统调用一致。
 
-最后用一幅图来展示 `Socket族系统调用` 的原理：
+通过下面一幅图来展示 `Socket族系统调用` 的原理：
 ![socket interfaces](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/socket_interface.jpg)
+
