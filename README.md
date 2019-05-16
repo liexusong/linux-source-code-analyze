@@ -20,6 +20,6 @@
 * 进程间通信
     * [信号处理机制](https://github.com/liexusong/linux-source-code-analyze/blob/master/signal.md)
 * 网络
-    * [Socket族接口层](https://github.com/liexusong/linux-source-code-analyze/blob/master/socket_interface.md)
+    * [BSD层接口](https://github.com/liexusong/linux-source-code-analyze/blob/master/socket_interface.md)
 * 其他
     * [多路复用I/O](https://github.com/liexusong/linux-source-code-analyze/blob/master/multiplexing-io.md)
