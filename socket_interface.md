@@ -28,10 +28,10 @@ Socket的英文原本意思是 `孔` 或 `插座`。但在计算机科学中通�
 ENTRY (P(__,socket))
     movl %ebx, %edx
 
-    movl $SYS_ify(socketcall), %eax
+    movl $SYS_ify(socketcall), %eax        // 系统调用号
 
-    movl $P(SOCKOP_,socket), %ebx
-    lea 4(%esp), %ecx                      // 获取socket函数第一个参数的地址
+    movl $P(SOCKOP_,socket), %ebx          // 系统调用的第一个参数
+    lea 4(%esp), %ecx                      // 系统调用的第二个参数
 
     int $0x80
 
