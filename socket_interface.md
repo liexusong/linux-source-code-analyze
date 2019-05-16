@@ -137,46 +137,4 @@ asmlinkage long sys_socketcall(int call, unsigned long *args)
 通过下面一幅图来展示 `Socket族系统调用` 的原理：
 ![socket interfaces](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/socket_interface.jpg)
 
-### sys_socket()函数
-接下来我们分析一下创建Socket的函数 `sys_socket()`，源码如下：
-```cpp
-asmlinkage long sys_socket(int family, int type, int protocol)
-{
-    int retval;
-    struct socket *sock;
-
-    retval = sock_create(family, type, protocol, &sock);
-    if (retval < 0)
-        goto out;
-
-    retval = sock_map_fd(sock);
-    if (retval < 0)
-        goto out_release;
-
-out:
-    /* It may be already another descriptor 8) Not kernel problem. */
-    return retval;
-
-out_release:
-    sock_release(sock);
-    return retval;
-}
-```
-从上面的代码可以发现，`sys_socket()` 函数的定义跟 `socket()` 系统调用的参数是一致的，`sys_socket()` 函数会返回一个文件描述符。另外，在Linux内核中，通过 `struct socket` 结构来描述一个 Socket 对象。我们来看看 `struct socket` 结构的定义：
-```cpp
-struct socket
-{
-    socket_state         state;
-
-    unsigned long        flags;
-    struct proto_ops     *ops;
-    struct inode         *inode;
-    struct fasync_struct *fasync_list;
-    struct file          *file;
-    struct sock          *sk;
-    wait_queue_head_t    wait;
-
-    short                type;
-    unsigned char        passcred;
-};
-```
+### BSD层接口初始化
