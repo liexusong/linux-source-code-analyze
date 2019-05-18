@@ -239,3 +239,36 @@ out_release:
 #define SOCK_PACKET 10      /* linux specific way of        */
 ```
 例如 `SOCK_STREAM` 类型指定的是流方式，而 `SOCK_DGRAM` 类型指定的是数据报方式等。最后一个 `protocol` 参数看起来也是协议的意思，跟 `family` 好像重复了。事实上 `family` 所指定的协议偏向于物理介质，如 `Unix socket` 是用于进程间通信的，而 `Inet socket` 是用于以太网传输数据的。而 `protocol` 所指定的协议偏向于逻辑上的协议，如 `TCP`、`UDP` 等。举个栗子，如果把 `family` 比作是不同交通工具（飞机、汽车、火车等）的话，那么 `protocol` 就是大巴、的士和小车。
+
+`sys_socket()` 函数首先调用 `sock_create()` 创建一个 `struct socket` 结构，然后通过调用 `sock_map_fd()` 函数把此 `struct  socket` 结构与一个文件描述符关联起来，最后把文件描述符返回给用户。我们先来看看 `sock_create()` 函数的实现：
+```cpp
+int sock_create(int family, int type, int protocol, struct socket **res)
+{
+    int i;
+    struct socket *sock;
+
+    ...
+    net_family_read_lock();
+    ...
+
+    if (!(sock = sock_alloc())) {
+        printk(KERN_WARNING "socket: no more sockets\n");
+        i = -ENFILE;
+        goto out;
+    }
+
+    sock->type  = type;
+
+    if ((i = net_families[family]->create(sock, protocol)) < 0)  {
+        sock_release(sock);
+        goto out;
+    }
+
+    *res = sock;
+
+out:
+    net_family_read_unlock();
+    return i;
+}
+```
+`sock_create()` 函数首先调用 `sock_alloc()` 申请一个 `struct socket` 结构，然后调用指定协议族的 `create()` 函数（`net_families[family]->create`）进行进一步的创建功能。
