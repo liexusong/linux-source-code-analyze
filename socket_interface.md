@@ -110,7 +110,7 @@ struct proto_ops {
   int   (*mmap)(struct file *file, struct socket *sock, struct vm_area_struct * vma);
 };
 ```
-从上面的代码可以看出，`struct proto_ops` 结构主要是定义一系列的函数接口，每个 `具体的协议层` 必须提供一个 `struct proto_ops` 结构挂载到 `struct socket` 结构的 `ops` 字段上。
+从上面的代码可以看出，`struct proto_ops` 结构主要是定义一系列的函数接口，每个 `具体的协议层` 必须提供一个 `struct proto_ops` 结构挂载到 `struct socket` 结构的 `ops` 字段上。所以当用户调用 `bind()` 系统调用时真实调用的是：`socket->ops->bind()`。
 
 ### sys_socketcall()函数
 前面说过，所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
