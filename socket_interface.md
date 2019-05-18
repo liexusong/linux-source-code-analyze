@@ -59,6 +59,58 @@ ENTRY (P(__,socket))
 可以看到，`bind()` 函数直接套用了 `socket()` 函数实现的模板，只是把 `socket` 这个名字替换成 `bind` 而已，替换之后 `ebx` 的值就会变成 `SOCKOP_bind`，其他都跟 `socket()` 函数一样，所以这时传给 `sys_socketcall()` 函数的第一个参数就变成 `SOCKOP_bind`了。
 
 ## BSD接口层
+前面说了，`BSD接口层` 是为了能够使用相同的接口来操作不同协议而创造的。有面向对象编程经验的读者可能会发现，`BSD接口层` 使用的技巧与面向对象的 `接口` 概念非常相似。主要的方式是 `BSD接口层` 定义了一些接口，`具体的协议层` 必须实现这些接口才能接入到 `BSD接口层`。
+
+为了实现这种机制，Linux定义了一个 `struct socket` 的结构体，每个socket都与一个 `struct socket` 的结构对应，其定义如下：
+```cpp
+struct socket
+{
+    socket_state          state;
+
+    unsigned long         flags;
+    struct proto_ops     *ops;
+    struct inode         *inode;
+    struct fasync_struct *fasync_list;
+    struct file          *file;
+    struct sock          *sk;
+    wait_queue_head_t    wait;
+
+    short                type;
+    unsigned char        passcred;
+};
+```
+可以把这个结构体想象成钩子，要在上面挂什么由用户自己决定。其比较重要的字段是 `ops` 和 `sk`。`ops` 字段类型为 `struct proto_ops`，其定义了一系列操作socket的方法。而 `sk` 字段的类型为 `struct sock`， 用于保存具体协议所操作的真实对象。
+
+我们先来看看 `struct proto_ops` 结构的定义：
+```cpp
+struct proto_ops {
+  int   family;
+
+  int   (*release)(struct socket *sock);
+  int   (*bind)(struct socket *sock, struct sockaddr *umyaddr,
+                int sockaddr_len);
+  int   (*connect)(struct socket *sock, struct sockaddr *uservaddr,
+             int sockaddr_len, int flags);
+  int   (*socketpair)(struct socket *sock1, struct socket *sock2);
+  int   (*accept)(struct socket *sock, struct socket *newsock,
+                  int flags);
+  int   (*getname)(struct socket *sock, struct sockaddr *uaddr,
+                   int *usockaddr_len, int peer);
+  unsigned int (*poll)  (struct file *file, struct socket *sock, struct poll_table_struct *wait);
+  int   (*ioctl)(struct socket *sock, unsigned int cmd,
+                 unsigned long arg);
+  int   (*listen)(struct socket *sock, int len);
+  int   (*shutdown)(struct socket *sock, int flags);
+  int   (*setsockopt)(struct socket *sock, int level, int optname,
+                      char *optval, int optlen);
+  int   (*getsockopt)(struct socket *sock, int level, int optname,
+                      char *optval, int *optlen);
+  int   (*sendmsg)(struct socket *sock, struct msghdr *m, int total_len, struct scm_cookie *scm);
+  int   (*recvmsg)(struct socket *sock, struct msghdr *m, int total_len, int flags, struct scm_cookie *scm);
+  int   (*mmap)(struct file *file, struct socket *sock, struct vm_area_struct * vma);
+};
+```
+从上面的代码可以看出，`struct proto_ops` 结构主要是定义一系列的函数接口，每个 `具体的协议层` 必须提供一个 `struct proto_ops` 结构挂载到 `struct socket` 结构的 `ops` 字段上。
 
 ### sys_socketcall()函数
 前面说过，所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
