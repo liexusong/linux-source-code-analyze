@@ -220,3 +220,12 @@ out_release:
     return retval;
 }
 ```
+参数 `family` 指定 `具体协议层`，可以选择的协议非常多，下面列举几个：
+```cpp
+#define AF_UNIX     1   /* Unix domain sockets      */
+#define AF_LOCAL    1   /* POSIX name for AF_UNIX   */
+#define AF_INET     2   /* Internet IP Protocol     */
+#define AF_AX25     3   /* Amateur Radio AX.25      */
+#define AF_IPX      4   /* Novell IPX               */
+```
+例如 `AF_UNIX` 指定的是 `Unix domain sockets`，`AF_INET` 指定的是 `以太网协议` 等。
