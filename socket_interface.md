@@ -271,4 +271,26 @@ out:
     return i;
 }
 ```
-`sock_create()` 函数首先调用 `sock_alloc()` 申请一个 `struct socket` 结构，然后调用指定协议族的 `create()` 函数（`net_families[family]->create`）进行进一步的创建功能。
+`sock_create()` 函数首先调用 `sock_alloc()` 申请一个 `struct socket` 结构，然后调用指定协议族的 `create()` 函数（`net_families[family]->create`）进行进一步的创建功能。`net_families` 变量的类型为 `struct net_proto_family`，其定义如下：
+```cpp
+struct net_proto_family {
+    int family;
+    int (*create)(struct socket *sock, int protocol);
+    ...
+};
+```
+`family` 字段对应的就是具体的协议族，而 `create` 字段指定了其创建socket的方法。一个具体协议族需要通过调用 `sock_register()` 函数向系统注册其创建socket的方法。例如 `Unix socket` 就在初始化时通过下面的代码注册：
+```cpp
+struct net_proto_family unix_family_ops = {
+    PF_UNIX,
+    unix_create
+};
+
+static int __init af_unix_init(void)
+{
+    ...
+    sock_register(&unix_family_ops);
+    ...
+    return 0;
+}
+```
