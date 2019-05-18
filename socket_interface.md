@@ -271,7 +271,7 @@ out:
     return i;
 }
 ```
-`sock_create()` 函数首先调用 `sock_alloc()` 申请一个 `struct socket` 结构，然后调用指定协议族的 `create()` 函数（`net_families[family]->create`）进行进一步的创建功能。`net_families` 变量的类型为 `struct net_proto_family`，其定义如下：
+`sock_create()` 函数首先调用 `sock_alloc()` 申请一个 `struct socket` 结构，然后调用指定协议族的 `create()` 函数（`net_families[family]->create()`）进行进一步的创建功能。`net_families` 变量的类型为 `struct net_proto_family`，其定义如下：
 ```cpp
 struct net_proto_family {
     int family;
@@ -294,3 +294,4 @@ static int __init af_unix_init(void)
     return 0;
 }
 ```
+所以从上面的代码可以指定，对于 `Unix socket` 的话，`net_families[family]->create()` 这行代码实际调用的是 `unix_create()` 函数。
