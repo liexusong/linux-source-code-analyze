@@ -1,4 +1,4 @@
-# BSD接口层
+# Socket接口的分层
 Socket的英文原本意思是 `孔` 或 `插座`。但在计算机科学中通常被称作为 `套接字`，主要用于相同机器的不同进程间或者不同机器间的通信。Socket的使用很多网络编程的书籍都有介绍，所以本文不打算介绍Socket的使用，只讨论Socket的具体实现，所以如果对Socket不太了解的同学可以先查阅Socket相关的资料或者书籍。
 
 在Linux内核中，Socket的实现分为三层，第一层是 `GLIBC接口层`，第二层是 `BSD接口层`，第三层是 `具体的协议层`（如Unix sokcet或者INET socket）。如下图所示：
@@ -6,8 +6,8 @@ Socket的英文原本意思是 `孔` 或 `插座`。但在计算机科学中通�
 
 GLIBC层在用户态实现，提供一系列的socket族系统调用让用户使用。BSD层在内核态实现，主要是为了让不同的协议能够使用同一套接口来访问而创造的，如上图所示， `Unix socket` 和 `Inet socket` 都可以通过接入 `BSD接口层` 来向用户提供相同的接口。 `具体的协议层` 是为了实现不同的协议或者功能而存在的，如 `Unix socket` 主要是用于进程间通信，`Inet socket` 主要用于网络数据传输等。
 
-## Socket族系统调用
-`Soket族系统调用` 提供了一系列的接口函数供用户使用，如下：
+## GLIBC接口层
+`GLIBC接口层` 提供了一系列的接口函数供用户使用，如下：
 * socket()
 * bind()
 * listen()
@@ -21,7 +21,7 @@ GLIBC层在用户态实现，提供一系列的socket族系统调用让用户使
 
 例如 `socket()` 接口用于创建一个socket句柄，而 `bind()` 函数将一个socket绑定到指定的IP和端口上。当然，系统调用最终都会调用到内核态的某个内核函数来进行处理，在系统调用一章我们介绍过相关的原理，所以这里只会介绍一下这些系统调用最终会调用哪些内核函数。
 
-### Socket族系统调用在 GLIBC 中的定义
+### GLIBC层实现原理
 我们先来看看 `GLIBC` 是怎么定义这些系统调用的吧，首先来看看 `socket()` 函数的定义如下：
 ```asm
 #define P(a, b) P2(a, b)
@@ -57,6 +57,8 @@ ENTRY (P(__,socket))
 #include <socket.S>
 ```
 可以看到，`bind()` 函数直接套用了 `socket()` 函数实现的模板，只是把 `socket` 这个名字替换成 `bind` 而已，替换之后 `ebx` 的值就会变成 `SOCKOP_bind`，其他都跟 `socket()` 函数一样，所以这时传给 `sys_socketcall()` 函数的第一个参数就变成 `SOCKOP_bind`了。
+
+## BSD接口层
 
 ### sys_socketcall()函数
 前面说过，所有的 `Socket族系统调用` 最终都会调用 `sys_socketcall()` 函数来处理用户的请求，我们来看看 `sys_socketcall()` 函数的实现：
