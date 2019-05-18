@@ -227,5 +227,15 @@ out_release:
 #define AF_INET     2   /* Internet IP Protocol     */
 #define AF_AX25     3   /* Amateur Radio AX.25      */
 #define AF_IPX      4   /* Novell IPX               */
+...
 ```
-例如 `AF_UNIX` 指定的是 `Unix domain sockets`，`AF_INET` 指定的是 `以太网协议` 等。
+例如 `AF_UNIX` 指定的是 `Unix socket`，`AF_INET` 指定的是 `以太网协议` 等。而参数 `type` 用于指定传输数据的类型，有一下几种选择：
+```cpp
+#define SOCK_STREAM 1       /* stream (connection) socket   */
+#define SOCK_DGRAM  2       /* datagram (conn.less) socket  */
+#define SOCK_RAW    3       /* raw socket                   */
+#define SOCK_RDM    4       /* reliably-delivered message   */
+#define SOCK_SEQPACKET  5   /* sequential packet socket     */
+#define SOCK_PACKET 10      /* linux specific way of        */
+```
+例如 `SOCK_STREAM` 类型指定的是流方式，而 `SOCK_DGRAM` 类型指定的是数据报方式等。最后一个 `protocol` 参数看起来也是协议的意思，跟 `family` 好像重复了。事实上 `family` 所指定的协议偏向于物理介质，如 `Unix socket` 是用于进程间通信的，而 `Inet socket` 是用于以太网传输数据的。而 `protocol` 所指定的协议偏向于逻辑上的协议，如 `TCP`、`UDP` 等。举个栗子，如果把 `family` 比作是不同交通工具（飞机、汽车、火车等）的话，那么 `protocol` 就是大巴、的士和小车。
