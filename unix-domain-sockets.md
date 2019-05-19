@@ -227,3 +227,17 @@ out:
 }
 ```
 `unix_socket()` 函数有一大部分代码是基于文件系统的，主要就是根据 socket 绑定的文件路径创建一个 `inode` 对象，然后将这个 `inode` 的编号作为哈希值找到 `Unix Domain Sockets` 全局哈希表对应的哈希链表，最后把这个 socket 添加到哈希链表中。通过这个操作，就可以把 socket 与一个文件路径关联上。
+
+### listen() 函数
+`listen()` 函数用于把 socket 设置为监听状态，`listen()` 函数首先会触发 `sys_listen()` 函数，然后 `sys_listen()` 函数会调用 `unix_listen()` 函数把 socket 设置为监听状态，调用链为：`listen() -> sys_listen() -> unix_listen()`，`unix_listen()` 函数的实现如下：
+```cpp
+static int unix_listen(struct socket *sock, int backlog)
+{
+    ...
+    sk->max_ack_backlog = backlog;
+    sk->state = TCP_LISTEN;
+    ...
+    return err;
+}
+```
+`unix_socket()` 函数的实现很简单，主要是把 socket 的 `state` 字段设置为 `TCP_LISTEN`，表示当前 socket 处于监听状态。同时还设置了 socket 的 `max_ack_backlog` 字段，表示当前 socket 能够接收最大用户连接的队列长度。
