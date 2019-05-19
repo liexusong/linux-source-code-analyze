@@ -106,3 +106,45 @@ static int unix_create(struct socket *sock, int protocol)
     return unix_create1(sock) ? 0 : -ENOMEM;
 }
 ```
+从 `unix_create()` 函数的实现可知，当向参数 `protocol` 传入 `SOCK_STREAM` 时，就把 sock 的 `ops` 字段设置为 `unix_stream_ops`，如果传入的是 `SOCK_RAW`，那么就把 sock 的 `ops` 字段设置为 `unix_dgram_ops`。这两个结构的定义如下：
+```cpp
+struct proto_ops unix_stream_ops = {
+    family:     PF_UNIX,
+    
+    release:    unix_release,
+    bind:       unix_bind,
+    connect:    unix_stream_connect,
+    socketpair: unix_socketpair,
+    accept:     unix_accept,
+    getname:    unix_getname,
+    poll:       unix_poll,
+    ioctl:      unix_ioctl,
+    listen:     unix_listen,
+    shutdown:   unix_shutdown,
+    setsockopt: sock_no_setsockopt,
+    getsockopt: sock_no_getsockopt,
+    sendmsg:    unix_stream_sendmsg,
+    recvmsg:    unix_stream_recvmsg,
+    mmap:       sock_no_mmap,
+};
+
+struct proto_ops unix_dgram_ops = {
+    family:     PF_UNIX,
+    
+    release:    unix_release,
+    bind:       unix_bind,
+    connect:    unix_dgram_connect,
+    socketpair: unix_socketpair,
+    accept:     sock_no_accept,
+    getname:    unix_getname,
+    poll:       datagram_poll,
+    ioctl:      unix_ioctl,
+    listen:     sock_no_listen,
+    shutdown:   unix_shutdown,
+    setsockopt: sock_no_setsockopt,
+    getsockopt: sock_no_getsockopt,
+    sendmsg:    unix_dgram_sendmsg,
+    recvmsg:    unix_dgram_recvmsg,
+    mmap:       sock_no_mmap,
+};
+```
