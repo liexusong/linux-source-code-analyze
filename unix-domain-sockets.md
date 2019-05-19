@@ -39,6 +39,7 @@ connect(fd, (struct sockaddr *)&addr, sizeof(addr));
 ```
 
 ## Unix Domain Sockets实现
+### socket() 函数实现
 上一章介绍过，在应用程序中调用 `socket()` 函数时候，最终会调用 `sys_socket()` 函数，`sys_socket()` 接着通过调用 `sock_create()` 函数创建socket对象，我们来看看 `sock_create()` 函数的实现：
 ```cpp
 int sock_create(int family, int type, int protocol, struct socket **res)
@@ -187,3 +188,4 @@ static struct sock * unix_create1(struct socket *sock)
 ```
 `unix_create1()` 函数主要是创建并初始化一个 `struct sock` 结构，然后保存到 `socket` 对象的 `sk` 字段中。这个 `struct sock` 结构就是 `Unix Domain Sockets` 的操作实体，也就是说所有对socket的操作最终都是作用于这个 `struct sock` 结构上。`struct sock` 结构的定义非常复杂，所以这里就不把这个结构列出来，在分析的过程中涉及到这个结构的时候再加以说明。
 
+### bind() 函数实现
