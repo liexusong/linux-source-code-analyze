@@ -206,7 +206,8 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 
         list = &unix_socket_table[addr->hash];
     } else {
-        list = &unix_socket_table[dentry->d_inode->i_ino & (UNIX_HASH_SIZE-1)]; // 根据文件路径查找一个inode对象, 然后通过这个inode的编号查找到合适的哈希槽(链表)
+        // 根据文件路径查找一个inode对象, 然后通过这个inode的编号查找到合适的哈希链表
+        list = &unix_socket_table[dentry->d_inode->i_ino & (UNIX_HASH_SIZE-1)];
         sk->protinfo.af_unix.dentry = nd.dentry;
         sk->protinfo.af_unix.mnt = nd.mnt;
     }
@@ -225,4 +226,4 @@ out:
     ...
 }
 ```
-`unix_socket()` 函数有一大部分代码是基于文件系统的，主要就是根据 socket 绑定的文件路径创建一个 `inode` 对象，然后根据这个 `inode` 的编号来把这个 socket 添加到 `Unix Domain Sockets` 的全局哈希表中。
+`unix_socket()` 函数有一大部分代码是基于文件系统的，主要就是根据 socket 绑定的文件路径创建一个 `inode` 对象，然后将这个 `inode` 的编号作为哈希值找到 `Unix Domain Sockets` 全局哈希表对应的哈希链表，最后把这个 socket 添加到哈希链表中。
