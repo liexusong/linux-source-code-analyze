@@ -39,3 +39,42 @@ connect(fd, (struct sockaddr *)&addr, sizeof(addr));
 ```
 
 ## Unix Domain Sockets实现
+上一章介绍过，在应用程序中调用 `socket()` 函数时候，最终会调用 `sys_socket()` 函数，`sys_socket()` 接着通过调用 `sock_create()` 函数创建socket对象，我们来看看 `sock_create()` 函数的实现：
+```cpp
+int sock_create(int family, int type, int protocol, struct socket **res)
+{
+    int i;
+    struct socket *sock;
+
+    ...
+
+    if (!(sock = sock_alloc())) {
+        printk(KERN_WARNING "socket: no more sockets\n");
+        i = -ENFILE;
+        goto out;
+    }
+
+    sock->type  = type;
+
+    if ((i = net_families[family]->create(sock, protocol)) < 0) {
+        sock_release(sock);
+        goto out;
+    }
+
+    *res = sock;
+
+out:
+    net_family_read_unlock();
+    return i;
+}
+```
+因为创建 `Unix Domain Sockets` 时需要为 `family` 参数传入 `AF_UNIX`，所以代码 `net_families[family]->create()` 就是调用 `AF_UNIX` 类型的 `create()` 函数。上一章也介绍过，需要通过调用 `sock_register()` 函数向 `net_families` 注册具体协议的创建函数，对于 `Unix Domain Sockets` 在系统初始化时会在 `af_unix_init()` 函数中注册其创建函数，代码如下：
+```cpp
+static int __init af_unix_init(void)
+{
+    ...
+    sock_register(&unix_family_ops);
+    ...
+    return 0;
+}
+```
