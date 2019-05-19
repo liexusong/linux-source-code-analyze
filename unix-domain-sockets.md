@@ -70,11 +70,39 @@ out:
 ```
 因为创建 `Unix Domain Sockets` 时需要为 `family` 参数传入 `AF_UNIX`，所以代码 `net_families[family]->create()` 就是调用 `AF_UNIX` 类型的 `create()` 函数。上一章也介绍过，需要通过调用 `sock_register()` 函数向 `net_families` 注册具体协议的创建函数，对于 `Unix Domain Sockets` 在系统初始化时会在 `af_unix_init()` 函数中注册其创建函数，代码如下：
 ```cpp
+struct net_proto_family unix_family_ops = {
+    PF_UNIX,
+    unix_create
+};
+
 static int __init af_unix_init(void)
 {
     ...
     sock_register(&unix_family_ops);
     ...
     return 0;
+}
+```
+所以对于代码 `net_families[AF_UNIX]->create()` 实际调用的就是 `unix_create()` 函数，`unix_create()` 函数实现如下：
+```cpp
+static int unix_create(struct socket *sock, int protocol)
+{
+    ...
+    sock->state = SS_UNCONNECTED;
+
+    switch (sock->type) {
+    case SOCK_STREAM:
+        sock->ops = &unix_stream_ops;
+        break;
+    case SOCK_RAW:
+        sock->type=SOCK_DGRAM;
+    case SOCK_DGRAM:
+        sock->ops = &unix_dgram_ops;
+        break;
+    default:
+        return -ESOCKTNOSUPPORT;
+    }
+
+    return unix_create1(sock) ? 0 : -ENOMEM;
 }
 ```
