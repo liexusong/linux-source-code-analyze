@@ -1,4 +1,4 @@
-# Unix Domain Sockets实现
+# Unix Domain Sockets介绍
 上一章介绍了Socket接口层的实现，接下来我们将会介绍具体的协议层实现，这一章将会介绍用于进程间通信的 `Unix Doamin Sockets` 的实现。要使用 `Unix Domain Sockets` 需要在创建socket时为 `family` 参数传入 `AF_UNIX`，如下代码：
 ```cpp
 fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -8,7 +8,10 @@ fd = socket(AF_UNIX, SOCK_STREAM, 0);
 服务端：
 ```cpp
 ...
+int fd;
 struct sockaddr_un addr;
+
+fd = socket(AF_UNIX, SOCK_STREAM, 0);
 
 memset(&addr, 0, sizeof(addr));
 
@@ -21,7 +24,10 @@ bind(fd, (struct sockaddr *)&addr, sizeof(addr));
 客户端：
 ```cpp
 ...
+int fd;
 struct sockaddr_un addr;
+
+fd = socket(AF_UNIX, SOCK_STREAM, 0);
 
 memset(&addr, 0, sizeof(addr));
 
