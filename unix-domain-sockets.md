@@ -189,3 +189,40 @@ static struct sock * unix_create1(struct socket *sock)
 `unix_create1()` 函数主要是创建并初始化一个 `struct sock` 结构，然后保存到 `socket` 对象的 `sk` 字段中。这个 `struct sock` 结构就是 `Unix Domain Sockets` 的操作实体，也就是说所有对socket的操作最终都是作用于这个 `struct sock` 结构上。`struct sock` 结构的定义非常复杂，所以这里就不把这个结构列出来，在分析的过程中涉及到这个结构的时候再加以说明。
 
 ### bind() 函数实现
+`bind()` 系统调用最终会调用 `sys_bind()` 函数，而 `sys_bind()` 函数继而调用 `unix_bind()` 函数，调用链为： `bind() -> sys_bind() -> unix_bind()`，我们来看看 `unix_bind()` 函数的实现：
+```cpp
+static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+{
+    ...
+    write_lock(&unix_table_lock);
+
+    if (!sunaddr->sun_path[0]) {
+        err = -EADDRINUSE;
+        if (__unix_find_socket_byname(sunaddr, addr_len,
+                          sk->type, hash)) {
+            unix_release_addr(addr);
+            goto out_unlock;
+        }
+
+        list = &unix_socket_table[addr->hash];
+    } else {
+        list = &unix_socket_table[dentry->d_inode->i_ino & (UNIX_HASH_SIZE-1)]; // 根据文件路径查找一个inode对象, 然后通过这个inode的编号查找到合适的哈希槽(链表)
+        sk->protinfo.af_unix.dentry = nd.dentry;
+        sk->protinfo.af_unix.mnt = nd.mnt;
+    }
+
+    err = 0;
+    __unix_remove_socket(sk);
+    sk->protinfo.af_unix.addr = addr;
+    __unix_insert_socket(list, sk); // 把socket添加到全局哈希表中
+
+out_unlock:
+    write_unlock(&unix_table_lock);
+out_up:
+    up(&sk->protinfo.af_unix.readsem);
+out:
+    return err;
+    ...
+}
+```
+`unix_socket()` 函数有一大部分代码是基于文件系统的，主要就是根据 socket 绑定的文件路径创建一个 `inode` 对象，然后根据这个 `inode` 的编号来把这个 socket 添加到 `Unix Domain Sockets` 的全局哈希表中。
