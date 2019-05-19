@@ -226,4 +226,4 @@ out:
     ...
 }
 ```
-`unix_socket()` 函数有一大部分代码是基于文件系统的，主要就是根据 socket 绑定的文件路径创建一个 `inode` 对象，然后将这个 `inode` 的编号作为哈希值找到 `Unix Domain Sockets` 全局哈希表对应的哈希链表，最后把这个 socket 添加到哈希链表中。
+`unix_socket()` 函数有一大部分代码是基于文件系统的，主要就是根据 socket 绑定的文件路径创建一个 `inode` 对象，然后将这个 `inode` 的编号作为哈希值找到 `Unix Domain Sockets` 全局哈希表对应的哈希链表，最后把这个 socket 添加到哈希链表中。通过这个操作，就可以把 socket 与一个文件路径关联上。
