@@ -148,3 +148,42 @@ struct proto_ops unix_dgram_ops = {
     mmap:       sock_no_mmap,
 };
 ```
+`unix_create()` 函数接着会调用 `unix_create1()` 来进行下一步创建工作，代码如下：
+```cpp
+static struct sock * unix_create1(struct socket *sock)
+{
+    struct sock *sk;
+
+    if (atomic_read(&unix_nr_socks) >= 2*files_stat.max_files)
+        return NULL;
+
+    MOD_INC_USE_COUNT;
+    sk = sk_alloc(PF_UNIX, GFP_KERNEL, 1);
+    if (!sk) {
+        MOD_DEC_USE_COUNT;
+        return NULL;
+    }
+
+    atomic_inc(&unix_nr_socks);
+
+    sock_init_data(sock,sk);
+
+    sk->write_space = unix_write_space;
+    sk->max_ack_backlog = sysctl_unix_max_dgram_qlen;
+    sk->destruct = unix_sock_destructor;
+
+    sk->protinfo.af_unix.dentry = NULL;
+    sk->protinfo.af_unix.mnt = NULL;
+    sk->protinfo.af_unix.lock = RW_LOCK_UNLOCKED;
+
+    atomic_set(&sk->protinfo.af_unix.inflight, 0);
+    init_MUTEX(&sk->protinfo.af_unix.readsem);
+    init_waitqueue_head(&sk->protinfo.af_unix.peer_wait);
+    sk->protinfo.af_unix.list=NULL;
+    unix_insert_socket(&unix_sockets_unbound, sk);
+
+    return sk;
+}
+```
+`unix_create1()` 函数主要是创建并初始化一个 `struct sock` 结构，然后保存到 `socket` 对象的 `sk` 字段中。这个 `struct sock` 结构就是 `Unix Domain Sockets` 的操作实体，也就是说所有对socket的操作最终都是作用于这个 `struct sock` 结构上。`struct sock` 结构的定义非常复杂，所以这里就不把这个结构列出来，在分析的过程中涉及到这个结构的时候再加以说明。
+
