@@ -56,3 +56,22 @@ Child - 1
 从运行结果可以看出，在子进程的 `pid命名空间` 里当前进程的pid为1，但在父进程的 `pid命名空间` 中子进程的pid却是9045。
 
 ## namespace实现原理
+为了让每个进程都可以从属于某一个namespace，Linux内核为进程描述符添加了一个 `struct nsproxy` 的结构，如下：
+```cpp
+struct task_struct {
+    ...
+    /* namespaces */
+    struct nsproxy *nsproxy;
+    ...
+}
+
+struct nsproxy {
+    atomic_t count;
+    struct uts_namespace  *uts_ns;
+    struct ipc_namespace  *ipc_ns;
+    struct mnt_namespace  *mnt_ns;
+    struct pid_namespace  *pid_ns;
+    struct user_namespace *user_ns;
+    struct net            *net_ns;
+};
+```
