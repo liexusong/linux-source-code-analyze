@@ -113,6 +113,13 @@ struct task_struct {
     ...
 }
 
+enum pid_type {
+    PIDTYPE_PID,
+    PIDTYPE_PGID,
+    PIDTYPE_SID,
+    PIDTYPE_MAX
+};
+
 struct upid {
     int nr;
     struct pid_namespace *ns;
