@@ -143,3 +143,4 @@ struct pid_link {
 
 ![pid-namespace-structs](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/pid-namespace-structs.png)
 
+我们主要关注 `struct pid` 这个结构，`struct pid` 有个类型为 `struct upid` 的成员 `numbers`，其定义为只有一个元素的数组，但是其实是一个动态的数据，它的元素个数与 `level` 的值一致，也就是说当 `level` 的值为5时，那么 `numbers` 成员就是一个拥有5个元素的数组。而每个元素记录了其在每层 `pid命名空间` 的pid号，而 `struct upid` 结构的 `nr` 成员就是用于记录进程在不同层级 `pid命名空间` 的pid号。
