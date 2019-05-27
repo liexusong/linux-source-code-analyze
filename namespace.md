@@ -112,4 +112,23 @@ struct task_struct {
     struct pid_link pids[PIDTYPE_MAX];
     ...
 }
+
+struct upid {
+    int nr;
+    struct pid_namespace *ns;
+    struct hlist_node pid_chain;
+};
+
+struct pid {
+    atomic_t count;
+    struct hlist_head tasks[PIDTYPE_MAX];
+    struct rcu_head rcu;
+    unsigned int level;
+    struct upid numbers[1];
+};
+
+struct pid_link {
+    struct hlist_node node;
+    struct pid *pid;
+};
 ```
