@@ -75,4 +75,20 @@ struct nsproxy {
     struct net            *net_ns;
 };
 ```
-从 `struct nsproxy` 结构的定义可以看出，Linux为每种不同类型的资源定义了不同的命名空间结构体进行管理。比如对于 `pid命名空间` 定义了 `struct pid_namespace` 结构来管理 。
+从 `struct nsproxy` 结构的定义可以看出，Linux为每种不同类型的资源定义了不同的命名空间结构体进行管理。比如对于 `pid命名空间` 定义了 `struct pid_namespace` 结构来管理 。由于 namespace 涉及的资源种类比较多，所以本文主要以 `pid命名空间` 作为分析的对象。
+
+我们先来看看管理 `pid命名空间` 的 `struct pid_namespace` 结构的定义：
+```cpp
+struct pid_namespace {
+    struct kref kref;
+    struct pidmap pidmap[PIDMAP_ENTRIES];
+    int last_pid;
+    struct task_struct *child_reaper;
+    struct kmem_cache *pid_cachep;
+    unsigned int level;
+    struct pid_namespace *parent;
+#ifdef CONFIG_PROC_FS
+    struct vfsmount *proc_mnt;
+#endif
+};
+```
