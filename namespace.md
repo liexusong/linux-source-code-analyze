@@ -53,4 +53,6 @@ Parent - fork child
 Parent - child(9054) exit
 Child - 1
 ```
-从运行结果可以看出，在子进程的 `pid命名空间` 里当前进程的pid为1，但在父进程的 `pid命名空间` 中却是9045。
+从运行结果可以看出，在子进程的 `pid命名空间` 里当前进程的pid为1，但在父进程的 `pid命名空间` 中子进程的pid却是9045。
+
+## namespace实现原理
