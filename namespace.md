@@ -225,3 +225,4 @@ struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
     return NULL;
 }
 ```
+通过pid号查找 `struct pid` 结构时，首先会把进程pid号和当前进程的 `pid命名空间` 传入到 `find_pid_ns()` 函数，而在 `find_pid_ns()` 函数中通过全局pid哈希表来快速查找对应的 `struct pid` 结构。获取到 `struct pid` 结构后就可以很容易地获取到进程对应的进程描述符，例如可以通过 `pid_task()` 函数来获取 `struct pid` 结构对应进程描述符，由于代码比较简单，这里就不再分析了。
