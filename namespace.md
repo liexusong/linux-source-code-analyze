@@ -161,7 +161,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
 
     tmp = ns;
     for (i = ns->level; i >= 0; i--) {
-        nr = alloc_pidmap(tmp); // 为当前进程所在的每个pid命名空间分配一个pid
+        nr = alloc_pidmap(tmp);    // 为当前进程所在的不同层级pid命名空间分配一个pid
         if (nr < 0)
             goto out_free;
 
@@ -176,14 +176,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
     for (type = 0; type < PIDTYPE_MAX; ++type)
         INIT_HLIST_HEAD(&pid->tasks[type]);
 
-    spin_lock_irq(&pidmap_lock);
-    for (i = ns->level; i >= 0; i--) {
-        upid = &pid->numbers[i];
-        // 把upid连接到全局pid中, 用于快速查找pid
-        hlist_add_head_rcu(&upid->pid_chain,
-                &pid_hash[pid_hashfn(upid->nr, upid->ns)]);
-    }
-    spin_unlock_irq(&pidmap_lock);
+    ...
 
 out:
     return pid;
@@ -191,3 +184,4 @@ out:
     ...
 }
 ```
+上面的代码中，那个 `for循环` 就是通过 `parent` 成员不断向上检索为不同层级的 `pid命名空间` 分配一个唯一的pid号，并且保存到对应的 `nr` 字段中。
