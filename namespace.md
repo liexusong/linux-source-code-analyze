@@ -144,3 +144,50 @@ struct pid_link {
 ![pid-namespace-structs](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/pid-namespace-structs.png)
 
 我们主要关注 `struct pid` 这个结构，`struct pid` 有个类型为 `struct upid` 的成员 `numbers`，其定义为只有一个元素的数组，但是其实是一个动态的数据，它的元素个数与 `level` 的值一致，也就是说当 `level` 的值为5时，那么 `numbers` 成员就是一个拥有5个元素的数组。而每个元素记录了其在每层 `pid命名空间` 的pid号，而 `struct upid` 结构的 `nr` 成员就是用于记录进程在不同层级 `pid命名空间` 的pid号。
+
+我们通过代码来看看怎么为进程分配pid号的，在内核中是用过 `alloc_pid()` 函数分配pid号的，代码如下：
+```cpp
+struct pid *alloc_pid(struct pid_namespace *ns)
+{
+    struct pid *pid;
+    enum pid_type type;
+    int i, nr;
+    struct pid_namespace *tmp;
+    struct upid *upid;
+
+    pid = kmem_cache_alloc(ns->pid_cachep, GFP_KERNEL);
+    if (!pid)
+        goto out;
+
+    tmp = ns;
+    for (i = ns->level; i >= 0; i--) {
+        nr = alloc_pidmap(tmp); // 为当前进程所在的每个pid命名空间分配一个pid
+        if (nr < 0)
+            goto out_free;
+
+        pid->numbers[i].nr = nr;   // 对应i层namespace中的pid数字
+        pid->numbers[i].ns = tmp;  // 对应i层namespace的实体
+        tmp = tmp->parent;
+    }
+
+    get_pid_ns(ns);
+    pid->level = ns->level;
+    atomic_set(&pid->count, 1);
+    for (type = 0; type < PIDTYPE_MAX; ++type)
+        INIT_HLIST_HEAD(&pid->tasks[type]);
+
+    spin_lock_irq(&pidmap_lock);
+    for (i = ns->level; i >= 0; i--) {
+        upid = &pid->numbers[i];
+        // 把upid连接到全局pid中, 用于快速查找pid
+        hlist_add_head_rcu(&upid->pid_chain,
+                &pid_hash[pid_hashfn(upid->nr, upid->ns)]);
+    }
+    spin_unlock_irq(&pidmap_lock);
+
+out:
+    return pid;
+
+    ...
+}
+```
