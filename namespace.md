@@ -139,3 +139,7 @@ struct pid_link {
     struct pid *pid;
 };
 ```
+这几个结构的关系如下图：
+
+![pid-namespace-structs](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/pid-namespace-structs.png)
+
