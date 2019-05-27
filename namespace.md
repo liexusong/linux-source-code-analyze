@@ -92,5 +92,5 @@ struct pid_namespace {
 #endif
 };
 ```
-因为 `struct pid_namespace` 结构主要用于为当前 `pid命名空间` 分配空闲的pid，所以定义比较简单。`kref` 成员是一个引用计数器，用于记录引用这个结构的进程数，`pidmap` 成员用于快速找到可用pid的位图，`last_pid` 成员是记录最后一个可用的pid，`parent` 成员记录当前 `pid命名空间` 的父命名空间。
+因为 `struct pid_namespace` 结构主要用于为当前 `pid命名空间` 分配空闲的pid，所以定义比较简单。`kref` 成员是一个引用计数器，用于记录引用这个结构的进程数，`pidmap` 成员用于快速找到可用pid的位图，`last_pid` 成员是记录最后一个可用的pid，`level` 成员记录当前 `pid命名空间` 所在的层次，`parent` 成员记录当前 `pid命名空间` 的父命名空间。
 
