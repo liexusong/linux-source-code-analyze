@@ -103,4 +103,4 @@ struct pid_namespace {
 
 ![pid-namespace](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/pid-namespace-level.png)
 
-
+第0层的 `pid命名空间` 是 `init` 进程所在的命名空间。如果一个进程所在的 `pid命名空间` 为 `N`，那么其在 `0 ~ N 层pid命名空间` 都有一个唯一的pid号。也就是说 `高层pid命名空间` 的进程对 `低层pid命名空间` 的进程是可见的，但是 `低层pid命名空间` 的进程对 `高层pid命名空间` 的进程是不可见的。
