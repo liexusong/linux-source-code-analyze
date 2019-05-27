@@ -176,7 +176,14 @@ struct pid *alloc_pid(struct pid_namespace *ns)
     for (type = 0; type < PIDTYPE_MAX; ++type)
         INIT_HLIST_HEAD(&pid->tasks[type]);
 
-    ...
+    spin_lock_irq(&pidmap_lock);
+    for (i = ns->level; i >= 0; i--) {
+        upid = &pid->numbers[i];
+        // 把upid连接到全局pid中, 用于快速查找pid
+        hlist_add_head_rcu(&upid->pid_chain,
+                &pid_hash[pid_hashfn(upid->nr, upid->ns)]);
+    }
+    spin_unlock_irq(&pidmap_lock);
 
 out:
     return pid;
@@ -184,4 +191,37 @@ out:
     ...
 }
 ```
-上面的代码中，那个 `for循环` 就是通过 `parent` 成员不断向上检索为不同层级的 `pid命名空间` 分配一个唯一的pid号，并且保存到对应的 `nr` 字段中。
+上面的代码中，那个 `for (i = ns->level; i >= 0; i--)` 就是通过 `parent` 成员不断向上检索为不同层级的 `pid命名空间` 分配一个唯一的pid号，并且保存到对应的 `nr` 字段中。另外，还会把进程所在各个层级的pid号添加到全局pid哈希表中，这样做是为了通过pid号快速找到进程。
+
+现在我们来看看怎么通过pid号快速找到一个进程，在内核中 `find_get_pid()` 函数用来通过pid号查找对应的 `struct pid` 结构，代码如下：
+```cpp
+struct pid *find_get_pid(pid_t nr)
+{
+    struct pid *pid;
+
+    rcu_read_lock();
+    pid = get_pid(find_vpid(nr));
+    rcu_read_unlock();
+
+    return pid;
+}
+
+struct pid *find_vpid(int nr)
+{
+    return find_pid_ns(nr, current->nsproxy->pid_ns);
+}
+
+struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
+{
+    struct hlist_node *elem;
+    struct upid *pnr;
+
+    hlist_for_each_entry_rcu(pnr, elem,
+            &pid_hash[pid_hashfn(nr, ns)], pid_chain)
+        if (pnr->nr == nr && pnr->ns == ns)
+            return container_of(pnr, struct pid,
+                    numbers[ns->level]);
+
+    return NULL;
+}
+```
