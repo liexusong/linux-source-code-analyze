@@ -99,4 +99,7 @@ struct pid_namespace {
 * `level` 成员记录当前 `pid命名空间` 所在的层次
 * `parent` 成员记录当前 `pid命名空间` 的父命名空间
 
+由于 `pid命名空间` 是分层的，也就是说新创建一个 `pid命名空间` 时会记录父级 `pid命名空间` 到 `parent` 字段中，所以随着 `pid命名空间` 的创建，在内核中会形成一颗 `pid命名空间` 的树，如下图（[图片来源](http://www.zhongruitech.com/256011226.html)）：
+![pid-namespace](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/pid-namespace-level.png)
+
 
