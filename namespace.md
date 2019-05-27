@@ -193,7 +193,7 @@ out:
 ```
 上面的代码中，那个 `for (i = ns->level; i >= 0; i--)` 就是通过 `parent` 成员不断向上检索为不同层级的 `pid命名空间` 分配一个唯一的pid号，并且保存到对应的 `nr` 字段中。另外，还会把进程所在各个层级的pid号添加到全局pid哈希表中，这样做是为了通过pid号快速找到进程。
 
-现在我们来看看怎么通过pid号快速找到一个进程，在内核中 `find_get_pid()` 函数用来通过pid号查找对应的 `struct pid` 结构，代码如下：
+现在我们来看看怎么通过pid号快速找到一个进程，在内核中 `find_get_pid()` 函数用来通过pid号查找对应的 `struct pid` 结构，代码如下（find_get_pid() -> find_vpid() -> find_pid_ns()）：
 ```cpp
 struct pid *find_get_pid(pid_t nr)
 {
