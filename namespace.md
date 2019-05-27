@@ -75,3 +75,4 @@ struct nsproxy {
     struct net            *net_ns;
 };
 ```
+从 `struct nsproxy` 结构的定义可以看出，Linux为每种不同类型的资源定义了不同的命名空间结构体进行管理。比如对于 `pid命名空间` 定义了 `struct pid_namespace` 结构来管理 。
