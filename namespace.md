@@ -14,3 +14,42 @@ Linux支持6种资源的 `namespace`，分别为（[文档](https://lwn.net/Arti
 |Network namespaces| CLONE_NEWNET|Linux 2.6.24 |
 | User namespaces  |CLONE_NEWUSER|Linux 2.6.23 |
 
+在调用 `clone()` 系统调用时，传入以上的不同类型的参数就可以实现复制不同类型的namespace。比如传入 `CLONE_NEWPID` 参数时，就是复制 `pid命名空间`，在新的 `pid命名空间` 里可以使用与其他 `pid命名空间` 相同的pid。代码如下：
+```cpp
+#define _GNU_SOURCE
+#include <sched.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <errno.h>
+
+char child_stack[5000];
+
+int child(void* arg)
+{
+    printf("Child - %d\n", getpid());
+    return 1;
+}
+
+int main()
+{
+    printf("Parent - fork child\n");
+    int pid = clone(child, child_stack+5000, CLONE_NEWPID, NULL);
+    if (pid == -1) {
+        perror("clone:");
+        exit(1);
+    }
+    waitpid(pid, NULL, 0);
+    printf("Parent - child(%d) exit\n", pid);
+    return 0;
+}
+```
+输出如下：
+```
+Parent - fork child
+Parent - child(9054) exit
+Child - 1
+```
