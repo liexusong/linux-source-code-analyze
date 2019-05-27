@@ -4,3 +4,18 @@
 有了 `namespace` 就可以实现基本的容器功能，著名的 `Docker` 也是使用了 namespace 来实现资源隔离的。
 
 Linux支持6种资源的 `namespace`，分别为（[文档](https://lwn.net/Articles/531114/)）：
+
+|Type              |  Parameter  |Linux Version|
+-------------------|-------------|-------------|
+| Mount namespaces | CLONE_NEWNS |Linux 2.4.19 |
+-------------------|-------------|-------------|
+|  UTS namespaces  | CLONE_NEWUTS|Linux 2.6.19 |
+-------------------|-------------|-------------|
+|  IPC namespaces  | CLONE_NEWIPC|Linux 2.6.19 |
+-------------------|-------------|-------------|
+|  PID namespaces  | CLONE_NEWPID|Linux 2.6.24 |
+-------------------|-------------|-------------|
+|Network namespaces| CLONE_NEWNET|Linux 2.6.24 |
+-------------------|-------------|-------------|
+| User namespaces  |CLONE_NEWUSER|Linux 2.6.23 |
+
