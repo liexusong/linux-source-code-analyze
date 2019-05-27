@@ -8,14 +8,9 @@ Linux支持6种资源的 `namespace`，分别为（[文档](https://lwn.net/Arti
 |Type              |  Parameter  |Linux Version|
 -------------------|-------------|-------------|
 | Mount namespaces | CLONE_NEWNS |Linux 2.4.19 |
--------------------|-------------|-------------|
 |  UTS namespaces  | CLONE_NEWUTS|Linux 2.6.19 |
--------------------|-------------|-------------|
 |  IPC namespaces  | CLONE_NEWIPC|Linux 2.6.19 |
--------------------|-------------|-------------|
 |  PID namespaces  | CLONE_NEWPID|Linux 2.6.24 |
--------------------|-------------|-------------|
 |Network namespaces| CLONE_NEWNET|Linux 2.6.24 |
--------------------|-------------|-------------|
 | User namespaces  |CLONE_NEWUSER|Linux 2.6.23 |
 
