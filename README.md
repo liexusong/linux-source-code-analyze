@@ -19,6 +19,7 @@
     * [虚拟文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_file_system.md)
 * 进程间通信
     * [信号处理机制](https://github.com/liexusong/linux-source-code-analyze/blob/master/signal.md)
+    * [信号量](https://github.com/liexusong/linux-source-code-analyze/blob/master/ipc-sem.md)
 * 网络
     * [Socket接口](https://github.com/liexusong/linux-source-code-analyze/blob/master/socket_interface.md)
     * [Unix Domain Socket](https://github.com/liexusong/linux-source-code-analyze/blob/master/unix-domain-sockets.md)
