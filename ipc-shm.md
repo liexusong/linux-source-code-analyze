@@ -145,7 +145,7 @@ struct shmid_kernel
 
 static struct shmid_kernel *shm_segs[SHMMNI]; // SHMMNI等于128
 ```
-从注释可以知道 `struct shmid_kernel` 结构体各个字段的作用，比如 `shm_npages` 字段表示共享内存使用了多少个内存页。而 `shm_pages` 字段指向了共享内存映射的虚拟内存页表项数组等。
+从注释可以知道 `struct shmid_kernel` 结构体各个字段的作用，比如 `shm_npages` 字段表示共享内存使用了多少个内存页。而 `shm_pages` 字段指向了共享内存映射的虚拟内存页表项数组等。而 `shm_segs数组` 用于管理系统中所有的共享内存。
 
 ### shmget() 函数实现
 通过前面的例子可知，要使用共享内存，首先需要调用 `shmget()` 函数来创建或者获取一块共享内存。`shmget()` 函数的实现如下：
@@ -184,4 +184,6 @@ asmlinkage long sys_shmget (key_t key, int size, int shmflg)
 	return err;
 }
 ```
-`shmget()` 函数的实现比较简单，首先调用 `findkey()` 函数查找值为key的共享内存是否已经被创建。如果没被创建，那么就调用 `newseg()` 函数创建新的共享内存。
+`shmget()` 函数的实现比较简单，首先调用 `findkey()` 函数查找值为key的共享内存是否已经被创建，`findkey()` 函数返回共享内存在 `shm_segs数组` 的索引。如果找到，那么直接返回共享内存的标识符即可。否则就调用 `newseg()` 函数创建新的共享内存。`newseg()` 函数的实现也比较简单，就是创建一个新的 `struct shmid_kernel` 结构体，然后设置其各个字段的值，并且保存到 `shm_segs数组` 中。
+
+
