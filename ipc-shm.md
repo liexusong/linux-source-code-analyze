@@ -6,7 +6,7 @@
 ## 共享内存使用
 ### 获取共享内存
 要使用共享内存，首先需要使用 `shmget()` 函数获取共享内存，`shmget()` 函数的原型如下：
-```c
+```cpp
 int shmget(key_t key, size_t size, int shmflg);
 ```
 * 参数 `key` 一般由 `ftok()` 函数生成，用于标识系统的唯一IPC资源。
@@ -16,3 +16,12 @@ int shmget(key_t key, size_t size, int shmflg);
 函数调用成功时返回一个新建或已经存在的的共享内存标识符，取决于shmflg的参数。失败返回-1，并设置错误码。
 
 ### 关联共享内存
+`shmget()` 函数返回的是一个标识符，而不是可用的内存地址，所以还需要调用 `shmat()` 函数把共享内存关联到某个虚拟内存地址上。`shmat()` 函数的原型如下：
+```cpp
+void *shmat(int shmid, const void *shmaddr, int shmflg);
+```
+* 参数 `shmid` 是 `shmget()` 函数返回的标识符。
+* 参数 `shmaddr` 是要关联的虚拟内存地址，如果传入0，表示由系统自动选择合适的虚拟内存地址。
+* 参数 `shmflg` 若指定了 `SHM_RDONLY` 位，则以只读方式连接此段，否则以读写方式连接此段。
+
+函数调用成功返回一个可用的指针（虚拟内存地址），出错返回-1。
