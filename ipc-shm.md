@@ -37,3 +37,76 @@ int shmdt(const void *shmaddr);
 
 ### 共享内存使用例子
 下面通过一个例子来介绍一下共享内存的使用方法。在这个例子中，有两个进程，分别为 `进程A` 和 `进程B`，`进程A` 创建一块共享内存，然后写入数据，`进程B` 获取这块共享内存并且读取其内容。
+* 进程A
+```cpp
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+#define SHM_PATH "/tmp/shm"
+#define SHM_SIZE 128
+
+int main(int argc, char *argv[])
+{
+    int shmid;
+    char *addr;
+    key_t key = ftok(SHM_PATH, 0x6666);
+    
+    shmid = shmget(key, SHM_SIZE, IPC_CREAT|IPC_EXCL|0666);
+    if (shmid < 0) {
+        printf("failed to create share memory\n");
+        return -1;
+    }
+    
+    addr = shmat(shmid, NULL, 0);
+    if (addr <= 0) {
+        printf("failed to map share memory\n");
+        return -1;
+    }
+    
+    sprintf(addr, "%s", "Hello World\n");
+    
+    sleep(10);
+    
+    return 0;
+}
+```
+
+* 进程B
+```cpp
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+#define SHM_PATH "/tmp/shm"
+#define SHM_SIZE 128
+
+int main(int argc, char *argv[])
+{
+    int shmid;
+    char *addr;
+    key_t key = ftok(SHM_PATH, 0x6666);
+    
+    char buf[128];
+    
+    shmid = shmget(key, SHM_SIZE, IPC_CREAT);
+    if (shmid < 0) {
+        printf("failed to create share memory\n");
+        return -1;
+    }
+    
+    addr = shmat(shmid, NULL, 0);
+    if (addr <= 0) {
+        printf("failed to map share memory\n");
+        return -1;
+    }
+    
+    sleep(2);
+    
+    strcpy(buf, addr, 128);
+    
+    return 0;
+}
+```
