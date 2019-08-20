@@ -145,6 +145,7 @@ struct shmid_kernel
 
 static struct shmid_kernel *shm_segs[SHMMNI]; // SHMMNI等于128
 ```
+从注释可以知道 `struct shmid_kernel` 结构体各个字段的作用，比如 `shm_npages` 字段表示共享内存使用了多少个内存页。而 `shm_pages` 字段指向了共享内存映射的虚拟内存页表项数组等。
 
 ### shmget() 函数实现
 通过前面的例子可知，要使用共享内存，首先需要调用 `shmget()` 函数来创建或者获取一块共享内存。`shmget()` 函数的实现如下：
