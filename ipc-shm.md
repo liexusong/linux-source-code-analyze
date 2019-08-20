@@ -25,3 +25,12 @@ void *shmat(int shmid, const void *shmaddr, int shmflg);
 * 参数 `shmflg` 若指定了 `SHM_RDONLY` 位，则以只读方式连接此段，否则以读写方式连接此段。
 
 函数调用成功返回一个可用的指针（虚拟内存地址），出错返回-1。
+
+### 取消关联共享内存
+当一个进程不需要共享内存的时候，就需要取消共享内存与虚拟内存地址的关联。取消关联共享内存通过 `shmdt()` 函数实现，原型如下：
+```cpp
+int shmdt(const void *shmaddr);
+```
+* 参数 `shmaddr` 是要取消关联的虚拟内存地址，也就是 `shmat()` 函数返回的值。
+
+函数调用成功返回0，出错返回-1。
