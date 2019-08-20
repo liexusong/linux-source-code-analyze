@@ -188,4 +188,47 @@ asmlinkage long sys_shmget (key_t key, int size, int shmflg)
 ```
 `shmget()` 函数的实现比较简单，首先调用 `findkey()` 函数查找值为key的共享内存是否已经被创建，`findkey()` 函数返回共享内存在 `shm_segs数组` 的索引。如果找到，那么直接返回共享内存的标识符即可。否则就调用 `newseg()` 函数创建新的共享内存。`newseg()` 函数的实现也比较简单，就是创建一个新的 `struct shmid_kernel` 结构体，然后设置其各个字段的值，并且保存到 `shm_segs数组` 中。
 
+### shmat() 函数实现
+`shmat()` 函数用于将共享内存映射到本地虚拟内存地址，由于 `shmat()` 函数的实现比较复杂，所以我们分段来分析这个函数：
+```cpp
+asmlinkage long sys_shmat (int shmid, char *shmaddr, int shmflg, ulong *raddr)
+{
+	struct shmid_kernel *shp;
+	struct vm_area_struct *shmd;
+	int err = -EINVAL;
+	unsigned int id;
+	unsigned long addr;
+	unsigned long len;
 
+	down(&current->mm->mmap_sem);
+	spin_lock(&shm_lock);
+	if (shmid < 0)
+		goto out;
+
+	shp = shm_segs[id = (unsigned int) shmid % SHMMNI];
+	if (shp == IPC_UNUSED || shp == IPC_NOID)
+		goto out;
+```
+上面这段代码主要通过 `shmid` 标识符来找到共享内存描述符，上面说过系统中所有的共享内存到保存在 `shm_segs` 数组中。
+
+```cpp
+	if (!(addr = (ulong) shmaddr)) {
+		if (shmflg & SHM_REMAP)
+			goto out;
+		err = -ENOMEM;
+		addr = 0;
+	again:
+		if (!(addr = get_unmapped_area(addr, shp->u.shm_segsz))) // 获取一个空闲的虚拟内存空间
+			goto out;
+		if(addr & (SHMLBA - 1)) {
+			addr = (addr + (SHMLBA - 1)) & ~(SHMLBA - 1);
+			goto again;
+		}
+	} else if (addr & (SHMLBA-1)) {
+		if (shmflg & SHM_RND)
+			addr &= ~(SHMLBA-1);       /* round down */
+		else
+			goto out;
+	}
+```
+上面的代码主要找到一个可用的虚拟内存地址，如果在调用 `shmat()` 函数时没有指定了虚拟内存地址，那么就通过 `get_unmapped_area()` 函数来获取一个可用的虚拟内存地址。
