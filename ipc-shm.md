@@ -232,3 +232,72 @@ asmlinkage long sys_shmat (int shmid, char *shmaddr, int shmflg, ulong *raddr)
 	}
 ```
 上面的代码主要找到一个可用的虚拟内存地址，如果在调用 `shmat()` 函数时没有指定了虚拟内存地址，那么就通过 `get_unmapped_area()` 函数来获取一个可用的虚拟内存地址。
+
+```cpp
+	spin_unlock(&shm_lock);
+	err = -ENOMEM;
+	shmd = kmem_cache_alloc(vm_area_cachep, SLAB_KERNEL);
+	spin_lock(&shm_lock);
+	if (!shmd)
+		goto out;
+	if ((shp != shm_segs[id]) || (shp->u.shm_perm.seq != (unsigned int) shmid / SHMMNI)) {
+		kmem_cache_free(vm_area_cachep, shmd);
+		err = -EIDRM;
+		goto out;
+	}
+```
+上面的代码主要通过调用 `kmem_cache_alloc()` 函数创建一个 `vm_area_struct` 结构，在内存管理一章知道，`vm_area_struct` 结构用于管理进程的虚拟内存空间。
+
+```cpp
+	shmd->vm_private_data = shm_segs + id;
+	shmd->vm_start = addr;
+	shmd->vm_end = addr + shp->shm_npages * PAGE_SIZE;
+	shmd->vm_mm = current->mm;
+	shmd->vm_page_prot = (shmflg & SHM_RDONLY) ? PAGE_READONLY : PAGE_SHARED;
+	shmd->vm_flags = VM_SHM | VM_MAYSHARE | VM_SHARED
+			 | VM_MAYREAD | VM_MAYEXEC | VM_READ | VM_EXEC
+			 | ((shmflg & SHM_RDONLY) ? 0 : VM_MAYWRITE | VM_WRITE);
+	shmd->vm_file = NULL;
+	shmd->vm_offset = 0;
+	shmd->vm_ops = &shm_vm_ops;
+
+	shp->u.shm_nattch++;	    /* prevent destruction */
+	spin_unlock(&shm_lock);
+	err = shm_map(shmd);
+	spin_lock(&shm_lock);
+	if (err)
+		goto failed_shm_map;
+
+	insert_attach(shp,shmd);  /* insert shmd into shp->attaches */
+
+	shp->u.shm_lpid = current->pid;
+	shp->u.shm_atime = CURRENT_TIME;
+
+	*raddr = addr;
+	err = 0;
+out:
+	spin_unlock(&shm_lock);
+	up(&current->mm->mmap_sem);
+	return err;
+	...
+}
+```
+上面的代码主要是设置刚创建的 `vm_area_struct` 结构的各个字段，比较重要的是设置其 `vm_ops` 字段为 `shm_vm_ops`，`shm_vm_ops` 定义如下：
+```cpp
+static struct vm_operations_struct shm_vm_ops = {
+	shm_open,		/* open - callback for a new vm-area open */
+	shm_close,		/* close - callback for when the vm-area is released */
+	NULL,			/* no need to sync pages at unmap */
+	NULL,			/* protect */
+	NULL,			/* sync */
+	NULL,			/* advise */
+	shm_nopage,		/* nopage */
+	NULL,			/* wppage */
+	shm_swapout		/* swapout */
+};
+```
+`shm_vm_ops` 的 `nopage` 回调为 `shm_nopage()` 函数，也就是说，当发生页缺失异常时将会调用此函数来恢复内存的映射。
+
+从上面的代码可看出，`shmat()` 函数只是申请了进程的虚拟内存空间，而共享内存的物理空间并没有申请，那么在什么时候申请物理内存呢？答案就是当进程发生缺页异常的时候会调用 `shm_nopage()` 函数来恢复进程的虚拟内存地址到物理内存地址的映射。
+
+### shm_nopage() 函数实现
