@@ -4,7 +4,7 @@
 但有时候为了让不同进程之间进行通信，需要让不同进程共享相同的物理内存，Linux通过 `共享内存` 来实现这个功能。下面先来介绍一下Linux系统的共享内存的使用。
 
 ## 共享内存使用
-### 获取共享内存
+### 1. 获取共享内存
 要使用共享内存，首先需要使用 `shmget()` 函数获取共享内存，`shmget()` 函数的原型如下：
 ```cpp
 int shmget(key_t key, size_t size, int shmflg);
@@ -15,7 +15,7 @@ int shmget(key_t key, size_t size, int shmflg);
 
 函数调用成功时返回一个新建或已经存在的的共享内存标识符，取决于shmflg的参数。失败返回-1，并设置错误码。
 
-### 关联共享内存
+### 2. 关联共享内存
 `shmget()` 函数返回的是一个标识符，而不是可用的内存地址，所以还需要调用 `shmat()` 函数把共享内存关联到某个虚拟内存地址上。`shmat()` 函数的原型如下：
 ```cpp
 void *shmat(int shmid, const void *shmaddr, int shmflg);
@@ -26,7 +26,7 @@ void *shmat(int shmid, const void *shmaddr, int shmflg);
 
 函数调用成功返回一个可用的指针（虚拟内存地址），出错返回-1。
 
-### 取消关联共享内存
+### 3. 取消关联共享内存
 当一个进程不需要共享内存的时候，就需要取消共享内存与虚拟内存地址的关联。取消关联共享内存通过 `shmdt()` 函数实现，原型如下：
 ```cpp
 int shmdt(const void *shmaddr);
