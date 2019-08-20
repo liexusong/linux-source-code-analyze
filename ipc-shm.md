@@ -301,3 +301,46 @@ static struct vm_operations_struct shm_vm_ops = {
 从上面的代码可看出，`shmat()` 函数只是申请了进程的虚拟内存空间，而共享内存的物理空间并没有申请，那么在什么时候申请物理内存呢？答案就是当进程发生缺页异常的时候会调用 `shm_nopage()` 函数来恢复进程的虚拟内存地址到物理内存地址的映射。
 
 ### shm_nopage() 函数实现
+shm_nopage() 函数是当发生内存缺页异常时被调用的，代码如下：
+```cpp
+static struct page * shm_nopage(struct vm_area_struct * shmd, unsigned long address, int no_share)
+{
+	pte_t pte;
+	struct shmid_kernel *shp;
+	unsigned int idx;
+	struct page * page;
+
+	shp = *(struct shmid_kernel **) shmd->vm_private_data;
+	idx = (address - shmd->vm_start + shmd->vm_offset) >> PAGE_SHIFT;
+
+	spin_lock(&shm_lock);
+again:
+	pte = shp->shm_pages[idx]; // 共享内存的页表项
+	if (!pte_present(pte)) {   // 如果内存页不存在
+		if (pte_none(pte)) {
+			spin_unlock(&shm_lock);
+			page = get_free_highpage(GFP_HIGHUSER); // 申请一个新的物理内存页
+			if (!page)
+				goto oom;
+			clear_highpage(page);
+			spin_lock(&shm_lock);
+			if (pte_val(pte) != pte_val(shp->shm_pages[idx]))
+				goto changed;
+		} else {
+			...
+		}
+		shm_rss++;
+		pte = pte_mkdirty(mk_pte(page, PAGE_SHARED));   // 创建页表项
+		shp->shm_pages[idx] = pte;                      // 保存共享内存的页表项
+	} else
+		--current->maj_flt;  /* was incremented in do_no_page */
+
+done:
+	get_page(pte_page(pte));
+	spin_unlock(&shm_lock);
+	current->min_flt++;
+	return pte_page(pte);
+	...
+}
+```
+shm_nopage() 函数的主要功能是当发生内存缺页时，申请新的物理内存页，并映射到共享内存中。
