@@ -119,3 +119,39 @@ int main(int argc, char *argv[])
 通过上图可知，共享内存是通过将不同进程的虚拟内存地址映射到相同的物理内存地址来实现的，下面将会介绍Linux的实现方式。
 
 ### shmget() 函数实现
+通过前面的例子可知，要使用共享内存，首先需要调用 `shmget()` 函数来创建或者获取一块共享内存。`shmget()` 函数的实现如下：
+```cpp
+asmlinkage long sys_shmget (key_t key, int size, int shmflg)
+{
+	struct shmid_kernel *shp;
+	int err, id = 0;
+
+	down(&current->mm->mmap_sem);
+	spin_lock(&shm_lock);
+	if (size < 0 || size > shmmax) {
+		err = -EINVAL;
+	} else if (key == IPC_PRIVATE) {
+		err = newseg(key, shmflg, size);
+	} else if ((id = findkey (key)) == -1) {
+		if (!(shmflg & IPC_CREAT))
+			err = -ENOENT;
+		else
+			err = newseg(key, shmflg, size);
+	} else if ((shmflg & IPC_CREAT) && (shmflg & IPC_EXCL)) {
+		err = -EEXIST;
+	} else {
+		shp = shm_segs[id];
+		if (shp->u.shm_perm.mode & SHM_DEST)
+			err = -EIDRM;
+		else if (size > shp->u.shm_segsz)
+			err = -EINVAL;
+		else if (ipcperms (&shp->u.shm_perm, shmflg))
+			err = -EACCES;
+		else
+			err = (int) shp->u.shm_perm.seq * SHMMNI + id;
+	}
+	spin_unlock(&shm_lock);
+	up(&current->mm->mmap_sem);
+	return err;
+}
+```
