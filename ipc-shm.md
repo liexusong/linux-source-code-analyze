@@ -37,7 +37,7 @@ int shmdt(const void *shmaddr);
 
 ### 共享内存使用例子
 下面通过一个例子来介绍一下共享内存的使用方法。在这个例子中，有两个进程，分别为 `进程A` 和 `进程B`，`进程A` 创建一块共享内存，然后写入数据，`进程B` 获取这块共享内存并且读取其内容。
-* 进程A
+#### 进程A
 ```cpp
 #include <stdio.h>
 #include <unistd.h>
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 }
 ```
 
-* 进程B
+#### 进程B
 ```cpp
 #include <stdio.h>
 #include <string.h>
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     
     shmid = shmget(key, SHM_SIZE, IPC_CREAT);
     if (shmid < 0) {
-        printf("failed to create share memory\n");
+        printf("failed to get share memory\n");
         return -1;
     }
     
