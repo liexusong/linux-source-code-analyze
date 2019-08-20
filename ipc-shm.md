@@ -40,6 +40,7 @@ int shmdt(const void *shmaddr);
 * 进程A
 ```cpp
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -67,8 +68,6 @@ int main(int argc, char *argv[])
     
     sprintf(addr, "%s", "Hello World\n");
     
-    sleep(10);
-    
     return 0;
 }
 ```
@@ -76,6 +75,8 @@ int main(int argc, char *argv[])
 * 进程B
 ```cpp
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -103,10 +104,10 @@ int main(int argc, char *argv[])
         return -1;
     }
     
-    sleep(2);
-    
     strcpy(buf, addr, 128);
+    printf("%s", buf);
     
     return 0;
 }
 ```
+测试时先运行进程A，然后再运行进程B，可以看到进程B会打印出 “Hello World”，说明共享内存已经创建成功并且读取。
