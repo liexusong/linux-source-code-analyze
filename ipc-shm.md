@@ -111,3 +111,7 @@ int main(int argc, char *argv[])
 }
 ```
 测试时先运行进程A，然后再运行进程B，可以看到进程B会打印出 “Hello World”，说明共享内存已经创建成功并且读取。
+
+## 共享内存实现原理
+我们先通过一幅图来了解一下共享内存的大概原理，如下图：
+![shm-map](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/shm-map.jpg)
