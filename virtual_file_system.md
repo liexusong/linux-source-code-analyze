@@ -155,3 +155,25 @@ struct dentry {
     unsigned char d_iname[DNAME_INLINE_LEN]; // 当目录名不超过16个字符时使用
 };
 ```
+
+### 文件结构（file）
+文件结构用于描述一个已打开的文件，其包含文件当前的读写偏移量，文件打开模式和文件操作函数列表等，文件结构定义如下：
+```cpp
+struct file {
+	struct list_head         f_list;
+	struct dentry           *f_dentry;
+	struct file_operations  *f_op;
+	atomic_t                 f_count;
+	unsigned int             f_flags;
+	mode_t                   f_mode;
+	loff_t                   f_pos;
+	unsigned long            f_reada, f_ramax, f_raend, f_ralen, f_rawin;
+	struct fown_struct       f_owner;
+	unsigned int             f_uid, f_gid;
+	int                      f_error;
+	unsigned long            f_version;
+
+	/* needed for tty driver, and maybe others */
+	void                    *private_data;
+};
+```
