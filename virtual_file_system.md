@@ -184,5 +184,26 @@ struct file {
 ## 虚拟文件系统的实现
 接下来我们分析一下虚拟文件系统的实现。
 
-### 挂载文件系统
+### 注册文件系统
 Linux为了支持不同的文件系统而创造了虚拟文件系统，虚拟文件系统更像一个规范(或者说接口)，真实的文件系统需要实现虚拟文件系统的规范(接口)才能接入到Linux内核中。
+
+要让Linux内核能够发现真实的文件系统，那么必须先使用 `register_filesystem()` 函数注册文件系统，`register_filesystem()` 函数实现如下：
+```cpp
+int register_filesystem(struct file_system_type * fs)
+{
+    struct file_system_type ** tmp;
+
+    if (!fs)
+        return -EINVAL;
+    if (fs->next)
+        return -EBUSY;
+    tmp = &file_systems;
+    while (*tmp) {
+        if (strcmp((*tmp)->name, fs->name) == 0)
+            return -EBUSY;
+        tmp = &(*tmp)->next;
+    }
+    *tmp = fs;
+    return 0;
+}
+```
