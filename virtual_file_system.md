@@ -217,3 +217,50 @@ struct file_system_type {
 };
 ```
 其中比较重要的字段是 `read_super`，用于读取文件系统的超级块结构。在Linux初始化时会注册各种文件系统，比如 `ext2` 文件系统会调用 `register_filesystem(&ext2_fs_type)` 来注册。
+
+当安装Linux系统时，需要把磁盘格式化为指定的文件系统，其实格式化就是把文件系统超级块信息写入到磁盘中。但Linux系统启动时，就会遍历所有注册过的文件系统，然后调用其 `read_super()` 接口来尝试读取超级块信息，因为每种文件系统的超级块都有不同的魔数，用于识别不同的文件系统，所以当调用 `read_super()` 接口返回成功时，表示读取超级块成功，而且识别出磁盘所使用的文件系统。具体过程可以通过 `mount_root()` 函数得知：
+```cpp
+void __init mount_root(void)
+{
+    ...
+
+    memset(&filp, 0, sizeof(filp));
+    d_inode = get_empty_inode(); // 获取一个新的inode
+    d_inode->i_rdev = ROOT_DEV;
+    filp.f_dentry = NULL;
+    if ( root_mountflags & MS_RDONLY)
+        filp.f_mode = 1; /* read only */
+    else
+        filp.f_mode = 3; /* read write */
+    retval = blkdev_open(d_inode, &filp);
+    if (retval == -EROFS) {
+        root_mountflags |= MS_RDONLY;
+        filp.f_mode = 1;
+        retval = blkdev_open(d_inode, &filp);
+    }
+
+    iput(d_inode);
+
+    if (retval)
+            /*
+         * Allow the user to distinguish between failed open
+         * and bad superblock on root device.
+         */
+        printk("VFS: Cannot open root device %s\n", kdevname(ROOT_DEV));
+    else {
+        for (fs_type = file_systems ; fs_type ; fs_type = fs_type->next) { // 试探性读取超级块
+            if (!(fs_type->fs_flags & FS_REQUIRES_DEV))
+                continue;
+            sb = read_super(ROOT_DEV,fs_type->name,root_mountflags,NULL,1); // 读取超级块
+            if (sb) {
+                sb->s_flags = root_mountflags;
+                current->fs->root = dget(sb->s_root);  // 增加计数器
+                current->fs->pwd = dget(sb->s_root);   // 增加计数器
+                vfsmnt = add_vfsmnt(sb, "/dev/root", "/");
+                if (vfsmnt)
+                    return;
+            }
+        }
+    }
+}
+```
