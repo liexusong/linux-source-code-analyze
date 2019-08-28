@@ -207,3 +207,13 @@ int register_filesystem(struct file_system_type * fs)
     return 0;
 }
 ```
+`register_filesystem()` 函数的实现很简单，就是把类型为 `struct file_system_type` 的 `fs` 添加到 `file_systems` 全局链表中。`struct file_system_type` 结构的定义如下：
+```cpp
+struct file_system_type {
+    const char *name;
+    int fs_flags;
+    struct super_block *(*read_super) (struct super_block *, void *, int);
+    struct file_system_type * next;
+};
+```
+其中比较重要的字段是 `read_super`，用于读取文件系统的超级块结构。在Linux初始化时会注册各种文件系统，比如 `ext2` 文件系统会调用 `register_filesystem(&ext2_fs_type)` 来注册。
