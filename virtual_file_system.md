@@ -177,3 +177,6 @@ struct file {
     void                    *private_data;
 };
 ```
+
+下图展示了各个数据结构之间的关系：
+![vfs-struct](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vfs-struct.jpg)
