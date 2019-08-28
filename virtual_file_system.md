@@ -242,10 +242,6 @@ void __init mount_root(void)
     iput(d_inode);
 
     if (retval)
-            /*
-         * Allow the user to distinguish between failed open
-         * and bad superblock on root device.
-         */
         printk("VFS: Cannot open root device %s\n", kdevname(ROOT_DEV));
     else {
         for (fs_type = file_systems ; fs_type ; fs_type = fs_type->next) { // 试探性读取超级块
@@ -264,3 +260,4 @@ void __init mount_root(void)
     }
 }
 ```
+在上面的for循环中，遍历了所有已注册的文件系统，并且调用其 `read_super()` 接口来尝试读取超级块信息，如果成功表示磁盘所使用的文件系统就是当前文件系统。成功读取超级块信息后，会把根目录的 `dentry` 结构保存到当前进程的 `root` 和 `pwd` 字段中，`root` 表示根目录，`pwd` 表示当前工作目录。
