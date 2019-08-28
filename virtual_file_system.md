@@ -250,8 +250,8 @@ void __init mount_root(void)
             sb = read_super(ROOT_DEV,fs_type->name,root_mountflags,NULL,1); // 读取超级块
             if (sb) {
                 sb->s_flags = root_mountflags;
-                current->fs->root = dget(sb->s_root);  // 增加计数器
-                current->fs->pwd = dget(sb->s_root);   // 增加计数器
+                current->fs->root = dget(sb->s_root);  // 设置根目录
+                current->fs->pwd = dget(sb->s_root);   // 设置当前工作目录
                 vfsmnt = add_vfsmnt(sb, "/dev/root", "/");
                 if (vfsmnt)
                     return;
@@ -263,3 +263,35 @@ void __init mount_root(void)
 在上面的for循环中，遍历了所有已注册的文件系统，并且调用其 `read_super()` 接口来尝试读取超级块信息，如果成功表示磁盘所使用的文件系统就是当前文件系统。成功读取超级块信息后，会把根目录的 `dentry` 结构保存到当前进程的 `root` 和 `pwd` 字段中，`root` 表示根目录，`pwd` 表示当前工作目录。
 
 ### 打开文件
+要使用一个文件前必须打开文件，打开文件使用 `open()` 系统调用来实现，而 `open()` 系统调用最终会调用内核的 `sys_open()` 函数，`sys_open()` 函数实现如下：
+```cpp
+asmlinkage long sys_open(const char * filename, int flags, int mode)
+{
+    char * tmp;
+    int fd, error;
+
+    tmp = getname(filename);
+    fd = PTR_ERR(tmp);
+    if (!IS_ERR(tmp)) {
+        fd = get_unused_fd();
+        if (fd >= 0) {
+            struct file * f;
+            lock_kernel();
+            f = filp_open(tmp, flags, mode);
+            unlock_kernel();
+            error = PTR_ERR(f);
+            if (IS_ERR(f))
+                goto out_error;
+            fd_install(fd, f);
+        }
+out:
+        putname(tmp);
+    }
+    return fd;
+
+out_error:
+    put_unused_fd(fd);
+    fd = error;
+    goto out;
+}
+```
