@@ -180,3 +180,6 @@ struct file {
 
 下图展示了各个数据结构之间的关系：
 ![vfs-struct](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vfs-struct.jpg)
+
+## 虚拟文件系统的实现
+接下来我们分析一下虚拟文件系统的实现。
