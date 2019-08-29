@@ -429,4 +429,14 @@ static struct dentry * real_lookup(struct dentry * parent, struct qstr * name, i
     return result;
 }
 ```
-参数 `parent` 是父目录的 `dentry结构`，而参数 `name` 是要打开的目录或者文件的名称。`real_lookup()` 函数最终也会调用父目录的 `inode结构` 的 `lookup()` 方法来查找并打开文件，然后返回打开后的子目录或者文件的 `dentry结构`。
+参数 `parent` 是父目录的 `dentry结构`，而参数 `name` 是要打开的目录或者文件的名称。`real_lookup()` 函数最终也会调用父目录的 `inode结构` 的 `lookup()` 方法来查找并打开文件，然后返回打开后的子目录或者文件的 `dentry结构`。`lookup()` 方法需要把要打开的目录或者文件从磁盘中读入到内存中（如果目录或者文件存在的话），并且把其 `inode结构` 保存到 `dentry结构` 的 `d_inode` 字段中。
+
+`filp_open()` 函数会把 `inode结构` 的文件操作函数列表复制到 `file结构` 中，如下：
+```cpp
+struct file *filp_open(const char * filename, int flags, int mode)
+{
+    ...
+    f->f_op = inode->i_op->default_file_ops;
+    ...
+}
+```
