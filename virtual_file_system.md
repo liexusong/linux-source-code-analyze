@@ -335,7 +335,7 @@ struct file *filp_open(const char * filename, int flags, int mode)
     ...
 }
 ```
-`filp_open()` 函数首先调用 `get_empty_filp()` 函数获取一个空闲的file结构，然后调用 `open_namei()` 函数来打开对应路径的文件。`open_namei()` 函数会返回一个 `dentry结构`，就是对应文件路径的 `dentry结构`。所以 `open_namei()` 函数才是打开文件的核心函数，由于 `open_namei()` 函数比较复杂，所以这里分段来分析其实现：
+`filp_open()` 函数首先调用 `get_empty_filp()` 函数获取一个空闲的file结构，然后调用 `open_namei()` 函数来打开对应路径的文件。`open_namei()` 函数会返回一个 `dentry结构`，就是对应文件路径的 `dentry结构`。所以 `open_namei()` 函数才是打开文件的核心函数，其实现如下：
 ```cpp
 struct dentry * open_namei(const char * pathname, int flag, int mode)
 {
@@ -346,7 +346,36 @@ struct dentry * open_namei(const char * pathname, int flag, int mode)
     mode &= S_IALLUGO & ~current->fs->umask;
     mode |= S_IFREG;
 
-    dentry = lookup_dentry(pathname, NULL, lookup_flags(flag));
+    dentry = lookup_dentry(pathname, NULL, lookup_flags(flag)); // 通过路径一级一级的查找对应的dentry
     if (IS_ERR(dentry))
         return dentry;
+
+    acc_mode = ACC_MODE(flag);
+    if (flag & O_CREAT) {  // 如果是创建文件
+        struct dentry *dir;
+
+        if (dentry->d_inode) {
+            if (!(flag & O_EXCL))
+                goto nocreate;
+            error = -EEXIST;  // 已经存在返回错误
+            goto exit;
+        }
+
+        ...
+
+        if (dentry->d_inode) {
+            error = 0;
+            if (flag & O_EXCL)
+                error = -EEXIST;
+        } else {
+            error = vfs_create(dir->d_inode, dentry,mode); // 创建文件
+            ...
+        }
+        ...
+    }
+
+    ...
+
+    return dentry;
+}
 ```
