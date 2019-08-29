@@ -443,3 +443,57 @@ struct file *filp_open(const char * filename, int flags, int mode)
 这样，`file结构` 就有操作文件的函数列表。
 
 ### 读写文件
+读取文件内容通过 `read()` 系统调用完成，而 `read()` 系统调用最终会调用 `sys_read()` 内核函数，`sys_read()` 内核函数的实现如下：
+```cpp
+asmlinkage ssize_t sys_read(unsigned int fd, char * buf, size_t count)
+{
+    ssize_t ret;
+    struct file * file;
+
+    ret = -EBADF;
+    file = fget(fd);
+    if (file) {
+        if (file->f_mode & FMODE_READ) {
+            ret = locks_verify_area(FLOCK_VERIFY_READ, file->f_dentry->d_inode,
+                        file, file->f_pos, count);
+            if (!ret) {
+                ssize_t (*read)(struct file *, char *, size_t, loff_t *);
+                ret = -EINVAL;
+                if (file->f_op && (read = file->f_op->read) != NULL)
+                    ret = read(file, buf, count, &file->f_pos);
+            }
+        }
+        fput(file);
+    }
+    return ret;
+}
+```
+`sys_read()` 函数首先会调用 `fget()` 函数把文件描述符转换成 `file结构`，然后再通过调用 `file结构` 的 `read()` 方法来读取文件内容，`read()` 方法是由真实文件系统提供的，所以最终的过程会根据不同的文件系统而进行不同的操作，比如ext2文件系统最终会调用 `generic_file_read()` 函数来读取文件的内容。
+
+把内容写入到文件是通过调用 `write()` 系统调用实现，而 `write()` 系统调用最终会调用 `sys_write()` 内核函数，`sys_write()` 函数的实现如下：
+```cpp
+asmlinkage ssize_t sys_write(unsigned int fd, const char * buf, size_t count)
+{
+    ssize_t ret;
+    struct file * file;
+
+    ret = -EBADF;
+    file = fget(fd);
+    if (file) {
+        if (file->f_mode & FMODE_WRITE) {
+            struct inode *inode = file->f_dentry->d_inode;
+            ret = locks_verify_area(FLOCK_VERIFY_WRITE, inode, file,
+                file->f_pos, count);
+            if (!ret) {
+                ssize_t (*write)(struct file *, const char *, size_t, loff_t *);
+                ret = -EINVAL;
+                if (file->f_op && (write = file->f_op->write) != NULL)
+                    ret = write(file, buf, count, &file->f_pos);
+            }
+        }
+        fput(file);
+    }
+    return ret;
+}
+```
+`sys_write()` 函数的实现与 `sys_read()` 类似，首先会调用 `fget()` 函数把文件描述符转换成 `file结构`，然后再通过调用 `file结构` 的 `write()` 方法来把内容写入到文件中，对于ext2文件系统，`write()` 方法对应的是 `ext2_file_write()` 函数。
