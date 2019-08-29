@@ -399,4 +399,34 @@ exit_lock:
     return error;
 }
 ```
-从 `vfs_create()` 函数的实现可知，创建文件最终会调用 `inode结构` 的 `create()` 方法来实现。这个方法有真实的文件系统提供，所以真实文件系统只需要把创建文件的方法挂载到 `inode结构` 上即可。
+从 `vfs_create()` 函数的实现可知，最终会调用 `inode结构` 的 `create()` 方法来创建文件。这个方法由真实的文件系统提供，所以真实文件系统只需要把创建文件的方法挂载到 `inode结构` 上即可，虚拟文件系统不需要知道真实文件系统的实现过程，这就是虚拟文件系统可以支持多种文件系统的真正原因。
+
+而 `lookup_dentry()` 函数最终会调用 `real_lookup()` 函数来逐级目录查找并打开。`real_lookup()` 函数代码如下：
+```cpp
+static struct dentry * real_lookup(struct dentry * parent, struct qstr * name, int flags)
+{
+    struct dentry * result;
+    struct inode *dir = parent->d_inode;
+
+    down(&dir->i_sem);
+    result = d_lookup(parent, name);
+    if (!result) {
+        struct dentry * dentry = d_alloc(parent, name);
+        result = ERR_PTR(-ENOMEM);
+        if (dentry) {
+            result = dir->i_op->lookup(dir, dentry);
+            if (result)
+                dput(dentry);
+            else
+                result = dentry;
+        }
+        up(&dir->i_sem);
+        return result;
+    }
+    up(&dir->i_sem);
+    if (result->d_op && result->d_op->d_revalidate)
+        result->d_op->d_revalidate(result, flags);
+    return result;
+}
+```
+参数 `parent` 是父目录的 `dentry结构`，而参数 `name` 是要打开的目录或者文件的名称。`real_lookup()` 函数最终也会调用父目录的 `inode结构` 的 `lookup()` 方法来查找并打开文件，然后返回打开后的子目录或者文件的 `dentry结构`。
