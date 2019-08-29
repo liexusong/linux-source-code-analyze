@@ -321,7 +321,7 @@ struct file *filp_open(const char * filename, int flags, int mode)
     f->f_reada = 0;
     f->f_op = NULL;
     if (inode->i_op)
-        f->f_op = inode->i_op->default_file_ops;
+        f->f_op = inode->i_op->default_file_ops; // 把文件的操作函数列表从inode结构复制到file结构中
     if (inode->i_sb)
         file_move(f, &inode->i_sb->s_files);
     if (f->f_op && f->f_op->open) {
