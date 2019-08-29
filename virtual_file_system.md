@@ -296,7 +296,41 @@ out_error:
 }
 ```
 `sys_open()` 函数的主要流程是：
-* 1）通过调用 `get_unused_fd()` 函数获取一个空闲的文件描述符。
-* 2）调用 `filp_open()` 函数打开文件，返回打开文件的file结构。
-* 3）调用 `fd_install()` 函数把文件描述符与file结构关联起来。
-* 4）返回文件描述符，也就是open系统调用的返回值。
+* 通过调用 `get_unused_fd()` 函数获取一个空闲的文件描述符。
+* 调用 `filp_open()` 函数打开文件，返回打开文件的file结构。
+* 调用 `fd_install()` 函数把文件描述符与file结构关联起来。
+* 返回文件描述符，也就是 `open()` 系统调用的返回值。
+
+在上面的过程中，最重要的是调用 `filp_open()` 函数打开文件，`filp_open()` 函数的实现如下：
+```cpp
+struct file *filp_open(const char * filename, int flags, int mode)
+{
+    struct inode * inode;
+    struct dentry * dentry;
+    struct file * f;
+    int flag,error;
+
+    error = -ENFILE;
+    f = get_empty_filp(); // 获取一个空闲的file结构
+    ...
+    dentry = open_namei(filename,flag,mode); // 通过文件路径打开文件
+    ...
+    f->f_dentry = dentry; // 设置file结构的f_dentry字段为打开文件的dentry结构
+    f->f_pos = 0;
+    f->f_reada = 0;
+    f->f_op = NULL;
+    if (inode->i_op)
+        f->f_op = inode->i_op->default_file_ops;
+    if (inode->i_sb)
+        file_move(f, &inode->i_sb->s_files);
+    if (f->f_op && f->f_op->open) {
+        error = f->f_op->open(inode,f);
+        if (error)
+            goto cleanup_all;
+    }
+    f->f_flags &= ~(O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC);
+
+    return f;
+    ...
+}
+```
