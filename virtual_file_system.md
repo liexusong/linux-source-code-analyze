@@ -314,6 +314,7 @@ struct file *filp_open(const char * filename, int flags, int mode)
     f = get_empty_filp(); // 获取一个空闲的file结构
     ...
     dentry = open_namei(filename,flag,mode); // 通过文件路径打开文件
+    inode = dentry->d_inode;
     ...
     f->f_dentry = dentry; // 设置file结构的f_dentry字段为打开文件的dentry结构
     f->f_pos = 0;
@@ -333,4 +334,19 @@ struct file *filp_open(const char * filename, int flags, int mode)
     return f;
     ...
 }
+```
+`filp_open()` 函数首先调用 `get_empty_filp()` 函数获取一个空闲的file结构，然后调用 `open_namei()` 函数来打开对应路径的文件。`open_namei()` 函数会返回一个 `dentry结构`，就是对应文件路径的 `dentry结构`。所以 `open_namei()` 函数才是打开文件的核心函数，由于 `open_namei()` 函数比较复杂，所以这里分段来分析其实现：
+```cpp
+struct dentry * open_namei(const char * pathname, int flag, int mode)
+{
+    int acc_mode, error;
+    struct inode *inode;
+    struct dentry *dentry;
+
+    mode &= S_IALLUGO & ~current->fs->umask;
+    mode |= S_IFREG;
+
+    dentry = lookup_dentry(pathname, NULL, lookup_flags(flag));
+    if (IS_ERR(dentry))
+        return dentry;
 ```
