@@ -367,7 +367,7 @@ struct dentry * open_namei(const char * pathname, int flag, int mode)
             error = 0;
             if (flag & O_EXCL)
                 error = -EEXIST;
-        } else {
+        } else { // 如果文件不存在
             error = vfs_create(dir->d_inode, dentry,mode); // 创建文件
             ...
         }
@@ -379,3 +379,24 @@ struct dentry * open_namei(const char * pathname, int flag, int mode)
     return dentry;
 }
 ```
+上面的代码去掉了很多权限验证的代码，`open_namei()` 函数首先会调用 `lookup_dentry()` 函数打开文件并获得文件打开后的 `dentry结构`，如果文件不存在并且打开文件的时候设置了 `O_CREAT` 标志位，那么就调用 `vfs_create()` 函数创建文件。我们先来看看 `vfs_create()` 函数的实现：
+```cpp
+int vfs_create(struct inode *dir, struct dentry *dentry, int mode)
+{
+    int error;
+
+    error = may_create(dir, dentry);
+    if (error)
+        goto exit_lock;
+
+    error = -EACCES;    /* shouldn't it be ENOSYS? */
+    if (!dir->i_op || !dir->i_op->create)
+        goto exit_lock;
+
+    DQUOT_INIT(dir);
+    error = dir->i_op->create(dir, dentry, mode);
+exit_lock:
+    return error;
+}
+```
+从 `vfs_create()` 函数的实现可知，创建文件最终会调用 `inode结构` 的 `create()` 方法来实现。这个方法有真实的文件系统提供，所以真实文件系统只需要把创建文件的方法挂载到 `inode结构` 上即可。
