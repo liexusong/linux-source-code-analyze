@@ -18,4 +18,6 @@ __时间轮__ 类似于日常生活的时钟，如下图：
 
 ![timer](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/timer.jpg)
 
-当时钟的秒针转一圈时，分针就会走一格，而分针走一圈时，时针就会走一格。
+一般的时钟，当秒针转一圈时，分针就会走一格，而分针走一圈时，时针就会走一格。而时间轮的实现方式与时钟类似，就是把到期时间当成一个轮，然后把定时器挂在这个轮子上面，每当时间走一秒就移动时针，并且执行那个时针上的定时器，如下图：
+
+![timer-wheel](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/timer-Wheel.jpg)
