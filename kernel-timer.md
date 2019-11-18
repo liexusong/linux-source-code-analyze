@@ -45,6 +45,13 @@ __时间轮__ 类似于日常生活的时钟，如下图：
 
 #### 定义五个等级的数组
 ```c
+#define TVN_BITS 6
+#define TVR_BITS 8
+#define TVN_SIZE (1 << TVN_BITS)  // 64
+#define TVR_SIZE (1 << TVR_BITS)  // 256
+#define TVN_MASK (TVN_SIZE - 1)
+#define TVR_MASK (TVR_SIZE - 1)
+
 struct timer_vec {
     int index;
     struct list_head vec[TVN_SIZE];
@@ -60,4 +67,21 @@ static struct timer_vec tv4;
 static struct timer_vec tv3;
 static struct timer_vec tv2;
 static struct timer_vec_root tv1;
+```
+
+#### 初始化各个等级的数组
+```c
+void init_timervecs (void)
+{
+    int i;
+
+    for (i = 0; i < TVN_SIZE; i++) {
+        INIT_LIST_HEAD(tv5.vec + i);
+        INIT_LIST_HEAD(tv4.vec + i);
+        INIT_LIST_HEAD(tv3.vec + i);
+        INIT_LIST_HEAD(tv2.vec + i);
+    }
+    for (i = 0; i < TVR_SIZE; i++)
+        INIT_LIST_HEAD(tv1.vec + i);
+}
 ```
