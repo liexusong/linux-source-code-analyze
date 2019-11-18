@@ -95,10 +95,10 @@ static inline void internal_add_timer(struct timer_list *timer)
     unsigned long idx = expires - timer_jiffies;
     struct list_head * vec;
 
-    if (idx < TVR_SIZE) { // 0 <= idx < 256
+    if (idx < TVR_SIZE) { // 0 ~ 255
         int i = expires & TVR_MASK;
         vec = tv1.vec + i;
-    } else if (idx < 1 << (TVR_BITS + TVN_BITS)) {
+    } else if (idx < 1 << (TVR_BITS + TVN_BITS)) { // 256 ~ 16191
         int i = (expires >> TVR_BITS) & TVN_MASK;
         vec = tv2.vec + i;
     } else if (idx < 1 << (TVR_BITS + 2 * TVN_BITS)) {
@@ -121,8 +121,9 @@ static inline void internal_add_timer(struct timer_list *timer)
         return;
     }
     /*
-     * Timers are FIFO!
+     * 添加到链表中
      */
     list_add(&timer->list, vec->prev);
 }
 ```
+`internal_add_timer()` 函数的主要工作是计算定时器到期时间所属的等级范围，然后把定时器添加到链表中。
