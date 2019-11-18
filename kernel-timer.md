@@ -38,5 +38,5 @@ __时间轮__ 类似于日常生活的时钟，如下图：
 
 ![timer-vts-pointer](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/timer-vts-pointer.jpg)
 
-
+当要执行到期的定时器只需要移动第一级数组上的指针并且执行该位置上的定时器列表即可，所以时间复杂度为 `O(1)`，而插入一个定时器也很简单，先计算定时器的过期时间范围在哪一级数组上，并且连接到该位置上的链表即可，时间复杂度也是 `O(1)`。
 
