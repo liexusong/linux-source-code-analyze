@@ -13,3 +13,7 @@
 
 ### 时间轮：
 但对于Linux这种对定时器依赖性比较高（网络子模块的TCP协议使用了大量的定时器）的操作系统来说，以上的数据结构都是不能满足要求的。所以Linux使用了效率更高的定时器算法：__时间轮__。
+
+`时间轮` 类似于日常生活的时钟，如下图：
+![timer](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/timer.jpg)
+
