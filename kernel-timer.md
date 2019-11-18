@@ -40,3 +40,24 @@ __时间轮__ 类似于日常生活的时钟，如下图：
 
 当要执行到期的定时器只需要移动第一级数组上的指针并且执行该位置上的定时器列表即可，所以时间复杂度为 `O(1)`，而插入一个定时器也很简单，先计算定时器的过期时间范围在哪一级数组上，并且连接到该位置上的链表即可，时间复杂度也是 `O(1)`。
 
+## Linux时间轮的实现
+那么接下来我们看看Linux内核是怎么实现时间轮算法的。
+
+#### 定义五个等级的数组
+```c
+struct timer_vec {
+    int index;
+    struct list_head vec[TVN_SIZE];
+};
+
+struct timer_vec_root {
+    int index;
+    struct list_head vec[TVR_SIZE];
+};
+
+static struct timer_vec tv5;
+static struct timer_vec tv4;
+static struct timer_vec tv3;
+static struct timer_vec tv2;
+static struct timer_vec_root tv1;
+```
