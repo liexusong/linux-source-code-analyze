@@ -127,3 +127,68 @@ static inline void internal_add_timer(struct timer_list *timer)
 }
 ```
 `internal_add_timer()` 函数的主要工作是计算定时器到期时间所属的等级范围，然后把定时器添加到链表中。
+
+#### 执行到期的定时器
+```c
+static inline void cascade_timers(struct timer_vec *tv)
+{
+    /* cascade all the timers from tv up one level */
+    struct list_head *head, *curr, *next;
+
+    head = tv->vec + tv->index;
+    curr = head->next;
+    /*
+     * We are removing _all_ timers from the list, so we don't  have to
+     * detach them individually, just clear the list afterwards.
+     */
+    while (curr != head) {
+        struct timer_list *tmp;
+
+        tmp = list_entry(curr, struct timer_list, list);
+        next = curr->next;
+        list_del(curr);
+        internal_add_timer(tmp);
+        curr = next;
+    }
+    INIT_LIST_HEAD(head);
+    tv->index = (tv->index + 1) & TVN_MASK;
+}
+
+static inline void run_timer_list(void)
+{
+    spin_lock_irq(&timerlist_lock);
+    while ((long)(jiffies - timer_jiffies) >= 0) {
+        struct list_head *head, *curr;
+        if (!tv1.index) { // 完成了一个轮回, 移动下一个单位的定时器
+            int n = 1;
+            do {
+                cascade_timers(tvecs[n]);
+            } while (tvecs[n]->index == 1 && ++n < NOOF_TVECS);
+        }
+repeat:
+        head = tv1.vec + tv1.index;
+        curr = head->next;
+        if (curr != head) {
+            struct timer_list *timer;
+            void (*fn)(unsigned long);
+            unsigned long data;
+
+            timer = list_entry(curr, struct timer_list, list);
+            fn = timer->function;
+            data= timer->data;
+
+            detach_timer(timer);
+            timer->list.next = timer->list.prev = NULL;
+            timer_enter(timer);
+            spin_unlock_irq(&timerlist_lock);
+            fn(data);
+            spin_lock_irq(&timerlist_lock);
+            timer_exit();
+            goto repeat;
+        }
+        ++timer_jiffies;
+        tv1.index = (tv1.index + 1) & TVR_MASK;
+    }
+    spin_unlock_irq(&timerlist_lock);
+}
+```
