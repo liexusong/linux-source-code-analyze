@@ -67,10 +67,7 @@ static struct timer_vec tv4;
 static struct timer_vec tv3;
 static struct timer_vec tv2;
 static struct timer_vec_root tv1;
-```
 
-#### 初始化各个等级的数组
-```c
 void init_timervecs (void)
 {
     int i;
@@ -83,5 +80,49 @@ void init_timervecs (void)
     }
     for (i = 0; i < TVR_SIZE; i++)
         INIT_LIST_HEAD(tv1.vec + i);
+}
+```
+上面的代码定义第一级数组为 `timer_vec_root` 类型，其 `index` 成员是当前要执行的定时器指针（对应 `vec` 成员的下标），而 `vec` 成员是一个链表数组，数组元素个数为256，每个元素上保存了该秒到期的定时器列表，其他等级的数组类似。
+
+#### 插入定时器
+```c
+static inline void internal_add_timer(struct timer_list *timer)
+{
+    /*
+     * must be cli-ed when calling this
+     */
+    unsigned long expires = timer->expires;
+    unsigned long idx = expires - timer_jiffies;
+    struct list_head * vec;
+
+    if (idx < TVR_SIZE) { // 0 <= idx < 256
+        int i = expires & TVR_MASK;
+        vec = tv1.vec + i;
+    } else if (idx < 1 << (TVR_BITS + TVN_BITS)) {
+        int i = (expires >> TVR_BITS) & TVN_MASK;
+        vec = tv2.vec + i;
+    } else if (idx < 1 << (TVR_BITS + 2 * TVN_BITS)) {
+        int i = (expires >> (TVR_BITS + TVN_BITS)) & TVN_MASK;
+        vec =  tv3.vec + i;
+    } else if (idx < 1 << (TVR_BITS + 3 * TVN_BITS)) {
+        int i = (expires >> (TVR_BITS + 2 * TVN_BITS)) & TVN_MASK;
+        vec = tv4.vec + i;
+    } else if ((signed long) idx < 0) {
+        /* can happen if you add a timer with expires == jiffies,
+         * or you set a timer to go off in the past
+         */
+        vec = tv1.vec + tv1.index;
+    } else if (idx <= 0xffffffffUL) {
+        int i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
+        vec = tv5.vec + i;
+    } else {
+        /* Can only get here on architectures with 64-bit jiffies */
+        INIT_LIST_HEAD(&timer->list);
+        return;
+    }
+    /*
+     * Timers are FIFO!
+     */
+    list_add(&timer->list, vec->prev);
 }
 ```
