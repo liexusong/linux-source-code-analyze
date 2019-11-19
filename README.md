@@ -24,5 +24,6 @@
     * [Socket接口](https://github.com/liexusong/linux-source-code-analyze/blob/master/socket_interface.md)
     * [Unix Domain Socket](https://github.com/liexusong/linux-source-code-analyze/blob/master/unix-domain-sockets.md)
 * 其他
+    * [定时器实现](https://github.com/liexusong/linux-source-code-analyze/blob/master/kernel-timer.md)
     * [多路复用I/O](https://github.com/liexusong/linux-source-code-analyze/blob/master/multiplexing-io.md)
     * [docker实现原理之 - namespace](https://github.com/liexusong/linux-source-code-analyze/blob/master/namespace.md)
