@@ -2,7 +2,7 @@
 
 由于 `APIC中断控制器` 有点小复杂，所以本文主要通过 `8259A中断控制器` 来介绍Linux对中断的处理过程。
 
-### 中断处理相关结构体
+### 中断处理相关结构
 
 前面说过，`8259A中断控制器` 由两片 8259A 风格的外部芯片以 `级联` 的方式连接在一起，每个芯片可处理多达 8 个不同的 IRQ（中断请求），所以可用 IRQ 线的个数达到 15 个。如下图：
 
@@ -47,3 +47,41 @@ struct irqaction {
 
 ![irq_desc_t](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/irq_desc_t.jpg)
 
+### 注册中断处理入口
+在内核中，可以通过 `setup_irq()` 函数来注册一个中断处理入口。`setup_irq()` 函数代码如下：
+```c
+int setup_irq(unsigned int irq, struct irqaction * new)
+{
+    int shared = 0;
+    unsigned long flags;
+    struct irqaction *old, **p;
+    irq_desc_t *desc = irq_desc + irq;
+    ...
+    spin_lock_irqsave(&desc->lock,flags);
+    p = &desc->action;
+    if ((old = *p) != NULL) {
+        if (!(old->flags & new->flags & SA_SHIRQ)) {
+            spin_unlock_irqrestore(&desc->lock,flags);
+            return -EBUSY;
+        }
+
+        do {
+            p = &old->next;
+            old = *p;
+        } while (old);
+        shared = 1;
+    }
+
+    *p = new;
+
+    if (!shared) {
+        desc->depth = 0;
+        desc->status &= ~(IRQ_DISABLED | IRQ_AUTODETECT | IRQ_WAITING);
+        desc->handler->startup(irq);
+    }
+    spin_unlock_irqrestore(&desc->lock,flags);
+
+    register_irq_proc(irq);
+    return 0;
+}
+```
