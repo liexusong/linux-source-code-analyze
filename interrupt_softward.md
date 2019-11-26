@@ -97,4 +97,4 @@ void __init time_init(void)
     setup_irq(0, &irq0);
 }
 ```
-可以看到，时钟中断处理入口的IRQ号为0，并且处理函数为 `timer_interrupt()`。
+可以看到，时钟中断处理入口的IRQ号为0，处理函数为 `timer_interrupt()`，并且不支持共享IRQ线（`flags` 字段没有设置 `SA_SHIRQ` 标志）。
