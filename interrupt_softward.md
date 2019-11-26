@@ -6,3 +6,33 @@
 
 ![8259A](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/8259A.png)
 
+在内核中每条IRQ线由结构体 `irq_desc_t` 来描述，`irq_desc_t` 定义如下：
+```c
+typedef struct {
+    unsigned int status;        /* IRQ status */
+    hw_irq_controller *handler;
+    struct irqaction *action;   /* IRQ action list */
+    unsigned int depth;         /* nested irq disables */
+    spinlock_t lock;
+} irq_desc_t;
+
+struct hw_interrupt_type {
+    const char * typename;
+    unsigned int (*startup)(unsigned int irq);
+    void (*shutdown)(unsigned int irq);
+    void (*enable)(unsigned int irq);
+    void (*disable)(unsigned int irq);
+    void (*ack)(unsigned int irq);
+    void (*end)(unsigned int irq);
+    void (*set_affinity)(unsigned int irq, unsigned long mask);
+};
+
+struct irqaction {
+    void (*handler)(int, void *, struct pt_regs *);
+    unsigned long flags;
+    unsigned long mask;
+    const char *name;
+    void *dev_id;
+    struct irqaction *next;
+};
+```
