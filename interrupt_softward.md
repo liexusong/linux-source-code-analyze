@@ -293,4 +293,13 @@ retry:
     goto restart;
 }
 ```
-前面说了 `softirq_vec` 数组有32个元素，每个元素对应一种类型的软中断，那么Linux怎么知道哪些软中断需要被执行呢？
+前面说了 `softirq_vec` 数组有32个元素，每个元素对应一种类型的软中断，那么Linux怎么知道哪种软中断需要被执行呢？在Linux中，每个CPU都有一个类型为 `irq_cpustat_t` 结构的变量，`irq_cpustat_t` 结构定义如下：
+```c
+typedef struct {
+    unsigned int __softirq_active;
+    unsigned int __softirq_mask;
+    ...
+} irq_cpustat_t;
+```
+其中 `__softirq_active` 字段表示有哪种软中断触发了（每一个位代表一种软中断），而 `__softirq_mask` 字段表示哪种软中断被屏蔽了。所以Linux通过 `__softirq_active` 这个字段就知道哪种软中断需要执行（只需要把对应位设置为1）。
+
