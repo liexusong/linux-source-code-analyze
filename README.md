@@ -14,6 +14,7 @@
     * [内存交换](https://github.com/liexusong/linux-source-code-analyze/blob/master/memory_swap.md)
 * 中断机制
     * [硬件相关](https://github.com/liexusong/linux-source-code-analyze/blob/master/interrupt_hardware.md)
+    * [中断处理](https://github.com/liexusong/linux-source-code-analyze/blob/master/interrupt_softward.md)
 * 系统调用
 * 文件系统
     * [虚拟文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_file_system.md)
