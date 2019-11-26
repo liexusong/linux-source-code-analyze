@@ -1,4 +1,4 @@
-## 中断处理 - 上半部
+## 中断处理 - 上半部（硬中断）
 
 由于 `APIC中断控制器` 有点小复杂，所以本文主要通过 `8259A中断控制器` 来介绍Linux对中断的处理过程。
 
@@ -182,7 +182,7 @@ int handle_IRQ_event(unsigned int irq, struct pt_regs * regs, struct irqaction *
 ```
 `handle_IRQ_event()` 函数非常简单，就是遍历 action 链表并且执行其中的处理函数，比如对于 `时钟中断` 就是调用 `timer_interrupt()` 函数。这里要注意的是，如果中断处理过程能够开启中断的，那么就把中断打开（因为CPU接收到中断信号时会关闭中断）。
 
-## 中断处理 - 下半部
+## 中断处理 - 下半部（软中断）
 
 由于中断处理一般在关闭中断的情况下执行，所以中断处理不能太耗时，否则后续发生的中断就不能实时地被处理。鉴于这个原因，Linux把中断处理分为两个部分，`上半部` 和 `下半部`，`上半部` 在前面已经介绍过，接下来就介绍一下 `下半部` 的执行。
 
@@ -243,3 +243,54 @@ void __init softirq_init()
 }
 ```
 
+### 处理软中断
+处理软中断是通过 `do_softirq()` 函数实现，代码如下：
+```c
+asmlinkage void do_softirq()
+{
+    int cpu = smp_processor_id();
+    __u32 active, mask;
+
+    if (in_interrupt())
+        return;
+
+    local_bh_disable();
+
+    local_irq_disable();
+    mask = softirq_mask(cpu);
+    active = softirq_active(cpu) & mask;
+
+    if (active) {
+        struct softirq_action *h;
+
+restart:
+        softirq_active(cpu) &= ~active;
+
+        local_irq_enable();
+
+        h = softirq_vec;
+        mask &= ~active;
+
+        do {
+            if (active & 1)
+                h->action(h);
+            h++;
+            active >>= 1;
+        } while (active);
+
+        local_irq_disable();
+
+        active = softirq_active(cpu);
+        if ((active &= mask) != 0)
+            goto retry;
+    }
+
+    local_bh_enable();
+
+    return;
+
+retry:
+    goto restart;
+}
+```
+前面说了 `softirq_vec` 数组有32个元素，每个元素对应一种类型的软中断，那么Linux怎么知道哪些软中断需要被执行呢？
