@@ -118,22 +118,22 @@ asmlinkage unsigned int do_IRQ(struct pt_regs regs)
     status |= IRQ_PENDING; /* we _want_ to handle it */
 
     action = NULL;
-    if (!(status & (IRQ_DISABLED | IRQ_INPROGRESS))) {
-        action = desc->action;
-        status &= ~IRQ_PENDING; /* we commit to handling */
-        status |= IRQ_INPROGRESS; /* we are handling it */
+    if (!(status & (IRQ_DISABLED | IRQ_INPROGRESS))) { // 当前IRQ不在处理中
+        action = desc->action;    // 获取 action 链表
+        status &= ~IRQ_PENDING;   // 去除IRQ_PENDING标志, 这个标志用于记录是否在处理IRQ请求的时候又发生了中断
+        status |= IRQ_INPROGRESS; // 设置IRQ_INPROGRESS标志, 表示正在处理IRQ
     }
     desc->status = status;
 
-    if (!action)
+    if (!action)  // 如果上一次IRQ还没完成, 直接退出
         goto out;
 
     for (;;) {
         spin_unlock(&desc->lock);
-        handle_IRQ_event(irq, &regs, action);
+        handle_IRQ_event(irq, &regs, action); // 处理IRQ请求
         spin_lock(&desc->lock);
         
-        if (!(desc->status & IRQ_PENDING))
+        if (!(desc->status & IRQ_PENDING)) // 如果在处理IRQ请求的时候又发生了中断, 继续处理IRQ请求
             break;
         desc->status &= ~IRQ_PENDING;
     }
@@ -144,7 +144,7 @@ out:
     spin_unlock(&desc->lock);
 
     if (softirq_active(cpu) & softirq_mask(cpu))
-        do_softirq();
+        do_softirq(); // 中断下半部处理
     return 1;
 }
 ```
