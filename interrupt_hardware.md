@@ -22,3 +22,6 @@ X86计算机的 CPU 为中断只提供了两条外接引脚：NMI 和 INTR。其
 
 ![APIC](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/APIC.png)
 
+目前大部分单处理器系统都包含一个 I/O APIC 芯片，可以通过以下两种方式来对这种芯片进行配置：
+* 作为一种标准的 8259A 工作方式。本地 APIC 被禁止，外部 I/O APIC 连接到 CPU，两条 LINT0 和 LINT1 分别连接到 INTR 和 NMI 引脚。
+* 作为一种标准外部 I/O APIC。本地 APIC 被激活，且所有的外部中断都通过 I/O APIC 接收。
