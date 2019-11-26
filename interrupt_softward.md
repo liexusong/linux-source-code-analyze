@@ -181,3 +181,5 @@ int handle_IRQ_event(unsigned int irq, struct pt_regs * regs, struct irqaction *
 }
 ```
 `handle_IRQ_event()` 函数非常简单，就是遍历 action 链表并且执行其中的处理函数，比如对于 `时钟中断` 就是调用 `timer_interrupt()` 函数。这里要注意的是，如果中断处理过程能够开启中断的，那么就把中断打开（因为CPU接收到中断信号时会关闭中断）。
+
+## 中断处理 - 下半部
