@@ -187,3 +187,16 @@ int handle_IRQ_event(unsigned int irq, struct pt_regs * regs, struct irqaction *
 由于中断处理一般在关闭中断的情况下执行，所以中断处理不能太耗时，否则后续发生的中断就不能实时地被处理。鉴于这个原因，Linux把中断处理分为两个部分，`上半部` 和 `下半部`，`上半部` 在前面已经介绍过，接下来就介绍一下 `下半部` 的执行。
 
 一般中断 `上半部` 只会做一些最基础的操作（比如从网卡中复制数据到缓存中），然后对要执行的中断 `下半部` 进行标识，标识完调用 `do_softirq()` 函数进行处理。 
+
+`中断下半部` 由 `softirq` 机制来实现的，在Linux内核中，有一个名为 `softirq_vec` 的数组，如下：
+```c
+static struct softirq_action softirq_vec[32];
+```
+其类型为 `softirq_action` 结构，定义如下：
+```c
+struct softirq_action
+{
+    void    (*action)(struct softirq_action *);
+    void    *data;
+};
+```
