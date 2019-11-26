@@ -212,3 +212,24 @@ enum
     TASKLET_SOFTIRQ
 };
 ```
+`HI_SOFTIRQ` 是高优先级软中断，而 `TASKLET_SOFTIRQ` 是普通软中断，`NET_TX_SOFTIRQ` 和 `NET_RX_SOFTIRQ` 特定用于网络子模块的软中断（不作介绍）。
+
+### 注册软中断处理函数
+要注册一个软中断处理函数，可以通过 `open_softirq()` 函数来进行，代码如下：
+```c
+void open_softirq(int nr, void (*action)(struct softirq_action*), void *data)
+{
+    unsigned long flags;
+    int i;
+
+    spin_lock_irqsave(&softirq_mask_lock, flags);
+    softirq_vec[nr].data = data;
+    softirq_vec[nr].action = action;
+
+    for (i=0; i<NR_CPUS; i++)
+        softirq_mask(i) |= (1<<nr);
+    spin_unlock_irqrestore(&softirq_mask_lock, flags);
+}
+```
+`open_softirq()` 函数的主要工作就是向 `softirq_vec` 数组添加一个软中断处理函数。
+
