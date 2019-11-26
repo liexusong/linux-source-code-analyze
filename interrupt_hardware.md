@@ -11,3 +11,6 @@ X86计算机的 CPU 为中断只提供了两条外接引脚：NMI 和 INTR。其
 ### 可编程中断控制器8259A
 
 传统的 PIC（Programmable Interrupt Controller）是由两片 8259A 风格的外部芯片以“级联”的方式连接在一起。每个芯片可处理多达 8 个不同的 IRQ。因为从 PIC 的 INT 输出线连接到主 PIC 的 IRQ2 引脚，所以可用 IRQ 线的个数达到 15 个，如图下所示。
+
+![8259A](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/8259A.png)
+
