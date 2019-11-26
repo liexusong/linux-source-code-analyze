@@ -23,7 +23,7 @@ typedef struct {
 * `depth`: 防止多次开启和关闭IRQ线。
 * `lock`: 防止多核CPU同时对IRQ进行操作的自旋锁。
 
-这里就不介绍硬件相关的处理，我们来看看 `irqaction` 这个结构：
+`hw_interrupt_type` 这个结构与硬件相关，这里就不作介绍了，我们来看看 `irqaction` 这个结构：
 ```c
 struct irqaction {
     void (*handler)(int, void *, struct pt_regs *);
@@ -34,3 +34,6 @@ struct irqaction {
     struct irqaction *next;
 };
 ```
+下面说说 `irqaction` 结构各个字段的作用：
+* `handler`: 中断处理的入口函数，`handler` 的第一个参数是中断号，第二个参数是设备对应的ID，第三个参数是中断发生时由内核保存的各个寄存器的值。
+* `next`: 每个硬件的中断处理入口对应一个 `irqaction` 结构，由于多个硬件可以共享同一条IRQ线，所以这里通过 `next` 字段来连接不同的硬件中断处理入口。
