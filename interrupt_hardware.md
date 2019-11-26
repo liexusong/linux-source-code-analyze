@@ -65,4 +65,4 @@ X86计算机的 CPU 为中断只提供了两条外接引脚：NMI 和 INTR。其
 
 X86 体系结构的每个中断都被赋予一个唯一的编号或者向量（8 位无符号整数）。非屏蔽中断和异常向量是固定的，而可屏蔽中断向量可以通过对中断控制器的编程来改变。
 
-> 本文来源于：[ibm](https://www.ibm.com/developerworks/cn/linux/l-cn-linuxkernelint/)
+> 本文来源于：[Linux 内核中断内幕](https://www.ibm.com/developerworks/cn/linux/l-cn-linuxkernelint/)
