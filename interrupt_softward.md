@@ -98,3 +98,53 @@ void __init time_init(void)
 }
 ```
 可以看到，时钟中断处理入口的IRQ号为0，处理函数为 `timer_interrupt()`，并且不支持共享IRQ线（`flags` 字段没有设置 `SA_SHIRQ` 标志）。
+
+### 处理中断请求
+当一个中断发生时，中断控制层会发送信号给CPU，CPU收到信号会中断当前的执行，转而执行中断处理过程。中断处理过程首先会保存寄存器的值到栈中，然后调用 `do_IRQ()` 函数进行进一步的处理，`do_IRQ()` 函数代码如下：
+```c
+asmlinkage unsigned int do_IRQ(struct pt_regs regs)
+{
+    int irq = regs.orig_eax & 0xff; /* high bits used in ret_from_ code  */
+    int cpu = smp_processor_id();
+    irq_desc_t *desc = irq_desc + irq;
+    struct irqaction * action;
+    unsigned int status;
+
+    kstat.irqs[cpu][irq]++;
+    spin_lock(&desc->lock);
+    desc->handler->ack(irq);
+
+    status = desc->status & ~(IRQ_REPLAY | IRQ_WAITING);
+    status |= IRQ_PENDING; /* we _want_ to handle it */
+
+    action = NULL;
+    if (!(status & (IRQ_DISABLED | IRQ_INPROGRESS))) {
+        action = desc->action;
+        status &= ~IRQ_PENDING; /* we commit to handling */
+        status |= IRQ_INPROGRESS; /* we are handling it */
+    }
+    desc->status = status;
+
+    if (!action)
+        goto out;
+
+    for (;;) {
+        spin_unlock(&desc->lock);
+        handle_IRQ_event(irq, &regs, action);
+        spin_lock(&desc->lock);
+        
+        if (!(desc->status & IRQ_PENDING))
+            break;
+        desc->status &= ~IRQ_PENDING;
+    }
+    desc->status &= ~IRQ_INPROGRESS;
+out:
+
+    desc->handler->end(irq);
+    spin_unlock(&desc->lock);
+
+    if (softirq_active(cpu) & softirq_mask(cpu))
+        do_softirq();
+    return 1;
+}
+```
