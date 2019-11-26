@@ -233,3 +233,13 @@ void open_softirq(int nr, void (*action)(struct softirq_action*), void *data)
 ```
 `open_softirq()` 函数的主要工作就是向 `softirq_vec` 数组添加一个软中断处理函数。
 
+Linux在系统初始化时注册了两种软中断处理函数，分别为 `TASKLET_SOFTIRQ` 和 `HI_SOFTIRQ`：
+```c
+void __init softirq_init()
+{
+    ...
+    open_softirq(TASKLET_SOFTIRQ, tasklet_action, NULL);
+    open_softirq(HI_SOFTIRQ, tasklet_hi_action, NULL);
+}
+```
+
