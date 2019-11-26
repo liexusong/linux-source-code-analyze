@@ -50,9 +50,9 @@ X86计算机的 CPU 为中断只提供了两条外接引脚：NMI 和 INTR。其
 
 根据 Intel 官方资料，同步中断称为异常（exception），异步中断被称为中断（interrupt）。
 
-中断可分为可屏蔽中断（Maskable interrupt）和非屏蔽中断（Nomaskable interrupt）。异常可分为故障（fault）、陷阱（trap）、终止（abort）三类。
+中断可分为 `可屏蔽中断`（Maskable interrupt）和 `非屏蔽中断`（Nomaskable interrupt）。异常可分为 `故障`（fault）、`陷阱`（trap）、`终止`（abort）三类。
 
-从广义上讲，中断可分为四类：中断、故障、陷阱、终止。这些类别之间的异同点请参看 表。
+从广义上讲，中断可分为四类：`中断`、`故障`、`陷阱`、`终止`。这些类别之间的异同点请参看 表。
 
 表：中断类别及其行为
 
