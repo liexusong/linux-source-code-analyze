@@ -37,3 +37,8 @@ struct irqaction {
 下面说说 `irqaction` 结构各个字段的作用：
 * `handler`: 中断处理的入口函数，`handler` 的第一个参数是中断号，第二个参数是设备对应的ID，第三个参数是中断发生时由内核保存的各个寄存器的值。
 * `next`: 每个硬件的中断处理入口对应一个 `irqaction` 结构，由于多个硬件可以共享同一条IRQ线，所以这里通过 `next` 字段来连接不同的硬件中断处理入口。
+
+`irq_desc_t` 结构关系如下图：
+
+![irq_desc_t](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/irq_desc_t.jpg)
+
