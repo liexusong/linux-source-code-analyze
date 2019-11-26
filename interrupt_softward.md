@@ -104,7 +104,7 @@ void __init time_init(void)
 ```c
 asmlinkage unsigned int do_IRQ(struct pt_regs regs)
 {
-    int irq = regs.orig_eax & 0xff; /* high bits used in ret_from_ code  */
+    int irq = regs.orig_eax & 0xff; /* 获取IRQ号  */
     int cpu = smp_processor_id();
     irq_desc_t *desc = irq_desc + irq;
     struct irqaction * action;
@@ -148,3 +148,6 @@ out:
     return 1;
 }
 ```
+`do_IRQ()` 函数首先通过IRQ号获取到其对应的 `irq_desc_t` 结构，注意的是同一个中断有可能发生多次，所以要判断当前IRQ是否正在被处理当中（判断 `irq_desc_t` 结构的 `status` 字段是否设置了 `IRQ_INPROGRESS` 标志），如果不是处理当前，那么就获取到 `action` 链表，然后通过调用 `handle_IRQ_event()` 函数来执行 action 链表中的中断处理函数。
+
+如果在处理中断的过程中又发生了相同的中断（`irq_desc_t` 结构的 `status` 字段被设置了 `IRQ_INPROGRESS` 标志），那么就继续对中断进行处理。处理完中断后，调用 `do_softirq()` 函数来对中断下半部进行处理（下面会说）。
