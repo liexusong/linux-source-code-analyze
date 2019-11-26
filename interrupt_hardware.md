@@ -20,7 +20,7 @@ X86计算机的 CPU 为中断只提供了两条外接引脚：NMI 和 INTR。其
 
 每个本地 APIC 都有 32 位的寄存器，一个内部时钟，一个本地定时设备以及为本地中断保留的两条额外的 IRQ 线 LINT0 和 LINT1。所有本地 APIC 都连接到 I/O APIC，形成一个多级 APIC 系统，如图下所示。
 
-![APIC](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/APIC.png)
+![APIC](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/APIC.gif)
 
 目前大部分单处理器系统都包含一个 I/O APIC 芯片，可以通过以下两种方式来对这种芯片进行配置：
 * 作为一种标准的 8259A 工作方式。本地 APIC 被禁止，外部 I/O APIC 连接到 CPU，两条 LINT0 和 LINT1 分别连接到 INTR 和 NMI 引脚。
