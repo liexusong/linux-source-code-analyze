@@ -188,7 +188,9 @@ int handle_IRQ_event(unsigned int irq, struct pt_regs * regs, struct irqaction *
 
 一般中断 `上半部` 只会做一些最基础的操作（比如从网卡中复制数据到缓存中），然后对要执行的中断 `下半部` 进行标识，标识完调用 `do_softirq()` 函数进行处理。 
 
-`中断下半部` 由 `softirq` 机制来实现的，在Linux内核中，有一个名为 `softirq_vec` 的数组，如下：
+`中断下半部` 由 `softirq` 机制来实现的。
+
+在Linux内核中，有一个名为 `softirq_vec` 的数组，如下：
 ```c
 static struct softirq_action softirq_vec[32];
 ```
@@ -198,5 +200,15 @@ struct softirq_action
 {
     void    (*action)(struct softirq_action *);
     void    *data;
+};
+```
+`softirq_vec` 数组是 `softirq` 机制的核心，`softirq_vec` 数组每个元素代表一种软中断。但在Linux中只定义了四种软中断，如下：
+```c
+enum
+{
+    HI_SOFTIRQ=0,
+    NET_TX_SOFTIRQ,
+    NET_RX_SOFTIRQ,
+    TASKLET_SOFTIRQ
 };
 ```
