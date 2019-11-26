@@ -81,7 +81,8 @@ int setup_irq(unsigned int irq, struct irqaction * new)
     }
     spin_unlock_irqrestore(&desc->lock,flags);
 
-    register_irq_proc(irq);
+    register_irq_proc(irq); // 注册proc文件系统
     return 0;
 }
 ```
+`setup_irq()` 函数比较简单，就是通过 `irq` 号来查找对应的 `irq_desc_t` 结构，并把新的 `irqaction` 连接到 `irq_desc_t` 结构的 `action` 链表中。要注意的是，如果设备不支持共享IRQ线（也即是 `flags` 字段没有设置 `SA_SHIRQ` 标志），那么就返回 `EBUSY` 错误。
