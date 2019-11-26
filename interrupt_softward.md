@@ -86,3 +86,15 @@ int setup_irq(unsigned int irq, struct irqaction * new)
 }
 ```
 `setup_irq()` 函数比较简单，就是通过 `irq` 号来查找对应的 `irq_desc_t` 结构，并把新的 `irqaction` 连接到 `irq_desc_t` 结构的 `action` 链表中。要注意的是，如果设备不支持共享IRQ线（也即是 `flags` 字段没有设置 `SA_SHIRQ` 标志），那么就返回 `EBUSY` 错误。
+
+我们看看 `时钟中断处理入口` 的注册实例：
+```c
+static struct irqaction irq0  = { timer_interrupt, SA_INTERRUPT, 0, "timer", NULL, NULL};
+
+void __init time_init(void)
+{
+    ...
+    setup_irq(0, &irq0);
+}
+```
+可以看到，时钟中断处理入口的IRQ号为0，并且处理函数为 `timer_interrupt()`。
