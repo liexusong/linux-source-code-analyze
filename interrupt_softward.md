@@ -306,3 +306,26 @@ typedef struct {
 
 ### tasklet机制
 前面说了，tasklet机制是基于softirq机制的，tasklet机制其实就是一个任务队列，然后通过softirq执行。在Linux内核中有两种tasklet，一种是高优先级tasklet，一种是普通tasklet。这两种tasklet的实现基本一致，唯一不同的就是执行的优先级，高优先级tasklet会先于普通tasklet执行。
+
+tasklet本质是一个队列，通过结构体 `tasklet_head` 存储，并且每个CPU有一个这样的队列，我们来看看结构体 `tasklet_head` 的定义：
+```c
+struct tasklet_head
+{
+    struct tasklet_struct *list;
+};
+
+struct tasklet_struct
+{
+    struct tasklet_struct *next;
+    unsigned long state;
+    atomic_t count;
+    void (*func)(unsigned long);
+    unsigned long data;
+};
+```
+从 `tasklet_head` 的定义可以知道，`tasklet_head` 结构是 `tasklet_struct` 结构队列的头部，而 `tasklet_struct` 结构的 `func` 字段正式任务要执行的函数指针。Linux定义了两种的tasklet队列，分别为 `tasklet_vec` 和 `tasklet_hi_vec`，定义如下：
+```c
+struct tasklet_head tasklet_vec[NR_CPUS];
+struct tasklet_head tasklet_hi_vec[NR_CPUS];
+```
+可以看出，`tasklet_vec` 和 `tasklet_hi_vec` 都是数组，数组的元素个数为CPU的核心数，也就是每个CPU核心都有一个tasklet的队列。
