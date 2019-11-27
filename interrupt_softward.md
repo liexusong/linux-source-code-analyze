@@ -328,4 +328,30 @@ struct tasklet_struct
 struct tasklet_head tasklet_vec[NR_CPUS];
 struct tasklet_head tasklet_hi_vec[NR_CPUS];
 ```
-可以看出，`tasklet_vec` 和 `tasklet_hi_vec` 都是数组，数组的元素个数为CPU的核心数，也就是每个CPU核心都有一个tasklet的队列。
+可以看出，`tasklet_vec` 和 `tasklet_hi_vec` 都是数组，数组的元素个数为CPU的核心数，也就是每个CPU核心都有一个高优先级tasklet队列和一个普通tasklet队列。
+
+### 调度tasklet
+如果我们有一个tasklet需要执行，那么高优先级tasklet可以通过 `tasklet_hi_schedule()` 函数调度，而普通tasklet可以通过 `tasklet_schedule()` 调度。这两个函数基本一样，所以我们只分析其中一个：
+```c
+static inline void tasklet_hi_schedule(struct tasklet_struct *t)
+{
+    if (!test_and_set_bit(TASKLET_STATE_SCHED, &t->state)) {
+        int cpu = smp_processor_id();
+        unsigned long flags;
+
+        local_irq_save(flags);
+        t->next = tasklet_hi_vec[cpu].list;
+        tasklet_hi_vec[cpu].list = t;
+        __cpu_raise_softirq(cpu, HI_SOFTIRQ);
+        local_irq_restore(flags);
+    }
+}
+```
+函数参数的类型是 `tasklet_struct` 结构的指针，表示需要执行的tasklet结构。`tasklet_hi_schedule()` 函数首先判断这个tasklet是否已经被添加到队列中，如果不是就添加到 `tasklet_hi_vec` 队列中，并且通过调用 `__cpu_raise_softirq(cpu, HI_SOFTIRQ)` 来告诉softirq需要执行 `HI_SOFTIRQ` 类型的softirq，我们来看看 `__cpu_raise_softirq()` 函数的实现：
+```c
+static inline void __cpu_raise_softirq(int cpu, int nr)
+{
+    softirq_active(cpu) |= (1<<nr);
+}
+```
+可以看出，`__cpu_raise_softirq()` 函数就是把 `irq_cpustat_t` 结构的 `__softirq_active` 字段的 `nr位` 设置为1。对于 `tasklet_hi_schedule()` 函数就是把 `HI_SOFTIRQ` 位（0位）设置为1。
