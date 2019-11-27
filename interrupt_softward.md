@@ -355,3 +355,45 @@ static inline void __cpu_raise_softirq(int cpu, int nr)
 }
 ```
 可以看出，`__cpu_raise_softirq()` 函数就是把 `irq_cpustat_t` 结构的 `__softirq_active` 字段的 `nr位` 设置为1。对于 `tasklet_hi_schedule()` 函数就是把 `HI_SOFTIRQ` 位（0位）设置为1。
+
+前面我们也介绍过，Linux在初始化时会注册两种softirq，`TASKLET_SOFTIRQ` 和 `HI_SOFTIRQ`：
+```c
+void __init softirq_init()
+{
+    ...
+    open_softirq(TASKLET_SOFTIRQ, tasklet_action, NULL);
+    open_softirq(HI_SOFTIRQ, tasklet_hi_action, NULL);
+}
+```
+所以当把 `irq_cpustat_t` 结构的 `__softirq_active` 字段的 `HI_SOFTIRQ` 位（0位）设置为1时，softirq机制就会执行 `tasklet_hi_action()` 函数，我们来看看 `tasklet_hi_action()` 函数的实现：
+```c
+static void tasklet_hi_action(struct softirq_action *a)
+{
+    int cpu = smp_processor_id();
+    struct tasklet_struct *list;
+
+    local_irq_disable();
+    list = tasklet_hi_vec[cpu].list;
+    tasklet_hi_vec[cpu].list = NULL;
+    local_irq_enable();
+
+    while (list != NULL) {
+        struct tasklet_struct *t = list;
+
+        list = list->next;
+
+        if (tasklet_trylock(t)) {
+            if (atomic_read(&t->count) == 0) {
+                clear_bit(TASKLET_STATE_SCHED, &t->state);
+
+                t->func(t->data);  // 调用tasklet处理函数
+                tasklet_unlock(t);
+                continue;
+            }
+            tasklet_unlock(t);
+        }
+        ...
+    }
+}
+```
+`tasklet_hi_action()` 函数非常简单，就是遍历 `tasklet_hi_vec` 队列并且执行其中tasklet的处理函数。
