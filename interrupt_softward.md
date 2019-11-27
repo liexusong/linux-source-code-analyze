@@ -188,9 +188,8 @@ int handle_IRQ_event(unsigned int irq, struct pt_regs * regs, struct irqaction *
 
 一般中断 `上半部` 只会做一些最基础的操作（比如从网卡中复制数据到缓存中），然后对要执行的中断 `下半部` 进行标识，标识完调用 `do_softirq()` 函数进行处理。 
 
-`中断下半部` 由 `softirq` 机制来实现的。
-
-在Linux内核中，有一个名为 `softirq_vec` 的数组，如下：
+### softirq机制
+`中断下半部` 由 `softirq（软中断）` 机制来实现的，在Linux内核中，有一个名为 `softirq_vec` 的数组，如下：
 ```c
 static struct softirq_action softirq_vec[32];
 ```
@@ -212,10 +211,10 @@ enum
     TASKLET_SOFTIRQ
 };
 ```
-`HI_SOFTIRQ` 是高优先级软中断，而 `TASKLET_SOFTIRQ` 是普通软中断，`NET_TX_SOFTIRQ` 和 `NET_RX_SOFTIRQ` 特定用于网络子模块的软中断（不作介绍）。
+`HI_SOFTIRQ` 是高优先级tasklet，而 `TASKLET_SOFTIRQ` 是普通级别tasklet，tasklet是基于softirq机制的一种任务队列（下面会介绍）。`NET_TX_SOFTIRQ` 和 `NET_RX_SOFTIRQ` 特定用于网络子模块的软中断（不作介绍）。
 
 ### 注册软中断处理函数
-要注册一个软中断处理函数，可以通过 `open_softirq()` 函数来进行，代码如下：
+要注册一个softirq处理函数，可以通过 `open_softirq()` 函数来进行，代码如下：
 ```c
 void open_softirq(int nr, void (*action)(struct softirq_action*), void *data)
 {
@@ -231,9 +230,9 @@ void open_softirq(int nr, void (*action)(struct softirq_action*), void *data)
     spin_unlock_irqrestore(&softirq_mask_lock, flags);
 }
 ```
-`open_softirq()` 函数的主要工作就是向 `softirq_vec` 数组添加一个软中断处理函数。
+`open_softirq()` 函数的主要工作就是向 `softirq_vec` 数组添加一个softirq处理函数。
 
-Linux在系统初始化时注册了两种软中断处理函数，分别为 `TASKLET_SOFTIRQ` 和 `HI_SOFTIRQ`：
+Linux在系统初始化时注册了两种softirq处理函数，分别为 `TASKLET_SOFTIRQ` 和 `HI_SOFTIRQ`：
 ```c
 void __init softirq_init()
 {
@@ -243,8 +242,8 @@ void __init softirq_init()
 }
 ```
 
-### 处理软中断
-处理软中断是通过 `do_softirq()` 函数实现，代码如下：
+### 处理softirq
+处理softirq是通过 `do_softirq()` 函数实现，代码如下：
 ```c
 asmlinkage void do_softirq()
 {
@@ -293,7 +292,7 @@ retry:
     goto restart;
 }
 ```
-前面说了 `softirq_vec` 数组有32个元素，每个元素对应一种类型的软中断，那么Linux怎么知道哪种软中断需要被执行呢？在Linux中，每个CPU都有一个类型为 `irq_cpustat_t` 结构的变量，`irq_cpustat_t` 结构定义如下：
+前面说了 `softirq_vec` 数组有32个元素，每个元素对应一种类型的softirq，那么Linux怎么知道哪种softirq需要被执行呢？在Linux中，每个CPU都有一个类型为 `irq_cpustat_t` 结构的变量，`irq_cpustat_t` 结构定义如下：
 ```c
 typedef struct {
     unsigned int __softirq_active;
@@ -301,5 +300,6 @@ typedef struct {
     ...
 } irq_cpustat_t;
 ```
-其中 `__softirq_active` 字段表示有哪种软中断触发了（每一个位代表一种软中断），而 `__softirq_mask` 字段表示哪种软中断被屏蔽了。所以Linux通过 `__softirq_active` 这个字段就知道哪种软中断需要执行（只需要把对应位设置为1）。
+其中 `__softirq_active` 字段表示有哪种softirq触发了（int类型有32个位，每一个位代表一种softirq），而 `__softirq_mask` 字段表示哪种softirq被屏蔽了。Linux通过 `__softirq_active` 这个字段得知哪种softirq需要执行（只需要把对应位设置为1）。
 
+所以，`do_softirq()` 函数首先通过 `softirq_mask(cpu)` 来获取当前CPU对应被屏蔽的softirq，而 `softirq_active(cpu) & mask` 就是获取需要执行的softirq。
