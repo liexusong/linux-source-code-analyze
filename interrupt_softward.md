@@ -213,7 +213,7 @@ enum
 ```
 `HI_SOFTIRQ` 是高优先级tasklet，而 `TASKLET_SOFTIRQ` 是普通级别tasklet，tasklet是基于softirq机制的一种任务队列（下面会介绍）。`NET_TX_SOFTIRQ` 和 `NET_RX_SOFTIRQ` 特定用于网络子模块的软中断（不作介绍）。
 
-### 注册软中断处理函数
+### 注册softirq处理函数
 要注册一个softirq处理函数，可以通过 `open_softirq()` 函数来进行，代码如下：
 ```c
 void open_softirq(int nr, void (*action)(struct softirq_action*), void *data)
@@ -302,4 +302,6 @@ typedef struct {
 ```
 其中 `__softirq_active` 字段表示有哪种softirq触发了（int类型有32个位，每一个位代表一种softirq），而 `__softirq_mask` 字段表示哪种softirq被屏蔽了。Linux通过 `__softirq_active` 这个字段得知哪种softirq需要执行（只需要把对应位设置为1）。
 
-所以，`do_softirq()` 函数首先通过 `softirq_mask(cpu)` 来获取当前CPU对应被屏蔽的softirq，而 `softirq_active(cpu) & mask` 就是获取需要执行的softirq。
+所以，`do_softirq()` 函数首先通过 `softirq_mask(cpu)` 来获取当前CPU对应被屏蔽的softirq，而 `softirq_active(cpu) & mask` 就是获取需要执行的softirq，然后就通过对比 `__softirq_active` 字段的各个位来判断是否要执行该类型的softirq。
+
+### tasklet机制
