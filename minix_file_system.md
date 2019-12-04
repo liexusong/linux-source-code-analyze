@@ -78,3 +78,4 @@ struct minix2_inode {
 ```shell
 $ mke2fs -t ext4 -b 4096 /dev/sdb5
 ```
+上面的命令把设备 `/dev/sdb5` 格式化为 `ext4` 文件系统，并且每个逻辑数据块大小为4k。
