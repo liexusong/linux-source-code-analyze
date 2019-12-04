@@ -53,3 +53,18 @@ struct minix_super_block {
     __u32 s_zones;
 };
 ```
+
+#### minix2_inode结构
+```c
+struct minix2_inode {
+    __u16 i_mode;     // 文件模式
+    __u16 i_nlinks;   // 链接数
+    __u16 i_uid;      // 所属用户ID
+    __u16 i_gid;      // 所属组ID
+    __u32 i_size;     // 文件大小
+    __u32 i_atime;    // 访问时间
+    __u32 i_mtime;    // 修改时间
+    __u32 i_ctime;    // 创建时间
+    __u32 i_zone[10]; // 文件数据存储的逻辑数据块
+};
+```
