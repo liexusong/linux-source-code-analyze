@@ -24,3 +24,7 @@
 
 ![minix_filesystem](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/minix_filesystem.png)
 
+可以把硬盘当成一个由多个数据块组成的设备（对于MINIX文件系统一个数据块的大小为1024字节），MINIX文件系统就是组织和管理这些数据块的一种算法。下面来介绍一下上图中各个部分的作用：
+
+* 超级块：用于记录文件系统的一些信息，比如inode的数量和inode位图占用的数据块数量等。
+* 
