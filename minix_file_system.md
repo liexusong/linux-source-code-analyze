@@ -34,7 +34,7 @@
 
 从上面的介绍可以看到，MINIX文件系统的结构比较简单，接下来我们分析一下MINIX文件系统的实现。
 
-### MINIX文件系统实现
+### MINIX文件系统相关数据结构
 
 在分析MINIX文件系统的实现前，先来介绍一下两个重要的数据结构：`minix_super_block` 和 `minix2_inode`，`minix_super_block` 对应MINIX文件系统的超级块，而 `minix_super_block` 则对应MINIX文件系统的inode节点。
 
@@ -71,4 +71,6 @@ struct minix2_inode {
 `minix2_inode` 的 `i_zone` 字段记录了文件数据存储在哪些逻辑数据块上，可以看到 `i_zone` 字段是一个有10个元素的数组，前7个元素是直接指向的数据块，就是数据会直接存储在这些数据块上。而第8个元素是一级间接指向，第9个元素是二级间接指向，第10个元素是三级间接指向，原理如下图：
 
 ![minix_filesystem_inode](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/minix_filesystem_inode.jpg)
+
+### MINIX文件系统实现
 
