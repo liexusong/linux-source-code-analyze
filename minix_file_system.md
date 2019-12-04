@@ -42,7 +42,7 @@
 ```c
 struct minix_super_block {
     __u16 s_ninodes;       // inode的个数
-    __u16 s_nzones;        // 数据块个数
+    __u16 s_nzones;        // 逻辑数据块个数
     __u16 s_imap_blocks;   // inode位图占用的数据块数量
     __u16 s_zmap_blocks;   // 数据块位图占用的数据块数量
     __u16 s_firstdatazone; // 第一个数据块索引
