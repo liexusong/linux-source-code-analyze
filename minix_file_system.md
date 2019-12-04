@@ -70,3 +70,5 @@ struct minix2_inode {
 ```
 `minix2_inode` 的 `i_zone` 字段记录了文件数据存储在哪些逻辑数据块上，可以看到 `i_zone` 字段是一个有10个元素的数组，前7个元素是直接指向的数据块，就是数据会直接存储在这些数据块上。而第8个元素是一级间接指向，第9个元素是二级间接指向，第10个元素是三级间接指向，原理如下图：
 
+![minix_filesystem_inode](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/minix_filesystem_inode.jpg)
+
