@@ -42,15 +42,15 @@
 ```c
 struct minix_super_block {
     __u16 s_ninodes;       // inode的个数
-    __u16 s_nzones;        // 逻辑数据块个数
+    __u16 s_nzones;        // 逻辑数据块个数(v1版)
     __u16 s_imap_blocks;   // inode位图占用的数据块数量
     __u16 s_zmap_blocks;   // 数据块位图占用的数据块数量
-    __u16 s_firstdatazone; // 第一个数据块索引
-    __u16 s_log_zone_size;
+    __u16 s_firstdatazone; // 第一个逻辑数据块起始号
+    __u16 s_log_zone_size; // 使用2为底的对数表示的每个逻辑数据块包含的磁盘块数
     __u32 s_max_size;      // 文件最大尺寸
     __u16 s_magic;         // 魔数
-    __u16 s_state;
-    __u32 s_zones;
+    __u16 s_state;         // 文件系统状态
+    __u32 s_zones;         // 逻辑数据块个数(v2版)
 };
 ```
 
