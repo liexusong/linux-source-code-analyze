@@ -79,3 +79,11 @@ struct minix2_inode {
 $ mkfs -t ext4 -b 4096 /dev/sdb5
 ```
 上面的命令把设备 `/dev/sdb5` 格式化为 `ext4` 文件系统，并且每个逻辑数据块大小为4k。
+
+格式化完后可以通过 `mount` 命名将设备挂载到某个目录下，这样就可以访问这个设备了。如下：
+```shell
+$ mount /dev/sdb5 /mnt/foo
+$ cd /mnt/foo
+```
+
+
