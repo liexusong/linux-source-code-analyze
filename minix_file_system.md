@@ -126,7 +126,7 @@ static struct super_block *minix_read_super(
     // 设置第一inode和第一个逻辑数据块为已被使用(文件系统的根目录)
     minix_set_bit(0,s->u.minix_sb.s_imap[0]->b_data);
     minix_set_bit(0,s->u.minix_sb.s_zmap[0]->b_data);
-    /* set up enough so that it can read an inode */
+
     s->s_op = &minix_sops;
     root_inode = iget(s, MINIX_ROOT_INO);
     if (!root_inode)
@@ -143,4 +143,4 @@ static struct super_block *minix_read_super(
     ...
 }
 ```
-
+`minix_read_super()` 函数首先通过 `bread()` 读取设备的第2个数据块（第1个数据块是引导区），超级块就保存在这个数据块中。然后根据MINIX文件系统的超级块数据设置虚拟文件系统（VFS）的超级块，接着为inode位图和逻辑数据块位图申请内存，并且读入设备中的inode位图和逻辑数据块位图到内存中。
