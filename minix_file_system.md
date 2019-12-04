@@ -85,5 +85,62 @@ $ mkfs -t ext4 -b 4096 /dev/sdb5
 $ mount /dev/sdb5 /mnt/foo
 $ cd /mnt/foo
 ```
+挂载过程就是读入文件系统的超级块到内存，对于MINIX文件系统，读入超级块数据是通过 `minix_read_super()` 函数实现的，代码如下：
+```c
+static struct super_block *minix_read_super(
+    struct super_block *s, void *data, int silent)
+{
+    struct minix_super_block *ms;
 
+    ...
+    if (!(bh = bread(dev,1,BLOCK_SIZE)))
+        goto out_bad_sb;
+
+    ms = (struct minix_super_block *) bh->b_data;
+    ...
+
+    /*
+     * 申请inode位图和逻辑数据块位图的内存
+     */
+    i = (s->u.minix_sb.s_imap_blocks + s->u.minix_sb.s_zmap_blocks) * sizeof(bh);
+    map = kmalloc(i, GFP_KERNEL);
+    if (!map)
+        goto out_no_map;
+    memset(map, 0, i);
+    s->u.minix_sb.s_imap = &map[0];
+    s->u.minix_sb.s_zmap = &map[s->u.minix_sb.s_imap_blocks];
+
+    block=2;
+    for (i=0 ; i < s->u.minix_sb.s_imap_blocks ; i++) { // 读取inode位图
+        if (!(s->u.minix_sb.s_imap[i]=bread(dev,block,BLOCK_SIZE)))
+            goto out_no_bitmap;
+        block++;
+    }
+
+    for (i=0 ; i < s->u.minix_sb.s_zmap_blocks ; i++) { // 读取数据块位图
+        if (!(s->u.minix_sb.s_zmap[i]=bread(dev,block,BLOCK_SIZE)))
+            goto out_no_bitmap;
+        block++;
+    }
+
+    // 设置第一inode和第一个逻辑数据块为已被使用(文件系统的根目录)
+    minix_set_bit(0,s->u.minix_sb.s_imap[0]->b_data);
+    minix_set_bit(0,s->u.minix_sb.s_zmap[0]->b_data);
+    /* set up enough so that it can read an inode */
+    s->s_op = &minix_sops;
+    root_inode = iget(s, MINIX_ROOT_INO);
+    if (!root_inode)
+        goto out_no_root;
+
+    s->s_root = d_alloc_root(root_inode);
+    if (!s->s_root)
+        goto out_iput;
+
+    s->s_root->d_op = &minix_dentry_operations;
+
+    ...
+    return s;
+    ...
+}
+```
 
