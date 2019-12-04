@@ -21,3 +21,6 @@
 ### MINIX文件系统结构
 
 在分析MINIX文件系统实现前，我们先来了解一下MINIX文件系统在硬盘的结构组织，如下图：
+
+![minix_filesystem](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/minix_filesystem.png)
+
