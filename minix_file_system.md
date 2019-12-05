@@ -147,5 +147,7 @@ static struct super_block *minix_read_super(
 `minix_read_super()` 函数首先通过 `bread()` 读取设备的第2个数据块（第1个数据块是引导区），超级块就保存在这个数据块中。然后根据MINIX文件系统的超级块数据设置虚拟文件系统（VFS）的超级块，接着为inode位图和逻辑数据块位图申请内存，并且读入设备中的inode位图和逻辑数据块位图到内存中。最后读取根目录的inode节点数据，并保存到虚拟文件系统超级块的 `s_root` 字段中。
 
 #### 读取文件数据
-读取MINIX文件系统的文件过程如下：`read()` -> `sys_read()` -> `generic_file_read()` -> `do_generic_file_read()` -> `minix_readpage()` -> `block_read_full_page()`。
+读取MINIX文件系统的文件过程如下图：
+
+![minix-filesystem-read](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/minix-filesystem-read.jpg)
 
