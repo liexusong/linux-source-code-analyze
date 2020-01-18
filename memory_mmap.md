@@ -44,6 +44,6 @@ int main() {
 在 32位的 Linux 内核中，每个进程都独有 `4GB` 的虚拟内存空间，但所有进程却共用相同的物理内存空间。物理内存空间就是安装在电脑上的内存条，如果内存条只有 `1GB`，那么物理内存空间就只有 `1GB`。但虚拟内存空间是逻辑上的内存空间，虚拟内存空间必须映射到物理内存空间才能使用。
 
 虚拟内存空间与物理内存空间映射关系如下：
-![Alt text](./process_vm.jpg)
+![process-vm-mapping](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/process_vm.jpg)
 
 映射是按内存页进行的，一个内存页为 `4KB` 大小。在上图中，`P1` 是进程1，`P2` 是进程2。进程1的虚拟内存页A映射到物理内存页A，进程2的虚拟内存页A映射到物理内存页B。进程1的虚拟内存页B和进程2的虚拟内存页B同时映射到物理内存页C，也就是说进程1和进程2共享了物理内存页C。
