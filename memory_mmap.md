@@ -47,3 +47,28 @@ int main() {
 ![process-vm-mapping](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/process_vm.jpg)
 
 映射是按内存页进行的，一个内存页为 `4KB` 大小。在上图中，`P1` 是进程1，`P2` 是进程2。进程1的虚拟内存页A映射到物理内存页A，进程2的虚拟内存页A映射到物理内存页B。进程1的虚拟内存页B和进程2的虚拟内存页B同时映射到物理内存页C，也就是说进程1和进程2共享了物理内存页C。
+
+在Linux内核中，虚拟内存是用过结构体 `vm_area_struct` 来管理的，通过 `vm_area_struct` 结构体可以把虚拟内存划分为多个用途不相同的内存区，比如可以划分为数据段区、代码段区等等，`vm_area_struct` 结构体的定义如下：
+```cpp
+struct vm_area_struct {
+    struct mm_struct * vm_mm;   /* The address space we belong to. */
+    unsigned long vm_start;     /* Our start address within vm_mm. */
+    unsigned long vm_end;       /* The first byte after our end address
+                       within vm_mm. */
+
+    /* linked list of VM areas per task, sorted by address */
+    struct vm_area_struct *vm_next;
+
+    pgprot_t vm_page_prot;      /* Access permissions of this VMA. */
+    unsigned long vm_flags;     /* Flags, listed below. */
+
+    rb_node_t vm_rb;
+
+    struct vm_area_struct *vm_next_share;
+    struct vm_area_struct **vm_pprev_share;
+
+    /* Function pointers to deal with this struct. */
+    struct vm_operations_struct * vm_ops;
+    ...
+};
+```
