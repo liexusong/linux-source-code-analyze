@@ -6,12 +6,12 @@
 void *mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset);
 ```
 参数说明：
-	* `start`：指定要映射的内存地址，一般设置为 `NULL` 让操作系统自动选择合适的内存地址。
-	* `length`：映射地址空间的字节数，它从被映射文件开头 `offset` 个字节开始算起。
-	* `prot`：指定共享内存的访问权限。可取如下几个值的或：`PROT_READ`（可读）, `PROT_WRITE`（可写）, `PROT_EXEC`（可执行）, `PROT_NONE`（不可访问）。
-	* `flags`：由以下几个常值指定：`MAP_SHARED `（共享的） `MAP_PRIVATE`（私有的）, `MAP_FIXED`（表示必须使用 `start` 参数作为开始地址，如果失败不进行修正），其中，`MAP_SHARED` , `MAP_PRIVATE`必选其一，而 `MAP_FIXED` 则不推荐使用。
-	* `fd`：表示要映射的文件句柄。
-	* `offset`：表示映射文件的偏移量，一般设置为 `0` 表示从文件头部开始映射。
+* `start`：指定要映射的内存地址，一般设置为 `NULL` 让操作系统自动选择合适的内存地址。
+* `length`：映射地址空间的字节数，它从被映射文件开头 `offset` 个字节开始算起。
+* `prot`：指定共享内存的访问权限。可取如下几个值的或：`PROT_READ`（可读）, `PROT_WRITE`（可写）, `PROT_EXEC`（可执行）, `PROT_NONE`（不可访问）。
+* `flags`：由以下几个常值指定：`MAP_SHARED `（共享的） `MAP_PRIVATE`（私有的）, `MAP_FIXED`（表示必须使用 `start` 参数作为开始地址，如果失败不进行修正），其中，`MAP_SHARED` , `MAP_PRIVATE`必选其一，而 `MAP_FIXED` 则不推荐使用。
+* `fd`：表示要映射的文件句柄。
+* `offset`：表示映射文件的偏移量，一般设置为 `0` 表示从文件头部开始映射。
 
 函数的返回值为最后文件映射到进程空间的地址，进程可直接操作起始地址为该值的有效地址。
 
