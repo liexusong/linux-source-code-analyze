@@ -72,6 +72,13 @@ struct vm_area_struct {
     ...
 };
 ```
+`vm_area_struct` 结构各个字段作用：
+* `vm_mm`：指向进程内存空间管理对象。
+* `vm_start`：内存区的开始地址。
+* `vm_end`：内存区的结束地址。
+* `vm_next`：用于连接进程的所有内存区。
+* `vm_page_prot`：指定内存区的访问权限。
+* `vm_flags`：内存区的一些标志。
 
 `vm_area_struct` 结构与虚拟内存地址的关系如下图：
 
