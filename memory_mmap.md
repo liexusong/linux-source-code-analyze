@@ -87,3 +87,5 @@ struct vm_area_struct {
 `vm_area_struct` 结构与虚拟内存地址的关系如下图：
 
 ![vm_address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vm_address.png)
+
+每个进程都由 `task_struct` 结构进行管理，`task_struct` 结构中的 `mm` 成员指向了每个进程的内存管理结构 `mm_struct`，而 `mm_struct` 结构的 `mmap` 成员记录了进程虚拟内存空间各个内存区的 `vm_area_struct` 结构链表。
