@@ -83,9 +83,12 @@ struct vm_area_struct {
 * `vm_page_prot`：指定内存区的访问权限。
 * `vm_flags`：内存区的一些标志。
 * `vm_file`：指向映射的文件对象。
+* `vm_ops`：内存区的一些操作函数。
 
 `vm_area_struct` 结构与虚拟内存地址的关系如下图：
 
 ![vm_address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vm_address.png)
 
 每个进程都由 `task_struct` 结构进行管理，`task_struct` 结构中的 `mm` 成员指向了每个进程的内存管理结构 `mm_struct`，而 `mm_struct` 结构的 `mmap` 成员记录了进程虚拟内存空间各个内存区的 `vm_area_struct` 结构链表。
+
+当调用 `mmap()` 时，内核会创建一个 `vm_area_struct` 结构，并且把 `vm_start` 和 `vm_end` 指向虚拟内存空间的某个内存区，并且把 `vm_file` 字段指向映射的文件对象。
