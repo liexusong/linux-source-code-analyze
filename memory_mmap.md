@@ -113,4 +113,4 @@ int generic_file_mmap(struct file * file, struct vm_area_struct * vma)
     return 0;
 }
 ```
-
+`vm_operations_struct` 结构的 `nopage` 接口会在访问内存发生异常时被调用，上面指向的是 `filemap_nopage()` 函数，`filemap_nopage()` 函数的主要工作是：1. 把映射到虚拟内存区的文件内容读入到物理内存页中。2. 对访问发生异常的虚拟内存地址与物理内存地址进行映射。
