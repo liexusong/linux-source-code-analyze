@@ -91,4 +91,26 @@ struct vm_area_struct {
 
 每个进程都由 `task_struct` 结构进行管理，`task_struct` 结构中的 `mm` 成员指向了每个进程的内存管理结构 `mm_struct`，而 `mm_struct` 结构的 `mmap` 成员记录了进程虚拟内存空间各个内存区的 `vm_area_struct` 结构链表。
 
-当调用 `mmap()` 时，内核会创建一个 `vm_area_struct` 结构，并且把 `vm_start` 和 `vm_end` 指向虚拟内存空间的某个内存区，并且把 `vm_file` 字段指向映射的文件对象。
+当调用 `mmap()` 时，内核会创建一个 `vm_area_struct` 结构，并且把 `vm_start` 和 `vm_end` 指向虚拟内存空间的某个内存区，并且把 `vm_file` 字段指向映射的文件对象。然后调用文件对象的 `mmap` 接口来对 `vm_area_struct` 结构的 `vm_ops` 成员进行初始化，如 `ext2` 文件系统的文件对象会调用 `generic_file_mmap()` 函数进行初始化，代码如下：
+```cpp
+static struct vm_operations_struct generic_file_vm_ops = {
+    nopage:     filemap_nopage,
+};
+
+int generic_file_mmap(struct file * file, struct vm_area_struct * vma)
+{
+    struct address_space *mapping = file->f_dentry->d_inode->i_mapping;
+    struct inode *inode = mapping->host;
+
+    if ((vma->vm_flags & VM_SHARED) && (vma->vm_flags & VM_MAYWRITE)) {
+        if (!mapping->a_ops->writepage)
+            return -EINVAL;
+    }
+    if (!mapping->a_ops->readpage)
+        return -ENOEXEC;
+    UPDATE_ATIME(inode);
+    vma->vm_ops = &generic_file_vm_ops;
+    return 0;
+}
+```
+
