@@ -130,4 +130,8 @@ int generic_file_mmap(struct file * file, struct vm_area_struct * vma)
 
 ![read-write-system-call](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/read-write-system-call.png)
 
-而调用 `mmap()` 系统调用对文件进行映射后，用户对映射后的内存进行读写实际上是对文件缓存的读写，所以减少了一次系统调用，从而加速了对文件读写的效率。
+而调用 `mmap()` 系统调用对文件进行映射后，用户对映射后的内存进行读写实际上是对文件缓存的读写，所以减少了一次系统调用，从而加速了对文件读写的效率。如下图：
+
+![mmap-memory-address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/mmap-memory-address.png)
+
+
