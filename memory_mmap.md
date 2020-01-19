@@ -128,6 +128,6 @@ int generic_file_mmap(struct file * file, struct vm_area_struct * vma)
 #### 对文件的读写
 像 `read()/write()` 这些系统调用，首先需要进行内核空间，然后把文件内容读入到缓存中，然后再对缓存进行读写操作，最后由内核定时同步到文件中。过程如下图：
 
-![read-write-system-call](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/read-write-system-call.jpg)
+![read-write-system-call](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/read-write-system-call.png)
 
 而调用 `mmap()` 系统调用对文件进行映射后，用户对映射后的内存进行读写实际上是对文件缓存的读写，所以减少了一次系统调用，减少了读写过程的耗时。
