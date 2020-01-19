@@ -124,3 +124,8 @@ int generic_file_mmap(struct file * file, struct vm_area_struct * vma)
 如上图所示，`虚拟内存页m` 映射到 `物理内存页x`，并且把映射的文件的内容读入到物理内存中，这样就把内存与文件的映射关系建立起来，对映射的内存区进行读写操作实际上就是对文件的读写操作。
 
 一般来说，对映射的内存空间进行读写并不会实时写入到文件中，所以要对内存与文件进行同步时需要调用 `msync()` 函数来实现。
+
+#### 对文件的读写
+像 `read()/write()` 这些系统调用，首先需要进行内核空间，然后把文件内容读入到缓存中，然后再对缓存进行读写操作，最后由内核定时同步到文件中。过程如下图：
+
+![read-write-system-call](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/read-write-system-call.jpg)
