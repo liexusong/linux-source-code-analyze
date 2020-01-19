@@ -72,3 +72,7 @@ struct vm_area_struct {
     ...
 };
 ```
+
+`vm_area_struct` 结构与虚拟内存地址的关系如下图：
+
+![vm_address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vm_address.png)
