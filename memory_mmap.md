@@ -118,4 +118,7 @@ int generic_file_mmap(struct file * file, struct vm_area_struct * vma)
 2. 对访问发生异常的虚拟内存地址与物理内存地址进行映射。
 
 处理过程如下图：
+
 ![vma-pma-maping](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vma-pma-maping.png)
+
+如上图所示，`虚拟内存页m` 映射到 `物理内存页x`，并且把映射的文件的内容读入到物理内存中，这样就把内存与文件的映射关系建立起来。
