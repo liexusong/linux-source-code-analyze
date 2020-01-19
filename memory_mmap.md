@@ -70,6 +70,8 @@ struct vm_area_struct {
     /* Function pointers to deal with this struct. */
     struct vm_operations_struct * vm_ops;
     ...
+    struct file * vm_file;       /* File we map to (can be NULL). */
+    ...
 };
 ```
 `vm_area_struct` 结构各个字段作用：
@@ -79,6 +81,7 @@ struct vm_area_struct {
 * `vm_next`：用于连接进程的所有内存区。
 * `vm_page_prot`：指定内存区的访问权限。
 * `vm_flags`：内存区的一些标志。
+* `vm_file`：指向映射的文件对象。
 
 `vm_area_struct` 结构与虚拟内存地址的关系如下图：
 
