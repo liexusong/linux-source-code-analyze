@@ -15,3 +15,6 @@
 
 ![x86-segment](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/x86-segment.png)
 
+运行在 `保护模式` 下的操作系统需要提供一个 `段描述符表` 的数组让CPU能够通过段寄存器找到对应的 `段描述符`，`段描述符表` 分为 `全局描述符表GDT` 和 `局部描述符表LDT`，如下图：
+
+![semget-selector-table](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/semget-selector-table.png)
