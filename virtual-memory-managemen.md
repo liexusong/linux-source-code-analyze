@@ -25,3 +25,6 @@
 
 ![semgent-selector](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/semgent-selector.png)
 
+说实话，有了分页机制后，分段机制就变成了鸡肋了（保留只是为了兼容罢了，而且Linux也只是应付式的使用）。所以对于 `段描述符` 这个结构有兴趣的可以自己翻阅一些 `X86 CPU` 相关的书籍或文字了，这里就不作详细介绍了。
+
+
