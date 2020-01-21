@@ -23,5 +23,5 @@
 
 `段描述符` 是一个占用64字节大小的数据结构，结构如下图：
 
-![semget-selector](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/semget-selector.png)
+![semgent-selector](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/semgent-selector.png)
 
