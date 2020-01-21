@@ -21,3 +21,7 @@
 
 为什么会有 `全局描述符表（GDT）` 和 `局部描述符表（LDT）` 这两种表？这是因为 Intel 当初希望操作系统开发者能够通过 `全局描述符表` 来访问内核的数据，而通过 `局部描述符表` 来访问进程的数据。但 Linux 基本不会用到 `局部描述符表`，所以我们基本可以忽略。
 
+`段描述符` 是一个占用64字节大小的数据结构，结构如下图：
+
+![semget-selector](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/semget-selector.png)
+
