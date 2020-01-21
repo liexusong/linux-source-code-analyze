@@ -18,3 +18,5 @@
 运行在 `保护模式` 下的操作系统需要提供一个 `段描述符表` 的数组让CPU能够通过段寄存器找到对应的 `段描述符`，`段描述符表` 分为 `全局描述符表GDT` 和 `局部描述符表LDT`，如下图：
 
 ![semget-selector-table](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/semget-selector-table.png)
+
+为什么会有 `全局描述符表GDT` 和 `局部描述符表LDT` 这两种表？这是因为 Intel 当初希望操作系统开发者能够通过 `全局描述符表GDT` 来访问内核的数据，而通过 `局部描述符表LDT` 来访问进程的数据。
