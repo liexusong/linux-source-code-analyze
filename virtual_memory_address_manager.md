@@ -11,7 +11,7 @@ Linux的内存管理分为 `虚拟内存管理` 和 `物理内存管理`，本�
 
 下图展示了 `逻辑地址`、`线性地址` 和 `物理地址` 三者的关系：
 
-![memory-address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/memory-address.jpeg)
+![memory-address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/memory-address.jpeg)
 
 ### x86 分页机制
 
