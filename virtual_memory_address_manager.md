@@ -29,7 +29,7 @@ Linux的内存管理分为 `虚拟内存管理` 和 `物理内存管理`，本�
 
 ### 虚拟内存地址管理
 
-应用程序向Linux内核申请内存时，Linux内核会返回可用的虚拟内存地址给应用程序。我们可以通过以下程序来验证：
+应用程序使用 `malloc()` 函数向Linux内核申请内存时，Linux内核会返回可用的虚拟内存地址给应用程序。我们可以通过以下程序来验证：
 ```cpp
 #include <stdio.h>
 #include <stdlib.h>
@@ -95,7 +95,7 @@ struct vm_area_struct {
 
 ![vm_address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vm_address.png)
 
-从上图可以看出，通过 `vm_area_struct` 结构体可以把虚拟内存地址划分为多个用途不相同的内存区，比如可以划分为数据段区、代码段区等等。每个进程描述符（内核用于管理进程的结构）都有一个类型为 `mm_struct` 结构的字段，这个结构的 `mmap` 字段保存了已经被使用的虚拟内存地址。
+从上图可以看出，通过 `vm_area_struct` 结构体可以把虚拟内存地址划分为多个用途不相同的内存区，比如可以划分为数据区、代码区、堆区和栈区等等。每个进程描述符（内核用于管理进程的结构）都有一个类型为 `mm_struct` 结构的字段，这个结构的 `mmap` 字段保存了已经被使用的虚拟内存地址。
 
 当应用程序通过 `malloc()` 函数向内核申请内存时，会触发系统调用 `sys_brk()`，`sys_brk()` 实现如下：
 ```cpp
@@ -144,7 +144,7 @@ out:
     return retval;
 }
 ```
-`sys_brk()` 系统调用首先会进行一些检测，然后调用 `do_brk()` 函数进行虚拟内存地址的申请，`do_brk()` 函数实现如下：
+`sys_brk()` 系统调用的 `brk` 参数指定了堆区的新指针，`sys_brk()` 首先会进行一些检测，然后调用 `do_brk()` 函数进行虚拟内存地址的申请，`do_brk()` 函数实现如下：
 ```cpp
 unsigned long do_brk(unsigned long addr, unsigned long len)
 {
@@ -188,12 +188,63 @@ out:
     return addr;
 }
 ```
+`do_brk()` 函数主要通过调用 `kmem_cache_alloc()` 申请一个 `vm_area_struct` 结构，然后对这个结构的各个字段进行初始。最后通过调用 `insert_vm_struct()` 函数把这个结构添加到进程的虚拟内存地址链表中。
 
+> 为了加速查找虚拟内存区，Linux内核还为 `vm_area_struct` 结构构建了一个 `AVL树（新版本为红黑树）`，有兴趣的可以查阅源码或相关资料。
 
+### 虚拟地址与物理地址映射
 
+前面说过，虚拟地址必须要与物理地址进行映射才能使用，如果访问了没有被映射的虚拟地址，CPU会触发内存访问异常，并且调用异常处理例程对没被映射的虚拟地址进行映射操作。Linux的内存访问异常处理例程是 `do_page_fault()`，代码如下：
+```cpp
+asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long error_code)
+{
+    ...
 
+    // 获取发生错误的虚拟地址
+    __asm__("movl %%cr2,%0":"=r" (address)); 
 
+    ...
 
+    down(&mm->mmap_sem);
 
+    // 查找第一个结束地址比address大的vma
+    vma = find_vma(mm, address); 
+    if (!vma)
+        goto bad_area;
 
+    ...
 
+    // 这里是进行物理内存映射的地方
+    switch (handle_mm_fault(mm, vma, address, write)) { 
+    case 1:
+        tsk->min_flt++;
+        break;
+    case 2:
+        tsk->maj_flt++;
+        break;
+    case 0:
+        goto do_sigbus;
+    default:
+        goto out_of_memory;
+    }
+
+    ...
+
+bad_area:
+    up(&mm->mmap_sem);
+
+bad_area_nosemaphore:
+    // 用户空间触发的虚拟内存地址越界访问, 发送SIGSEGV信息(段错误)
+    if (error_code & 4) { 
+        tsk->thread.cr2 = address;
+        tsk->thread.error_code = error_code;
+        tsk->thread.trap_no = 14;
+        info.si_signo = SIGSEGV;
+        info.si_errno = 0;
+        info.si_addr = (void *)address;
+        force_sig_info(SIGSEGV, &info, tsk);
+        return;
+    }
+}
+```
+当异常发生时，CPU会把触发异常的虚拟内存地址保存到 `cr2寄存器` 中，`do_page_fault()` 函数首先通过读取 `cr2寄存器` 获取到触发异常的虚拟内存地址，然后调用 `find_vma()` 函数获取虚拟内存地址对应的 `vm_area_struct` 结构，如果找不到说明这个虚拟内存地址是不合法的（没有进行申请），所以内核会发送 `SIGSEGV` 信号（传说中的段错误）给进程。如果虚拟地址是合法的，那么就调用 `handle_mm_fault()` 函数对虚拟地址进行映射。
