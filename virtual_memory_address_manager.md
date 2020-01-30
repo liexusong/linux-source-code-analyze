@@ -11,7 +11,7 @@ Linux的内存管理分为 `虚拟内存管理` 和 `物理内存管理`，本�
 
 下图展示了 `逻辑地址`、`线性地址` 和 `物理地址` 三者的关系：
 
-![Alt text](./memory-address.jpeg)
+![memory-address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/memory-address.jpeg)
 
 ### x86 分页机制
 
@@ -23,7 +23,7 @@ Linux的内存管理分为 `虚拟内存管理` 和 `物理内存管理`，本�
 
 映射是通过 `页表` 作为媒介的。页表是一个类型为整型的数组，数组的每个元素保存了线性地址页对应的物理地址页的起始地址。由于32位的线性地址可以划分为 `2^20` 个页，而每个线性地址页需要一个整型来映射到物理地址页，所以页表的大小为 `4 * 2^20 (4MB)`。由于并不是所有的线性地址都会映射到物理地址，所以为了节省空间，引入了一个二级管理模式的机器来组织分页单元。如下图：
 
-![Alt text](./lining-pyh-mapping.jpg)
+![lining-physical-mapping](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/lining-physical-mapping.jpg)
 
 从上图可以看出，线性地址被划分为3部分：`面目录索引(10位)`、`页表索引(10位)` 和 `偏移量(12位)`。而 `cr3寄存器` 保存了 `页目录` 的物理地址，这样就可以通过 `cr3寄存器` 来找到 `页目录`。`页目录项` 指向页表地址，`页表项` 指向映射的物理内存页地址，而 `偏移量` 指定了在物理内存页的偏移量。
 
@@ -93,7 +93,7 @@ struct vm_area_struct {
 
 `vm_area_struct` 结构通过以下方式对虚拟内存地址进行管理，如下图：
 
-![Alt text](./vm_address.png)
+![vm_address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vm_address.png)
 
 从上图可以看出，通过 `vm_area_struct` 结构体可以把虚拟内存地址划分为多个用途不相同的内存区，比如可以划分为数据段区、代码段区等等。每个进程描述符（内核用于管理进程的结构）都有一个类型为 `mm_struct` 结构的字段，这个结构的 `mmap` 字段保存了已经被使用的虚拟内存地址。
 
