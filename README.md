@@ -11,6 +11,7 @@
     * [物理内存管理(中)](https://github.com/liexusong/linux-source-code-analyze/blob/master/physical-memory-managemen-2.md)
     * [物理内存管理(下)](https://github.com/liexusong/linux-source-code-analyze/blob/master/physical-memory-managemen-3.md)
     * [虚拟内存管理](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_memory_address_manager.md)
+    * [虚拟地址与物理地址映射](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual-physical-address-mapping.md)
     * [mmap完全剖析](https://github.com/liexusong/linux-source-code-analyze/blob/master/memory_mmap.md)
     * [内存交换](https://github.com/liexusong/linux-source-code-analyze/blob/master/memory_swap.md)
 * 中断机制
