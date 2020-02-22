@@ -70,3 +70,20 @@ inc [count]
 2. 如果不等于0，表示其他进程已经上锁，此时必须不断比较自旋锁 `lock` 的值是否等于1（表示已经解锁）。
 3. 如果自旋锁 `lock` 等于1，跳转到第一步继续进行上锁操作。
 
+由于Linux的自旋锁使用汇编实现，所以比较苦涩难懂，这里使用C语言来模拟一下：
+```cpp
+void spin_lock(amtoic_t *lock)
+{
+again:
+    result = (*lock)--;
+    if (result == 0) {
+        return;
+    }
+    
+    while (true) {
+        if (*lock == 1) {
+	    goto again;
+	}
+    }
+}
+```
