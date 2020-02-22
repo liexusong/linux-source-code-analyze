@@ -44,3 +44,9 @@ static __inline__ void atomic_inc(atomic_t *v)
 1. 从内存将count的数据读取到cpu。
 2. 累加读取的值。
 3. 将修改的值写回count内存。
+
+英特尔的CPU提供了 `lock` 前缀来锁住总线，可以让指令变成原子操作，如下：
+```asm
+lock
+inc [count]
+```
