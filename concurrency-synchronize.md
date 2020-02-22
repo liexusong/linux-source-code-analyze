@@ -160,3 +160,36 @@ static inline int __down_common(struct semaphore *sem,
 1. 把当前进程添加到信号量的等待队列中。
 2. 切换到其他进程运行，直到被其他进程唤醒。
 3. 如果当前进程获得信号量锁（由解锁进程传递），那么函数返回。
+
+接下来看看解锁过程，解锁过程主要通过 `up()` 函数实现，代码如下：
+```cpp
+void up(struct semaphore *sem)
+{
+    unsigned long flags;
+ 
+    raw_spin_lock_irqsave(&sem->lock, flags);
+    if (likely(list_empty(&sem->wait_list))) // 如果没有等待的进程, 直接对计数器加一操作
+        sem->count++;
+    else
+        __up(sem); // 如果有等待进程, 那么调用 __up() 函数进行唤醒
+    raw_spin_unlock_irqrestore(&sem->lock, flags);
+}
+
+static noinline void __sched __up(struct semaphore *sem)
+{
+    // 获取到等待队列的第一个进程
+    struct semaphore_waiter *waiter = list_first_entry(
+        &sem->wait_list, struct semaphore_waiter, list);
+
+    list_del(&waiter->list);       // 把进程从等待队列中删除
+    waiter->up = 1;                // 告诉进程已经获得信号量锁
+    wake_up_process(waiter->task); // 唤醒进程
+}
+```
+
+解锁过程如下：
+1. 判断当前信号量是否有等待的进程，如果没有等待的进程, 直接对计数器加一操作
+2. 如果有等待的进程，那么获取到等待队列的第一个进程。
+3. 把进程从等待队列中删除。
+4. 告诉进程已经获得信号量锁
+5. 唤醒进程
