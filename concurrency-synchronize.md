@@ -91,4 +91,7 @@ again:
 
 #### 信号量
 
-与 `自旋锁` 不一样，当当前进程对 `信号量` 进行上锁时，如果其他进程已经对其进行上锁，那么当前进程会进入睡眠状态，等待其他进程对信号量进行解锁。
+与 `自旋锁` 不一样，当当前进程对 `信号量` 进行上锁时，如果其他进程已经对其进行上锁，那么当前进程会进入睡眠状态，等待其他进程对信号量进行解锁。过程如下图：
+
+![semaphore](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/concurrency-synchronize-semaphore.jpg)
+
