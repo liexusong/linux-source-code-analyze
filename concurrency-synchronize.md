@@ -95,3 +95,16 @@ again:
 
 ![semaphore](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/concurrency-synchronize-semaphore.jpg)
 
+在Linux内核中，信号量使用 `struct semaphore` 表示，定义如下：
+```cpp
+struct semaphore {
+    atomic_t count;
+    int sleepers;
+    wait_queue_head_t wait;
+};
+```
+各个字段的作用如下：
+* `count`：信号量的计数器，上锁时对其进行减一操作(count--)，如果得到的结果为0，表示成功上锁，如果小于0表示已经被其他进程上锁。
+* `sleepers`：正在等待信号量解锁的进程数。
+* `wait`：正在等待信号量解锁的进程队列（注意sleepers不一定等于wait队列的长度）。
+
