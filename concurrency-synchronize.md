@@ -20,5 +20,5 @@ mov [count], eax
 ```
 那么在并发的情况下，有可能出现如下问题：
 
-![concurrency-problem](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/concurrency-synchronize-3.jpg)
+![concurrency-problem](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/concurrency-synchronize-4.jpg)
 
