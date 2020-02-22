@@ -98,58 +98,68 @@ again:
 在Linux内核中，信号量使用 `struct semaphore` 表示，定义如下：
 ```cpp
 struct semaphore {
-    atomic_t count;
-    int sleepers;
-    wait_queue_head_t wait;
+    raw_spinlock_t      lock;
+    unsigned int        count;
+    struct list_head    wait_list;
 };
 ```
 各个字段的作用如下：
-* `count`：信号量的计数器，上锁时对其进行减一操作(--count)，如果得到的结果为0，表示成功上锁，如果小于0表示已经被其他进程上锁。
-* `sleepers`：正在等待信号量解锁的进程数。
-* `wait`：正在等待信号量解锁的进程队列（注意sleepers不一定等于wait队列的长度）。
+* `lock`：自旋锁，用于对多核CPU平台进行同步。
+* `count`：信号量的计数器，上锁时对其进行减一操作(count--)，如果得到的结果为大于等于0，表示成功上锁，如果小于0表示已经被其他进程上锁。
+* `wait_list`：正在等待信号量解锁的进程队列。
 
 `信号量` 上锁通过 `down()` 函数实现，代码如下：
 ```cpp
-void __down(struct semaphore * sem)
+void down(struct semaphore *sem)
 {
-    struct task_struct *tsk = current;            // 获取当前进程描述符
-    DECLARE_WAITQUEUE(wait, tsk);                 // 定义一个等待队列节点
-    tsk->state = TASK_UNINTERRUPTIBLE;            // 把当前进程设置为睡眠状态
-    add_wait_queue_exclusive(&sem->wait, &wait);  // 把当前进程添加到信号量等待队列中
+    unsigned long flags;
 
-    spin_lock_irq(&semaphore_lock);
-    sem->sleepers++;  // 对正在等待信号量的进程数加一
-    for (;;) {
-        int sleepers = sem->sleepers;
-
-        // 把当前正在等待信号量的进程数添加到计数器中(除了当前进程外)
-        // 如果结果等于0时, 表示信号量已经被解锁, 这时可以退出循环
-        if (!atomic_add_negative(sleepers - 1, &sem->count)) {
-            sem->sleepers = 0;
-            break;
-        }
-
-        sem->sleepers = 1; // 由于sleepers(除当前进程外)已经增加到count, 所以现在要把sleepers设置为1
-        spin_unlock_irq(&semaphore_lock);
-
-        schedule();  // 切换到其他进程运行(使当进程进入睡眠)
-        tsk->state = TASK_UNINTERRUPTIBLE;
-        spin_lock_irq(&semaphore_lock);
-    }
-    // 运行到这里代表进程已经获取到信号量锁, 所以把当前进程设置为运行状态
-    spin_unlock_irq(&semaphore_lock);
-    remove_wait_queue(&sem->wait, &wait);
-    tsk->state = TASK_RUNNING;
-    wake_up(&sem->wait);
-}
-
-void down(struct semaphore * sem)
-{
-    result = --sem->count; // 当成原子操作
-    if (result == 0) {
-        return;
-    }
-    __down(sem);
+    spin_lock_irqsave(&sem->lock, flags);
+    if (likely(sem->count > 0))
+        sem->count--;
+    else
+        __down(sem);
+    spin_unlock_irqrestore(&sem->lock, flags);
 }
 ```
-从上面的代码可以知道，字段 `sleepers` 是用于修正计数器 `count` 的，并不是代表等待进程队列的长度。
+
+上面代码可以看出，`down()` 函数首先对信号量进行自旋锁操作（为了避免多核CPU竞争），然后比较计数器是否大于0，如果是对计数器进行减一操作，并且返回，否则调用 `__down()` 函数进行下一步操作。`__down()` 函数实现如下：
+
+```cpp
+static noinline void __sched __down(struct semaphore *sem)
+{
+    __down_common(sem, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+}
+
+static inline int __down_common(struct semaphore *sem,
+    long state, long timeout)
+{
+    struct task_struct *task = current;
+    struct semaphore_waiter waiter;
+
+    list_add_tail(&waiter.list, &sem->wait_list);
+    waiter.task = task;
+    waiter.up = 0;
+
+    for (;;) {
+        if (signal_pending_state(state, task))
+            goto interrupted;
+        if (timeout <= 0)
+            goto timed_out;
+        __set_task_state(task, state);
+        spin_unlock_irq(&sem->lock);
+        timeout = schedule_timeout(timeout);
+        spin_lock_irq(&sem->lock);
+        if (waiter.up)
+            return 0;
+    }
+
+ timed_out:
+    list_del(&waiter.list);
+    return -ETIME;
+
+ interrupted:
+    list_del(&waiter.list);
+    return -EINTR;
+}
+```
