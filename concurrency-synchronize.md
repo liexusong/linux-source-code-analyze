@@ -22,3 +22,4 @@ mov [count], eax
 
 ![concurrency-problem](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/concurrency-synchronize-4.jpg)
 
+假设count变量初始值为0，进程1执行完 `mov eax, [count]` 后，寄存器eax内保存了count的值0。此时，进程2被调度执行。进程2执行 `count++` 的所有指令，将累加后的count值1写回到内存。然后，进程1再次被调度执行，进程1接着执行，计算count的累加值仍为1，写回到内存。虽然进程1和进程2执行了两次 `count++` 操作，但是count最后的值为1，而不是2。
