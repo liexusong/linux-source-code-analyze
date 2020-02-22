@@ -65,3 +65,30 @@ inc [count]
 
 ![spinlock](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/concurrency-synchronize-spinlock.jpg)
 
+使用 `自旋锁` 时，必须先对自旋锁进行初始化（设置为1），上锁过程如下：
+1. 对自旋锁 `lock` 进行减一操作，判断结果是否等于0，如果是表示上锁成功并返回。
+2. 如果不等于0，表示其他进程已经上锁，此时必须不断比较自旋锁 `lock` 的值是否等于1（表示已经解锁）。
+3. 如果自旋锁 `lock` 等于1，跳转到第一步继续进行上锁操作。
+
+由于Linux的自旋锁使用汇编实现，所以比较苦涩难懂，这里使用C语言来模拟一下：
+```cpp
+void spin_lock(amtoic_t *lock)
+{
+again:
+    result = (*lock)--;
+    if (result == 0) {
+        return;
+    }
+    
+    while (true) {
+        if (*lock == 1) {
+	    goto again;
+	}
+    }
+}
+```
+上面代码将 `result = (*lock)--;` 当成原子操作，解锁过程只需要把 `lock` 设置为1即可。由于自旋锁会不断尝试上锁操作，并不会对进程进行调度，所以在单核CPU中可能会导致 100% 的CPU占用率。另外，自旋锁只适合粒度比较小的操作，如果操作粒度比较大，就需要使用信号量这种可调度进程的锁。
+
+#### 信号量
+
+与 `自旋锁` 不一样，当当前进程对 `信号量` 进行上锁时，如果其他进程已经对其进行上锁，那么当前进程会进入睡眠状态，等待其他进程对信号量进行解锁。
