@@ -28,3 +28,14 @@ mov [count], eax
 * 进程1再次被调度执行，计算count的累加值仍为1，写回到内存。
 
 虽然进程1和进程2执行了两次 `count++` 操作，但是count最后的值为1，而不是2。
+
+要解决这个问题就需要使用 `原子操作`，原子操作是指不能被打断的操作，在单核CPU中，一条指令就是原子操作。比如上面的问题可以把 `count++` 语句翻译成指令 `inc [count]` 即可。Linux也提供了这样的原子操作，如对整数加一操作的 `atomic_inc()`：
+```cpp
+static __inline__ void atomic_inc(atomic_t *v)
+{
+	__asm__ __volatile__(
+		LOCK "incl %0"
+		:"=m" (v->counter)
+		:"m" (v->counter));
+}
+```
