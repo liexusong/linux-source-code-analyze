@@ -61,4 +61,7 @@ inc [count]
 
 #### 自旋锁
 
+`自旋锁` 只能在多核CPU系统中，其核心原理是 `原子操作`，原理如下图：
+
+![spinlock](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/concurrency-synchronize-spinlock.jpg)
 
