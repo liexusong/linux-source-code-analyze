@@ -137,29 +137,26 @@ static inline int __down_common(struct semaphore *sem,
     struct task_struct *task = current;
     struct semaphore_waiter waiter;
 
+    // 把当前进程添加到等待队列中
     list_add_tail(&waiter.list, &sem->wait_list);
     waiter.task = task;
     waiter.up = 0;
 
     for (;;) {
-        if (signal_pending_state(state, task))
-            goto interrupted;
-        if (timeout <= 0)
-            goto timed_out;
+        ...
         __set_task_state(task, state);
         spin_unlock_irq(&sem->lock);
         timeout = schedule_timeout(timeout);
         spin_lock_irq(&sem->lock);
-        if (waiter.up)
+        if (waiter.up) // 当前进程是否获得信号量锁?
             return 0;
     }
-
- timed_out:
-    list_del(&waiter.list);
-    return -ETIME;
-
- interrupted:
-    list_del(&waiter.list);
-    return -EINTR;
+    ...
 }
 ```
+
+`__down()` 函数最终调用 `__down_common()` 函数，而 `__down_common()` 函数的操作过程如下：
+
+1. 把当前进程添加到信号量的等待队列中。
+2. 切换到其他进程运行，直到被其他进程唤醒。
+3. 如果当前进程获得信号量锁（由解锁进程传递），那么函数返回。
