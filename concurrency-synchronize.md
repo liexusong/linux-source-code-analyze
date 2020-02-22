@@ -104,7 +104,51 @@ struct semaphore {
 };
 ```
 各个字段的作用如下：
-* `count`：信号量的计数器，上锁时对其进行减一操作(count--)，如果得到的结果为0，表示成功上锁，如果小于0表示已经被其他进程上锁。
+* `count`：信号量的计数器，上锁时对其进行减一操作(--count)，如果得到的结果为0，表示成功上锁，如果小于0表示已经被其他进程上锁。
 * `sleepers`：正在等待信号量解锁的进程数。
 * `wait`：正在等待信号量解锁的进程队列（注意sleepers不一定等于wait队列的长度）。
 
+`信号量` 上锁通过 `down()` 函数实现，代码如下：
+```cpp
+void __down(struct semaphore * sem)
+{
+    struct task_struct *tsk = current;            // 获取当前进程描述符
+    DECLARE_WAITQUEUE(wait, tsk);                 // 定义一个等待队列节点
+    tsk->state = TASK_UNINTERRUPTIBLE;            // 把当前进程设置为睡眠状态
+    add_wait_queue_exclusive(&sem->wait, &wait);  // 把当前进程添加到信号量等待队列中
+
+    spin_lock_irq(&semaphore_lock);
+    sem->sleepers++;  // 对正在等待信号量的进程数加一
+    for (;;) {
+        int sleepers = sem->sleepers;
+
+        // 把当前正在等待信号量的进程数添加到计数器中(除了当前进程外)
+        // 如果结果等于0时, 表示信号量已经被解锁, 这时可以退出循环
+        if (!atomic_add_negative(sleepers - 1, &sem->count)) {
+            sem->sleepers = 0;
+            break;
+        }
+
+        sem->sleepers = 1; // 由于sleepers(除当前进程外)已经增加到count, 所以现在要把sleepers设置为1
+        spin_unlock_irq(&semaphore_lock);
+
+        schedule();  // 切换到其他进程运行(使当进程进入睡眠)
+        tsk->state = TASK_UNINTERRUPTIBLE;
+        spin_lock_irq(&semaphore_lock);
+    }
+    // 运行到这里代表进程已经获取到信号量锁, 所以把当前进程设置为运行状态
+    spin_unlock_irq(&semaphore_lock);
+    remove_wait_queue(&sem->wait, &wait);
+    tsk->state = TASK_RUNNING;
+    wake_up(&sem->wait);
+}
+
+void down(struct semaphore * sem)
+{
+    result = --sem->count; // 当成原子操作
+    if (result == 0) {
+        return;
+    }
+    __down(sem);
+}
+```
