@@ -39,3 +39,8 @@ static __inline__ void atomic_inc(atomic_t *v)
 		:"m" (v->counter));
 }
 ```
+
+在多核CPU中，一条指令也不一定是原子操作，比如 `inc [count]` 指令在多核CPU中需要进行如下过程：
+1. 从内存将count的数据读取到cpu。
+2. 累加读取的值。
+3. 将修改的值写回count内存。
