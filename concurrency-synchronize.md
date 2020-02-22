@@ -45,7 +45,7 @@ static __inline__ void atomic_inc(atomic_t *v)
 2. 累加读取的值。
 3. 将修改的值写回count内存。
 
-英特尔的CPU提供了 `lock` 前缀来锁住总线，可以让指令变成原子操作，如下：
+`Intel x86 CPU` 提供了 `lock` 前缀来锁住总线，可以让指令保证不被其他CPU中断，如下：
 ```asm
 lock
 inc [count]
