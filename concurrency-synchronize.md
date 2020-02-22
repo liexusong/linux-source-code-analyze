@@ -65,3 +65,8 @@ inc [count]
 
 ![spinlock](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/concurrency-synchronize-spinlock.jpg)
 
+使用 `自旋锁` 时，必须先对自旋锁进行初始化（设置为1），上锁过程如下：
+1. 对自旋锁 `lock` 进行减一操作，判断结果是否等于0，如果是表示上锁成功并返回。
+2. 如果不等于0，表示其他进程已经上锁，此时必须不断比较自旋锁 `lock` 的值是否等于1（表示已经解锁）。
+3. 如果自旋锁 `lock` 等于1，跳转到第一步继续进行上锁操作。
+
