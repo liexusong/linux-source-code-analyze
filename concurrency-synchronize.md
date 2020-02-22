@@ -152,3 +152,4 @@ void down(struct semaphore * sem)
     __down(sem);
 }
 ```
+从上面的代码可以知道，字段 `sleepers` 是用于修正计数器 `count` 的，并不是代表等待进程队列的长度。
