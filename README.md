@@ -32,5 +32,5 @@
     * [定时器实现](https://github.com/liexusong/linux-source-code-analyze/blob/master/kernel-timer.md)
     * [多路复用I/O](https://github.com/liexusong/linux-source-code-analyze/blob/master/multiplexing-io.md)
     * [docker实现原理之 - namespace](https://github.com/liexusong/linux-source-code-analyze/blob/master/namespace.md)
-* 2.6+内核
+* 2.6+内核分析
     
