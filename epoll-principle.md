@@ -63,4 +63,14 @@ struct eventpoll {
 ```cpp
 long epoll_ctl(int epfd, int op, int fd,struct epoll_event *event);
 ```
-
+下面说明一下各个参数的作用：
+1. `epfd`: 通过调用 `epoll_create()` 函数返回的文件句柄。
+2. `op`: 要进行的操作，有3个选项：`EPOLL_CTL_ADD`、`EPOLL_CTL_DEL` 和 `EPOLL_CTL_MOD`。`EPOLL_CTL_ADD` 表示要进行添加操作，`EPOLL_CTL_DEL` 表示要进行删除操作，`EPOLL_CTL_MOD` 表示要进行修改操作。
+3. `fd`: 要监听的文件句柄。
+4. `event`: 告诉内核需要监听什么事。其定义如下：
+```cpp
+struct epoll_event {
+  __uint32_t events;  /* Epoll events */
+  epoll_data_t data;  /* User data variable */
+};
+```
