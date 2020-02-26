@@ -41,14 +41,13 @@ struct eventpoll {
     ...
     struct list_head rdllist;
     struct rb_root rbr;
-    struct epitem *ovflist;
+    ...
 };
 ```
 先来说明一下 `eventpoll` 对象各个成员的作用：
 1. `wq`: 等待队列，当调用 `epoll_wait(fd)` 时会把进程添加到 `eventpoll` 对象的 `wq` 等待队列中。
 2. `rdllist`: 保存已经就绪的文件列表。
 3. `rbr`: 使用红黑树来管理所有被监听的文件。
-4. `ovflist`: 使用链表来管理所有被监听的文件。
 
 下图展示了 `eventpoll` 对象与被监听的文件关系：
 
