@@ -51,4 +51,6 @@ struct eventpoll {
 4. `ovflist`: 使用链表来管理所有被监听的文件。
 
 下图展示了 `eventpoll` 对象与被监听的文件关系：
-![epoll-eventpoll]()
+
+![epoll-eventpoll](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/epoll-eventpoll.jpg)
+
