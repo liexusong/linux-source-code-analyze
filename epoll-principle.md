@@ -30,8 +30,8 @@ error_return:
 }
 ```
 `sys_epoll_create()` 主要做两件事情：
-1. 调用 `ep_alloc()` 函数创建一个 `eventpoll` 对象。
-2. 调用 `anon_inode_getfd()` 函数把 `eventpoll` 对象映射到一个文件句柄并且返回这个句柄。
+1. 调用 `ep_alloc()` 函数创建并初始化一个 `eventpoll` 对象。
+2. 调用 `anon_inode_getfd()` 函数把 `eventpoll` 对象映射到一个文件句柄，并返回这个文件句柄。
 
 我们先来看看 `eventpoll` 这个对象，`eventpoll` 对象用于管理 `epoll` 监听的文件列表，其定义如下：
 ```cpp
@@ -53,4 +53,7 @@ struct eventpoll {
 下图展示了 `eventpoll` 对象与被监听的文件关系：
 
 ![epoll-eventpoll](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/epoll-eventpoll.jpg)
+
+由于被监听的文件是通过 `epitem` 对象来管理的，所以上图中的节点都是以 `epitem` 对象的形式存在的。为什么要使用红黑树来管理被监听的文件呢？这是为了能够通过文件句柄快速查找到其对应的 `epitem` 对象。红黑树是一种平衡二叉树，如果对其不了解可以查阅相关的文档。
+
 
