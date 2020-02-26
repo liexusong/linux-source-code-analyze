@@ -66,9 +66,9 @@ long epoll_ctl(int epfd, int op, int fd,struct epoll_event *event);
 下面说明一下各个参数的作用：
 1. `epfd`: 通过调用 `epoll_create()` 函数返回的文件句柄。
 2. `op`: 要进行的操作，有3个选项：
-   * `EPOLL_CTL_ADD` 表示要进行添加操作。
-   * `EPOLL_CTL_DEL` 表示要进行删除操作。
-   * `EPOLL_CTL_MOD` 表示要进行修改操作。
+   * `EPOLL_CTL_ADD`：表示要进行添加操作。
+   * `EPOLL_CTL_DEL`：表示要进行删除操作。
+   * `EPOLL_CTL_MOD`：表示要进行修改操作。
 3. `fd`: 要监听的文件句柄。
 4. `event`: 告诉内核需要监听什么事。其定义如下：
 ```cpp
@@ -78,10 +78,10 @@ struct epoll_event {
 };
 ```
 events可以是以下几个宏的集合：
-* EPOLLIN ：表示对应的文件句柄可以读（包括对端SOCKET正常关闭）；
-* EPOLLOUT：表示对应的文件句柄可以写；
-* EPOLLPRI：表示对应的文件句柄有紧急的数据可读（这里应该表示有带外数据到来）；
-* EPOLLERR：表示对应的文件句柄发生错误；
-* EPOLLHUP：表示对应的文件句柄被挂断；
-* EPOLLET：将EPOLL设为边缘触发(Edge Triggered)模式，这是相对于水平触发(Level Triggered)来说的。
-* EPOLLONESHOT：只监听一次事件，当监听完这次事件之后，如果还需要继续监听这个socket的话，需要再次把这个socket加入到EPOLL队列里。
+* `EPOLLIN` ：表示对应的文件句柄可以读（包括对端SOCKET正常关闭）；
+* `EPOLLOUT`：表示对应的文件句柄可以写；
+* `EPOLLPRI`：表示对应的文件句柄有紧急的数据可读（这里应该表示有带外数据到来）；
+* `EPOLLERR`：表示对应的文件句柄发生错误；
+* `EPOLLHUP`：表示对应的文件句柄被挂断；
+* `EPOLLET`：将EPOLL设为边缘触发(Edge Triggered)模式，这是相对于水平触发(Level Triggered)来说的。
+* `EPOLLONESHOT`：只监听一次事件，当监听完这次事件之后，如果还需要继续监听这个socket的话，需要再次把这个socket加入到EPOLL队列里。
