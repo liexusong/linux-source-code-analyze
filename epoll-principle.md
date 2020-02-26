@@ -2,7 +2,7 @@
 
 `epoll` 是Linux平台下的一种特有的多路复用IO实现方式，与传统的 `select` 相比，`epoll` 在性能上有很大的提升。本文主要讲解 `epoll` 的实现原理，而对于 `epoll` 的使用可以参考相关的书籍或文章。
 
-### epoll创建
+### epoll 的创建
 
 要使用 `epoll` 首先需要调用 `epoll_create()` 函数创建一个 `epoll` 的句柄，`epoll_create()` 函数定义如下：
 ```cpp
