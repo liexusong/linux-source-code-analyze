@@ -63,3 +63,23 @@ static inline void init_waitqueue_func_entry(wait_queue_t *q, wait_queue_func_t 
     q->func = func;
 }
 ```
+
+初始化完 `wait_queue_t` 结构变量后，可以通过调用 `add_wait_queue()` 函数把等待进程添加到等待队列，其实现如下：
+```cpp
+void add_wait_queue(wait_queue_head_t *q, wait_queue_t *wait)
+{
+    unsigned long flags;
+
+    wait->flags &= ~WQ_FLAG_EXCLUSIVE;
+    spin_lock_irqsave(&q->lock, flags);
+    __add_wait_queue(q, wait);
+    spin_unlock_irqrestore(&q->lock, flags);
+}
+
+static inline void __add_wait_queue(wait_queue_head_t *head, wait_queue_t *new)
+{
+    list_add(&new->task_list, &head->task_list);
+}
+```
+`add_wait_queue()` 函数的实现很简单，首先通过调用 `spin_lock_irqsave()` 上锁，然后调用 `list_add()` 函数把节点添加到等待队列即可。
+
