@@ -94,3 +94,20 @@ schedule();
 
 ### 唤醒等待队列
 
+当资源准备好后，就可以唤醒等待队列中的进程，可以通过 `wake_up()` 函数来唤醒等待队列中的进程。`wake_up()` 最终会调用 `__wake_up_common()`，其实现如下：
+```cpp
+static void __wake_up_common(wait_queue_head_t *q, 
+    unsigned int mode, int nr_exclusive, int sync, void *key)
+{
+    wait_queue_t *curr, *next;
+
+    list_for_each_entry_safe(curr, next, &q->task_list, task_list) {
+        unsigned flags = curr->flags;
+
+        if (curr->func(curr, mode, sync, key) &&
+                (flags & WQ_FLAG_EXCLUSIVE) && !--nr_exclusive)
+            break;
+    }
+}
+```
+可以看出，唤醒等待队列就是变量等待队列的等待进程，然后调用唤醒函数来唤醒它们。
