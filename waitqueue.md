@@ -1,10 +1,10 @@
-## `waitqueue` 原理与实现
+## 等待队列原理与实现
 
 当进程要获取某些资源（例如从网卡读取数据）的时候，但资源并没有准备好（例如网卡还没接收到数据），这时候内核必须切换到其他进程运行，直到资源准备好再唤醒进程。
 
 `waitqueue (等待队列)` 就是内核用于管理等待资源的进程，当某个进程获取的资源没有准备好的时候，可以通过调用 `add_wait_queue()` 函数把进程添加到 `waitqueue` 中，然后切换到其他进程继续执行。当资源准备好，由资源提供方通过调用 `wake_up()` 函数来唤醒等待的进程。
 
-### `waitqueue` 初始化
+### 等待队列初始化
 
 要使用 `waitqueue` 首先需要声明一个 `wait_queue_head_t` 结构的变量，`wait_queue_head_t` 结构定义如下：
 ```cpp
@@ -25,7 +25,7 @@ void init_waitqueue_head(wait_queue_head_t *q)
 ```
 初始化过程很简单，首先调用 `spin_lock_init()` 来初始化自旋锁 `lock`，然后调用 `INIT_LIST_HEAD()` 来初始化进程链表。
 
-### 向 `waitqueue` 添加等待进程
+### 向等待队列添加等待进程
 
 要向 `waitqueue` 添加等待进程，首先要声明一个 `wait_queue_t` 结构的变量，`wait_queue_t` 结构定义如下：
 ```cpp
@@ -82,4 +82,15 @@ static inline void __add_wait_queue(wait_queue_head_t *head, wait_queue_t *new)
 }
 ```
 `add_wait_queue()` 函数的实现很简单，首先通过调用 `spin_lock_irqsave()` 上锁，然后调用 `list_add()` 函数把节点添加到等待队列即可。
+
+### 休眠等待进程
+
+当把进程添加到等待队列后，就可以休眠当前进程，让出CPU给其他进程运行，要休眠进程可以通过一下方式：
+```cpp
+set_current_state(TASK_INTERRUPTIBLE);
+schedule();
+```
+代码 `set_current_state(TASK_INTERRUPTIBLE)` 可以把当前进程运行状态设置为 `可中断休眠` 状态，调用 `schedule()` 函数可以使当前进程让出CPU，切换到其他进程执行。
+
+### 唤醒等待队列
 
