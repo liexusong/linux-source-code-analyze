@@ -15,4 +15,12 @@ struct __wait_queue_head {
 ```
 `waitqueue` 本质上是一个链表，而 `wait_queue_head_t` 结构是 `waitqueue` 的头部，`lock` 字段用于保护等待队列在多核环境下数据被破坏，而 `task_list` 字段用于保存等待资源的进程列表。
 
-
+可以通过调用 `init_waitqueue_head()` 函数来初始化 `wait_queue_head_t` 结构，其实现如下：
+```cpp
+void init_waitqueue_head(wait_queue_head_t *q)
+{
+    spin_lock_init(&q->lock);
+    INIT_LIST_HEAD(&q->task_list);
+}
+```
+初始化过程很简单，首先调用 `spin_lock_init()` 来初始化自旋锁 `lock`，然后调用 `INIT_LIST_HEAD()` 来初始化进程链表。
