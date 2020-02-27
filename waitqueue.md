@@ -24,3 +24,17 @@ void init_waitqueue_head(wait_queue_head_t *q)
 }
 ```
 初始化过程很简单，首先调用 `spin_lock_init()` 来初始化自旋锁 `lock`，然后调用 `INIT_LIST_HEAD()` 来初始化进程链表。
+
+### 向 `waitqueue` 添加等待进程
+
+要向 `waitqueue` 添加等待进程，首先要声明一个 `wait_queue_t` 结构的变量，`wait_queue_t` 结构定义如下：
+```cpp
+typedef int (*wait_queue_func_t)(wait_queue_t *wait, unsigned mode, int sync, void *key);
+
+struct __wait_queue {
+    unsigned int flags;
+    void *private;
+    wait_queue_func_t func;
+    struct list_head task_list;
+};
+```
