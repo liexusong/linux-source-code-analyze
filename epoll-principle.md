@@ -188,4 +188,24 @@ unsigned int tcp_poll(struct file *file, struct socket *sock, poll_table *wait)
 ```
 每个 `socket` 对象都有个等待队列（`waitqueue`, 关于等待队列可以参考文章: [等待队列原理与实现](https://github.com/liexusong/linux-source-code-analyze/blob/master/waitqueue.md)），用于存放等待 socket 状态更改的进程。
 
-从上述代码可以知道，`tcp_poll()` 调用了 `poll_wait()` 函数，而 `poll_wait()` 最终会调用 `ep_ptable_queue_proc()` 函数，而 `ep_ptable_queue_proc()` 会把当前 `epitem` 对象添加到 socket 对象的等待队列中，并且设置唤醒函数为 `ep_poll_callback()`，也就是说，当socket状态发生变化时，会触发调用 `ep_poll_callback()` 函数。
+从上述代码可以知道，`tcp_poll()` 调用了 `poll_wait()` 函数，而 `poll_wait()` 最终会调用 `ep_ptable_queue_proc()` 函数，`ep_ptable_queue_proc()` 函数实现如下：
+```cpp
+static void ep_ptable_queue_proc(struct file *file, 
+    wait_queue_head_t *whead, poll_table *pt)
+{
+    struct epitem *epi = ep_item_from_epqueue(pt);
+    struct eppoll_entry *pwq;
+
+    if (epi->nwait >= 0 && (pwq = kmem_cache_alloc(pwq_cache, GFP_KERNEL))) {
+        init_waitqueue_func_entry(&pwq->wait, ep_poll_callback);
+        pwq->whead = whead;
+        pwq->base = epi;
+        add_wait_queue(whead, &pwq->wait);
+        list_add_tail(&pwq->llink, &epi->pwqlist);
+        epi->nwait++;
+    } else {
+        epi->nwait = -1;
+    }
+}
+```
+`ep_ptable_queue_proc()` 函数主要工作是把当前 `epitem` 对象添加到 socket 对象的等待队列中，并且设置唤醒函数为 `ep_poll_callback()`，也就是说，当socket状态发生变化时，会触发调用 `ep_poll_callback()` 函数。
