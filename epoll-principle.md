@@ -295,3 +295,8 @@ static int ep_poll(struct eventpoll *ep,
    3. 接收到信号
 4. 如果有就绪的文件，那么就调用 `ep_send_events()` 函数把就绪文件复制到 `events` 参数中。
 5. 返回就绪文件的个数。
+
+最后，我们通过一张图来总结epoll的原理：
+
+![epoll-principle](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/epoll_principle.jpg)
+
