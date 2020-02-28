@@ -300,3 +300,9 @@ static int ep_poll(struct eventpoll *ep,
 
 ![epoll-principle](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/epoll_principle.jpg)
 
+下面通过文字来描述一下这个过程：
+1. 通过调用 `epoll_create()` 函数创建并初始化一个 `eventpoll` 对象。
+2. 通过调用 `epoll_ctl()` 函数把被监听的文件句柄 (如socket句柄) 封装成 `epitem` 对象并且添加到 `eventpoll` 对象的红黑树中进行管理。
+3. 通过调用 `epoll_wait()` 函数等待被监听的文件状态发生改变。
+4. 当被监听的文件状态发生改变时（如socket接收到数据），会把文件句柄对应 `epitem` 对象添加到 `eventpoll` 对象的就绪队列 `rdllist` 中。并且把就绪队列的文件列表复制到 `epoll_wait()` 函数的 `events` 参数中。
+5. 唤醒调用 `epoll_wait()` 函数被阻塞（睡眠）的进程。
