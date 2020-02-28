@@ -90,5 +90,87 @@ struct epoll_event {
 
 `epoll_ctl()` 函数会调用 `sys_epoll_ctl()` 内核函数，`sys_epoll_ctl()` 内核函数的实现如下：
 ```cpp
+asmlinkage long sys_epoll_ctl(int epfd, int op, 
+    int fd, struct epoll_event __user *event)
+{
+    ...
+    file = fget(epfd);
+    tfile = fget(fd);
+    ...
+    ep = file->private_data;
 
+    mutex_lock(&ep->mtx);
+
+    epi = ep_find(ep, tfile, fd);
+
+    error = -EINVAL;
+    switch (op) {
+    case EPOLL_CTL_ADD:
+        if (!epi) {
+            epds.events |= POLLERR | POLLHUP;
+
+            error = ep_insert(ep, &epds, tfile, fd);
+        } else
+            error = -EEXIST;
+        break;
+    ...
+    }
+    mutex_unlock(&ep->mtx);
+
+    ...
+    return error;
+}
 ```
+`sys_epoll_ctl()` 函数会根据传入不同 `op` 的值来进行不同操作，比如传入 `EPOLL_CTL_ADD` 表示要进行添加操作，那么就调用 `ep_insert()` 函数来进行添加操作。
+
+我们继续来分析添加操作 `ep_insert()` 函数的实现：
+```cpp
+static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+             struct file *tfile, int fd)
+{
+    ...
+    error = -ENOMEM;
+    // 申请一个 epitem 对象
+    if (!(epi = kmem_cache_alloc(epi_cache, GFP_KERNEL)))
+        goto error_return;
+
+    // 初始化 epitem 对象
+    INIT_LIST_HEAD(&epi->rdllink);
+    INIT_LIST_HEAD(&epi->fllink);
+    INIT_LIST_HEAD(&epi->pwqlist);
+    epi->ep = ep;
+    ep_set_ffd(&epi->ffd, tfile, fd);
+    epi->event = *event;
+    epi->nwait = 0;
+    epi->next = EP_UNACTIVE_PTR;
+
+    epq.epi = epi;
+    // 等价于: epq.pt->qproc = ep_ptable_queue_proc
+    init_poll_funcptr(&epq.pt, ep_ptable_queue_proc);
+
+    // 调用被监听文件的 poll 接口. 
+    // 这个接口又各自文件系统实现, 如socket的话, 那么这个接口就是 tcp_poll().
+    revents = tfile->f_op->poll(tfile, &epq.pt);
+    ...
+    ep_rbtree_insert(ep, epi); // 把 epitem 对象添加到epoll的红黑树中进行管理
+
+    spin_lock_irqsave(&ep->lock, flags);
+
+    // 如果被监听的文件已经可以进行对应的读写操作
+    // 那么就把文件添加到epoll的就绪队列 rdllink 中, 并且唤醒调用 epoll_wait() 的进程.
+    if ((revents & event->events) && !ep_is_linked(&epi->rdllink)) {
+        list_add_tail(&epi->rdllink, &ep->rdllist);
+
+        if (waitqueue_active(&ep->wq))
+            wake_up_locked(&ep->wq);
+        if (waitqueue_active(&ep->poll_wait))
+            pwake++;
+    }
+
+    spin_unlock_irqrestore(&ep->lock, flags);
+    ...
+    return 0;
+    ...
+}
+```
+被监听的文件是通过 `epitem` 对象进行管理的，也就是说被监听的文件会被封装成 `epitem` 对象，然后会被添加到 `eventpoll` 对象的红黑树中进行管理。
