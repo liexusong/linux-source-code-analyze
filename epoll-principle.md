@@ -173,4 +173,19 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
     ...
 }
 ```
-被监听的文件是通过 `epitem` 对象进行管理的，也就是说被监听的文件会被封装成 `epitem` 对象，然后会被添加到 `eventpoll` 对象的红黑树中进行管理。
+被监听的文件是通过 `epitem` 对象进行管理的，也就是说被监听的文件会被封装成 `epitem` 对象，然后会被添加到 `eventpoll` 对象的红黑树中进行管理（如上述代码中的 `ep_rbtree_insert(ep, epi)`）。
+
+`tfile->f_op->poll(tfile, &epq.pt)` 这行代码的作用是调用被监听文件的 `poll()` 接口，如果被监听的文件是一个socket句柄，那么就会调用 `tcp_poll()`，我们来看看 `tcp_poll()` 做了什么操作：
+```cpp
+unsigned int tcp_poll(struct file *file, struct socket *sock, poll_table *wait)
+{
+    struct sock *sk = sock->sk;
+    ...
+    poll_wait(file, sk->sk_sleep, wait);
+    ...
+    return mask;
+}
+```
+每个 `socket` 对象都有个等待队列（`waitqueue`, 关于等待队列可以参考文章: [等待队列原理与实现](https://github.com/liexusong/linux-source-code-analyze/blob/master/waitqueue.md)），用于存放等待 socket 状态更改的进程。
+
+从上述代码可以知道，`tcp_poll()` 调用了 `poll_wait()` 函数，而 `poll_wait()` 最终会调用 `ep_ptable_queue_proc()` 函数，而 `ep_ptable_queue_proc()` 会把当前 `epitem` 对象添加到 socket 对象的等待队列中，并且设置唤醒函数为 `ep_poll_callback()`，也就是说，当socket状态发生变化时，会触发调用 `ep_poll_callback()` 函数。
