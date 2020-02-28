@@ -230,6 +230,16 @@ is_linked:
 
 把被监听的文件句柄添加到epoll后，就可以通过调用 `epoll_wait()` 等待被监听的文件状态发生改变。`epoll_wait()` 调用会阻塞当前进程，当被监听的文件状态发生改变时，`epoll_wait()` 调用便会返回。
 
+`epoll_wait()` 系统调用的原型如下：
+```cpp
+long epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
+```
+各个参数的意义：
+1. `epfd`: 调用 `epoll_create()` 函数创建的epoll句柄。
+2. `events`: 用来存放就绪文件列表。
+3. `maxevents`: `events` 数组的大小。
+4. `timeout`: 设置等待的超时时间。
+
 `epoll_wait()` 函数会调用 `sys_epoll_wait()` 内核函数，而 `sys_epoll_wait()` 函数最终会调用 `ep_poll()` 函数，我们来看看 `ep_poll()` 函数的实现：
 ```cpp
 static int ep_poll(struct eventpoll *ep, 
@@ -276,3 +286,12 @@ static int ep_poll(struct eventpoll *ep,
     return res;
 }
 ```
+`ep_poll()` 函数主要做以下几件事：
+1. 判断被监听的文件集合中是否有就绪的文件，如果有就返回。
+2. 如果没有就把当前进程添加到epoll的等待队列中，并且进入睡眠。
+3. 进程会一直睡眠直到有以下几种情况发生：
+   1. 被监听的文件集合中有就绪的文件
+   2. 设置了超时时间并且超时了
+   3. 接收到信号
+4. 如果有就绪的文件，那么就调用 `ep_send_events()` 函数把就绪文件复制到 `events` 参数中。
+5. 返回就绪文件的个数。
