@@ -217,7 +217,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
     list_add_tail(&epi->rdllink, &ep->rdllist);
 
 is_linked:
-    // 唤醒调用 epoll_wait() 的进程
+    // 唤醒调用 epoll_wait() 而被阻塞的进程
     if (waitqueue_active(&ep->wq))
         wake_up_locked(&ep->wq);
     ...
@@ -226,3 +226,53 @@ is_linked:
 ```
 `ep_poll_callback()` 函数的主要工作是把就绪的文件添加到 `eventepoll` 对象的就绪队列中，然后唤醒调用 `epoll_wait()` 被阻塞的进程。
 
+### 等待被监听的文件状态发生改变
+
+把被监听的文件句柄添加到epoll后，就可以通过调用 `epoll_wait()` 等待被监听的文件状态发生改变。`epoll_wait()` 调用会阻塞当前进程，当被监听的文件状态发生改变时，`epoll_wait()` 调用便会返回。
+
+`epoll_wait()` 函数会调用 `sys_epoll_wait()` 内核函数，而 `sys_epoll_wait()` 函数最终会调用 `ep_poll()` 函数，我们来看看 `ep_poll()` 函数的实现：
+```cpp
+static int ep_poll(struct eventpoll *ep, 
+    struct epoll_event __user *events, int maxevents, long timeout)
+{
+    ...
+    // 如果就绪文件列表为空
+    if (list_empty(&ep->rdllist)) {
+        // 把当前进程添加到epoll的等待队列中
+        init_waitqueue_entry(&wait, current);
+        wait.flags |= WQ_FLAG_EXCLUSIVE;
+        __add_wait_queue(&ep->wq, &wait);
+
+        for (;;) {
+            set_current_state(TASK_INTERRUPTIBLE); // 把当前进程设置为睡眠状态
+            if (!list_empty(&ep->rdllist) || !jtimeout) // 如果有就绪文件或者超时, 退出循环
+                break;
+            if (signal_pending(current)) { // 接收到信号也要退出
+                res = -EINTR;
+                break;
+            }
+
+            spin_unlock_irqrestore(&ep->lock, flags);
+            jtimeout = schedule_timeout(jtimeout); // 让出CPU, 切换到其他进程进行执行
+            spin_lock_irqsave(&ep->lock, flags);
+        }
+        // 有3种情况会执行到这里:
+        // 1. 被监听的文件集合中有就绪的文件
+        // 2. 设置了超时时间并且超时了
+        // 3. 接收到信号
+        __remove_wait_queue(&ep->wq, &wait);
+
+        set_current_state(TASK_RUNNING);
+    }
+    /* 是否有就绪的文件? */
+    eavail = !list_empty(&ep->rdllist);
+
+    spin_unlock_irqrestore(&ep->lock, flags);
+
+    if (!res && eavail 
+        && !(res = ep_send_events(ep, events, maxevents)) && jtimeout)
+        goto retry;
+
+    return res;
+}
+```
