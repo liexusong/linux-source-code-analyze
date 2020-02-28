@@ -208,4 +208,21 @@ static void ep_ptable_queue_proc(struct file *file,
     }
 }
 ```
-`ep_ptable_queue_proc()` 函数主要工作是把当前 `epitem` 对象添加到 socket 对象的等待队列中，并且设置唤醒函数为 `ep_poll_callback()`，也就是说，当socket状态发生变化时，会触发调用 `ep_poll_callback()` 函数。
+`ep_ptable_queue_proc()` 函数主要工作是把当前 `epitem` 对象添加到 socket 对象的等待队列中，并且设置唤醒函数为 `ep_poll_callback()`，也就是说，当socket状态发生变化时，会触发调用 `ep_poll_callback()` 函数。`ep_poll_callback()` 函数实现如下：
+```cpp
+static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *key)
+{
+    ...
+    // 把就绪的文件添加到就绪队列中
+    list_add_tail(&epi->rdllink, &ep->rdllist);
+
+is_linked:
+    // 唤醒调用 epoll_wait() 的进程
+    if (waitqueue_active(&ep->wq))
+        wake_up_locked(&ep->wq);
+    ...
+    return 1;
+}
+```
+`ep_poll_callback()` 函数的主要工作是把就绪的文件添加到 `eventepoll` 对象的就绪队列中，然后唤醒调用 `epoll_wait()` 被阻塞的进程。
+
