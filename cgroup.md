@@ -25,3 +25,13 @@ memory.force_empty          memory.kmem.tcp.max_usage_in_bytes  memory.memsw.max
 memory.kmem.failcnt         memory.kmem.tcp.usage_in_bytes      memory.memsw.usage_in_bytes      memory.swappiness
 memory.kmem.limit_in_bytes  memory.kmem.usage_in_bytes          memory.move_charge_at_immigrate  memory.usage_in_bytes
 ```
+我们可以向 `memory.limit_in_bytes` 文件写入限制进程（进程组）使用的内存大小，单位为字节(bytes)。例如可以使用以下命令写入限制使用的内存大小为 `1MB`：
+```bash
+$ echo 1048576 > /sys/fs/cgroup/memory/test/memory.limit_in_bytes
+```
+然后我们可以通过以下命令把要限制的进程加入到 `CGroup` 中：
+```bash
+$ echo task_pid > /sys/fs/cgroup/memory/test/tasks
+```
+上面的 `task_pid` 为进程的 `PID`。
+
