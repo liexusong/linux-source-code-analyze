@@ -46,3 +46,7 @@ $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 * `层级（hierarchy）`。由于控制组是以目录形式存在的，所以控制组可以组织成层级的形式，即一棵控制组组成的树。控制组树上的子节点控制组是父节点控制组的孩子，继承父控制组的特定的属性；
 
 * `子系统（subsystem）`。一个子系统就是一个资源控制器，比如 `CPU子系统` 就是控制 CPU 时间分配的一个控制器。子系统必须附加（attach）到一个层级上才能起作用，一个子系统附加到某个层级以后，这个层级上的所有控制组都受到这个子系统的控制。
+
+他们之间的关系如下图：
+
+![cgroup-base](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-base.png)
