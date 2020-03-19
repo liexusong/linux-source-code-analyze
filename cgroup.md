@@ -50,3 +50,13 @@ $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 他们之间的关系如下图：
 
 ![cgroup-base](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-base.png)
+
+`层级` 与 `子系统` 的操作规则有以下几条：
+
+##### 一个 `层级` 可以 attach 多个 `子系统`
+
+![cgroup-rule1](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule1.jpeg)
+
+##### 一个已经被挂载的 `子系统` 只能被再次挂载在一个空的 `层级` 上
+
+![cgroup-rule2](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule2.jpeg)
