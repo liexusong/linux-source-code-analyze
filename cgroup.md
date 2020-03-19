@@ -7,15 +7,15 @@
 本文主要以 `内存子系统（memory subsys）` 作为例子来阐述 `CGroup` 的原理，所以这里先介绍怎么通过 `内存子系统` 来限制进程对内存的使用。
 
 `CGroup` 使用了 `虚拟文件系统` 来进行管理限制的资源信息和被限制的进程列表等，例如要创建一个限制内存使用的 `CGroup` 可以使用下面命令：
-```
+```shell
 $ mount -t cgroup -o memory memory /sys/fs/cgroup/memory
 ```
 上面的命令用于创建内存子系统的根 `CGroup`，如果系统已经存在可以跳过。然后我们使用下面命令在这个目录下面创建一个新的目录 `test`，
-```
+```shell
 $ mkdir /sys/fs/cgroup/memory/test
 ```
 这样就创建了一个子 `CGroup`，我们可以通过 `ls` 目录来查看这个目录下有哪些文件：
-```
+```shell
 $ ls /sys/fs/cgroup/memory/test
 cgroup.clone_children       memory.kmem.max_usage_in_bytes      memory.limit_in_bytes            memory.numa_stat            memory.use_hierarchy
 cgroup.event_control        memory.kmem.slabinfo                memory.max_usage_in_bytes        memory.oom_control          notify_on_release
