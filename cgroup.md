@@ -51,21 +51,21 @@ $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 
 ![cgroup-base](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-base.png)
 
-`层级` 与 `子系统` 的操作规则有以下几条：
+##### `层级` 与 `子系统` 的操作规则有以下几条：
 
-##### 一个 `层级` 可以 attach 多个 `子系统`，如下图：
+__一个 `层级` 可以附加多个 `子系统`，如下图：__
 
 ![cgroup-rule1](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule1.jpeg)
 
-##### 一个已经被挂载的 `子系统` 只能被再次挂载在一个空的 `层级` 上，如下图：
+__一个已经被挂载的 `子系统` 只能被再次挂载在一个空的 `层级` 上，如下图：__
 
 ![cgroup-rule2](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule2.jpeg)
 
-##### 每个 `任务` 只能在一同个 `层级` 的唯一一个 `CGroup` 里，如下图：
+__每个 `任务` 只能在一同个 `层级` 的唯一一个 `CGroup` 里，如下图：__
 
 ![cgroup-rule3](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule3.jpeg)
 
-##### 子进程在被 `fork` 出时自动继承父进程所在 `CGroup`，但是 `fork` 之后就可以按需调整到其他 `CGroup`，如下图：
+__子进程在被 `fork` 出时自动继承父进程所在 `CGroup`，但是 `fork` 之后就可以按需调整到其他 `CGroup`，如下图：__
 
 ![cgroup-rule4](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule4.jpeg)
 
