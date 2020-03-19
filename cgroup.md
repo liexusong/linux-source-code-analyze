@@ -51,7 +51,7 @@ $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 
 ![cgroup-base](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-base.png)
 
-##### `层级` 与 `子系统` 的操作规则有以下几条：
+##### 操作规则：
 
 1. 一个 `层级` 可以附加多个 `子系统`，如下图：
 
