@@ -33,5 +33,5 @@ $ echo 1048576 > /sys/fs/cgroup/memory/test/memory.limit_in_bytes
 ```bash
 $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 ```
-上面的 `task_pid` 为进程的 `PID`。
+上面的 `task_pid` 为进程的 `PID`，把进程PID添加到 `tasks` 文件后，进程对内存的使用就受到此 `CGroup` 的限制。
 
