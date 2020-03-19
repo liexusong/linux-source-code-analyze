@@ -1,4 +1,4 @@
-## CGroup 源码分析
+## CGroup 介绍
 
 `CGroup` 全称 `Control Group` 中文意思为 `控制组`，用于控制（限制）进程对系统各种资源的使用，比如 `CPU`、`内存`、`网络` 和 `磁盘I/O` 等资源的限制，著名的容器引擎 `Docker` 就是使用 `CGroup` 来对容器进行资源限制。
 
@@ -35,7 +35,7 @@ $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 ```
 上面的 `task_pid` 为进程的 `PID`，把进程PID添加到 `tasks` 文件后，进程对内存的使用就受到此 `CGroup` 的限制。
 
-### CGroup 原理
+### CGroup 基本概念
 
 在介绍 `CGroup` 原理前，先介绍一下 `CGroup` 几个相关的概念，因为要理解 `CGroup` 就必须要理解他们：
 
@@ -57,11 +57,11 @@ $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 
 ![cgroup-rule1](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule1.jpeg)
 
-2. 一个已经被挂载的 `子系统` 只能被再次挂载在一个空的 `层级` 上，如下图：
+2. 一个已经被挂载的 `子系统` 只能被再次挂载在一个空的 `层级` 上，不能挂载到已经挂载了其他 `子系统` 的 `层级`，如下图：
 
 ![cgroup-rule2](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule2.jpeg)
 
-3. 每个 `任务` 只能在一同个 `层级` 的唯一一个 `CGroup` 里，如下图：
+3. 每个 `任务` 只能在同一个 `层级` 的唯一一个 `CGroup` 里，并且可以在多个不同层级的 `CGroup` 中，如下图：
 
 ![cgroup-rule3](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule3.jpeg)
 
