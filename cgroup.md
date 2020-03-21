@@ -6,6 +6,8 @@
 
 本文主要以 `内存子系统（memory subsystem）` 作为例子来阐述 `CGroup` 的原理，所以这里先介绍怎么通过 `内存子系统` 来限制进程对内存的使用。
 
+> `子系统` 是 `CGroup` 用于控制某种资源（如内存或者CPU等）使用的逻辑或者算法
+
 `CGroup` 使用了 `虚拟文件系统` 来进行管理限制的资源信息和被限制的进程列表等，例如要创建一个限制内存使用的 `CGroup` 可以使用下面命令：
 ```bash
 $ mount -t cgroup -o memory memory /sys/fs/cgroup/memory
@@ -25,7 +27,7 @@ memory.force_empty          memory.kmem.tcp.max_usage_in_bytes  memory.memsw.max
 memory.kmem.failcnt         memory.kmem.tcp.usage_in_bytes      memory.memsw.usage_in_bytes      memory.swappiness
 memory.kmem.limit_in_bytes  memory.kmem.usage_in_bytes          memory.move_charge_at_immigrate  memory.usage_in_bytes
 ```
-我们可以向 `memory.limit_in_bytes` 文件写入限制进程（进程组）使用的内存大小，单位为字节(bytes)。例如可以使用以下命令写入限制使用的内存大小为 `1MB`：
+可以看到在目录下有很多文件，每个文件都是 `CGroup` 用于控制进程组的资源使用。我们可以向 `memory.limit_in_bytes` 文件写入限制进程（进程组）使用的内存大小，单位为字节(bytes)。例如可以使用以下命令写入限制使用的内存大小为 `1MB`：
 ```bash
 $ echo 1048576 > /sys/fs/cgroup/memory/test/memory.limit_in_bytes
 ```
