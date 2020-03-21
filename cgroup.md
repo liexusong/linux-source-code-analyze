@@ -4,7 +4,7 @@
 
 ### CGroup 使用
 
-本文主要以 `内存子系统（memory subsys）` 作为例子来阐述 `CGroup` 的原理，所以这里先介绍怎么通过 `内存子系统` 来限制进程对内存的使用。
+本文主要以 `内存子系统（memory subsystem）` 作为例子来阐述 `CGroup` 的原理，所以这里先介绍怎么通过 `内存子系统` 来限制进程对内存的使用。
 
 `CGroup` 使用了 `虚拟文件系统` 来进行管理限制的资源信息和被限制的进程列表等，例如要创建一个限制内存使用的 `CGroup` 可以使用下面命令：
 ```bash
@@ -49,7 +49,7 @@ $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 
 他们之间的关系如下图：
 
-![cgroup-base](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-base.png)
+![cgroup-base](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-base.jpg)
 
 ### CGroup 操作规则
 
