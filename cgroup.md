@@ -53,6 +53,8 @@ $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 
 ![cgroup-base](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-base.jpg)
 
+我们可以把 `层级` 中的一个目录当成是一个 `CGroup`，那么目录里面的文件就是这个 `CGroup` 用于控制进程组使用各种资源的信息，而附加在 `层级` 上的 `子系统` 表示这个 `层级` 中的 `CGroup` 可以控制哪些资源。
+
 ### CGroup 操作规则
 
 1. 一个 `层级` 可以附加多个 `子系统`，如下图：
