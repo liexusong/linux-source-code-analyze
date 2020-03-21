@@ -57,6 +57,8 @@ $ echo task_pid > /sys/fs/cgroup/memory/test/tasks
 
 ### CGroup 操作规则
 
+使用 `CGroup` 时，必须按照 `CGroup` 一些操作规则来进行操作，否则会出错。下面介绍一下关于 `CGroup` 的一些操作规则：
+
 1. 一个 `层级` 可以附加多个 `子系统`，如下图：
 
 ![cgroup-rule1](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-rule1.jpeg)
