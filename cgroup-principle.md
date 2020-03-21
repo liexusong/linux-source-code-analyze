@@ -31,3 +31,21 @@ struct cgroup {
 6. `root`: 用于保存 `层级` 的一些数据，比如：`层级` 的根节点，附加到 `层级` 的 `子系统` 列表（因为一个 `层级` 可以附加多个 `子系统`），还有这个 `层级` 有多少个 `cgroup` 节点等。
 7. `top_cgroup`: `层级` 的根节点（根cgroup）。
 
+我们通过下面图片来描述 `层级` 中各个 `cgroup` 组成的树状关系：
+
+![cgroup-links](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-links.jpg)
+
+
+### `css_set` 结构体
+
+由于一个进程可以同时添加到不同的 `cgroup` 中（前提是这些 `cgroup` 属于不同的 `层级`）进行资源控制，而这些 `cgroup` 附加了不同的资源控制 `子系统`。所以需要使用一个结构把这些 `子系统` 关联起来，方便进程快速找到对应 `子系统` 的资源控制统计信息，而 `css_set` 结构体就是用来做这件事情。`css_set` 结构体定义如下：
+
+```cpp
+struct css_set {
+    struct kref ref;
+    struct list_head list;
+    struct list_head tasks;
+    struct list_head cg_links;
+    struct cgroup_subsys_state *subsys[CGROUP_SUBSYS_COUNT];
+};
+```
