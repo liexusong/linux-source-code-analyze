@@ -52,7 +52,7 @@ struct cgroup_subsys_state {
 2. `refcnt`: 引用计数器。
 3. `flags`: 标志位，如果这个资源控制统计信息所属的 `cgroup` 是 `层级` 的根节点，那么就会将这个标志位设置为 `CSS_ROOT` 表示属于根节点。
 
-从 `cgroup_subsys_state` 结构的定义看不到有关各个 `子系统` 的资源控制统计信息，这是因为 `cgroup_subsys_state` 结构并不是真实的资源控制统计信息结构，比如 `内存子系统` 的资源控制统计信息结构是 `mem_cgroup`，那么怎样通过这个 `cgroup_subsys_state` 结构去找到对应的 `mem_cgroup` 结构呢？我们来看看 `mem_cgroup` 结构的定义：
+从 `cgroup_subsys_state` 结构的定义看不到各个 `子系统` 相关的资源控制统计信息，这是因为 `cgroup_subsys_state` 结构并不是真实的资源控制统计信息结构，比如 `内存子系统` 真正的资源控制统计信息结构是 `mem_cgroup`，那么怎样通过这个 `cgroup_subsys_state` 结构去找到对应的 `mem_cgroup` 结构呢？我们来看看 `mem_cgroup` 结构的定义：
 
 ```cpp
 struct mem_cgroup {
@@ -64,11 +64,11 @@ struct mem_cgroup {
 };
 ```
 
-从 `mem_cgroup` 结构的定义可以发现，其第一个字段就是一个 `cgroup_subsys_state` 结构。下面的图片展示了他们之间的关系：
+从 `mem_cgroup` 结构的定义可以发现，`mem_cgroup` 结构的第一个字段就是一个 `cgroup_subsys_state` 结构。下面的图片展示了他们之间的关系：
 
 ![cgroup-state-memory](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-state-memory.jpg)
 
-从上图可以看出，`mem_cgroup` 结构提供给 `cgroup` 使用的是 `cgroup_subsys_state` 部分，而其他的统计信息由各个 `子系统` 来维护和使用。
+从上图可以看出，`mem_cgroup` 结构包含了 `cgroup_subsys_state` 结构，`内存子系统` 对外暴露出 `mem_cgroup` 结构的 `cgroup_subsys_state` 部分，而其余部分由自己维护和使用。要将 `cgroup_subsys_state` 结构转换成 `mem_cgroup` 结构，可以通过计算结构体的偏移量来实现。
 
 ### `css_set` 结构体
 
@@ -89,4 +89,3 @@ struct css_set {
 2. `list`: 用于连接所有 `css_set`。
 3. `tasks`: 用于连接所有使用此 `css_set` 的进程。
 4. `subsys`: 用于收集各种 `子系统` 的统计信息结构。
-
