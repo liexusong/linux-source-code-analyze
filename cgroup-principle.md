@@ -109,3 +109,6 @@ struct task_struct {
 
 可以看出，`task_struct` 结构的 `cgroups` 字段就是指向 `css_set` 结构的指针，而 `cg_list` 字段用于连接所有使用此 `css_set` 结构的进程列表。
 
+`task_struct` 结构与 `css_set` 结构的关系如下图：
+
+![cgroup-task-cssset](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-task-cssset.jpg)
