@@ -112,3 +112,17 @@ struct task_struct {
 `task_struct` 结构与 `css_set` 结构的关系如下图：
 
 ![cgroup-task-cssset](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-task-cssset.jpg)
+
+### `CGroup` 的挂载
+
+前面介绍了 `CGroup` 相关的几个结构体，接下来我们分析一下 `CGroup` 的实现。
+
+要使用 `CGroup` 功能首先必须先进行挂载操作，比如使用下面命令挂载一个 `CGroup`：
+
+```bash
+$ mount -t cgroup -o memory memory /sys/fs/cgroup/memory
+```
+
+在上面的命令中，`-t` 参数指定了要挂载的文件系统类型为 `cgroup`，而 `-o` 参数表示要附加到此 `层级` 的子系统，上面表示附加了 `内存子系统`，当然可以附加多个 `子系统`。而紧随 `-o` 参数后的 `memory` 指定了此 `CGroup` 的名字，最后一个参数表示要挂载的目录路径。
+
+
