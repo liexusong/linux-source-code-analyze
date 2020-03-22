@@ -78,7 +78,7 @@ struct mem_cgroup {
 
 ### `css_set` 结构体
 
-由于一个进程可以同时添加到不同的 `cgroup` 中（前提是这些 `cgroup` 属于不同的 `层级`）进行资源控制，而这些 `cgroup` 附加了不同的资源控制 `子系统`。所以需要使用一个结构把这些 `子系统` 关联起来，方便进程快速找到对应 `子系统` 的资源控制统计信息，而 `css_set` 结构体就是用来做这件事情。`css_set` 结构体定义如下：
+由于一个进程可以同时添加到不同的 `cgroup` 中（前提是这些 `cgroup` 属于不同的 `层级`）进行资源控制，而这些 `cgroup` 附加了不同的资源控制 `子系统`。所以需要使用一个结构把这些 `子系统` 的资源控制统计信息收集起来，方便进程通过 `子系统ID` 快速查找到对应的 `子系统` 资源控制统计信息，而 `css_set` 结构体就是用来做这件事情。`css_set` 结构体定义如下：
 
 ```cpp
 struct css_set {
@@ -93,5 +93,19 @@ struct css_set {
 下面介绍一下 `css_set` 结构体各个字段的作用：
 1. `ref`: 引用计数器，用于计算有多少个进程在使用此 `css_set`。
 2. `list`: 用于连接所有 `css_set`。
-3. `tasks`: 用于连接所有使用此 `css_set` 的进程。
+3. `tasks`: 由于可能存在多个进程同时受到相同的 `cgroup` 控制，所以用此字段把所有使用此 `css_set` 的进程连接起来。
 4. `subsys`: 用于收集各种 `子系统` 的统计信息结构。
+
+进程描述符 `task_struct` 有两个字段与此相关，如下：
+
+```cpp
+struct task_struct {
+    ...
+    struct css_set *cgroups;
+    struct list_head cg_list;
+    ...
+}
+```
+
+可以看出，`task_struct` 结构的 `cgroups` 字段就是指向 `css_set` 结构的指针，而 `cg_list` 字段用于连接所有使用此 `css_set` 结构的进程列表。
+
