@@ -245,4 +245,74 @@ struct cgroupfs_root {
 
 其中最重要的是 `subsys_list` 和 `top_cgroup` 字段，`subsys_list` 表示了附加到此 `层级` 的所有 `子系统`，而 `top_cgroup` 表示此 `层级` 的根 `cgroup`。
 
-接着调用 `rebind_subsystems()` 函数把挂载时指定附加的 `子系统` 添加到 `cgroupfs_root` 结构的 `subsys_list` 链表中，最后调用 `cgroup_populate_dir()` 函数向挂载目录创建 `cgroup` 的管理文件和各个 `子系统` 的管理文件。
+接着调用 `rebind_subsystems()` 函数把挂载时指定附加的 `子系统` 添加到 `cgroupfs_root` 结构的 `subsys_list` 链表中，最后调用 `cgroup_populate_dir()` 函数向挂载目录创建 `cgroup` 的管理文件（如 `tasks` 文件）和各个 `子系统` 的管理文件（如 `memory.limit_in_bytes` 文件）。
+
+### 向 `CGroup` 添加要进行资源控制的进程
+
+通过向 `CGroup` 的 `tasks` 文件写入要进行资源控制的进程PID，即可以对进程进行资源控制。向 `tasks` 文件写入进程PID是通过 `attach_task_by_pid()` 函数实现的，代码如下：
+
+```cpp
+static int attach_task_by_pid(struct cgroup *cgrp, char *pidbuf)
+{
+    pid_t pid;
+    struct task_struct *tsk;
+    int ret;
+
+    if (sscanf(pidbuf, "%d", &pid) != 1) // 读取进程pid
+        return -EIO;
+
+    if (pid) { // 如果有指定进程pid
+        ...
+        tsk = find_task_by_vpid(pid); // 通过pid查找对应进程的进程描述符
+        if (!tsk || tsk->flags & PF_EXITING) {
+            rcu_read_unlock();
+            return -ESRCH;
+        }
+        ...
+    } else {
+        tsk = current; // 如果没有指定进程pid, 就使用当前进程
+        ...
+    }
+
+    ret = cgroup_attach_task(cgrp, tsk); // 调用 cgroup_attach_task() 把进程添加到cgroup中
+    ...
+    return ret;
+}
+```
+
+`attach_task_by_pid()` 函数首先会判断是否指定了进程pid，如果指定了就通过进程pid查找到进程描述符，如果没指定就使用当前进程，然后通过调用 `cgroup_attach_task()` 函数把进程添加到 `cgroup` 中。
+
+我们接着看看 `cgroup_attach_task()` 函数的实现：
+
+```cpp
+int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+{
+    int retval = 0;
+    struct cgroup_subsys *ss;
+    struct cgroup *oldcgrp;
+    struct css_set *cg = tsk->cgroups;
+    struct css_set *newcg;
+    struct cgroupfs_root *root = cgrp->root;
+
+    ...
+    newcg = find_css_set(cg, cgrp);
+    ...
+    rcu_assign_pointer(tsk->cgroups, newcg);
+    ...
+    write_lock(&css_set_lock);
+    if (!list_empty(&tsk->cg_list)) {
+        list_del(&tsk->cg_list);
+        list_add(&tsk->cg_list, &newcg->tasks);
+    }
+    write_unlock(&css_set_lock);
+
+    for_each_subsys(root, ss) {
+        if (ss->attach)
+            ss->attach(ss, cgrp, oldcgrp, tsk);
+    }
+    ...
+    return 0;
+}
+```
+
+
