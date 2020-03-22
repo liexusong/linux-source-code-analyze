@@ -113,6 +113,77 @@ struct task_struct {
 
 ![cgroup-task-cssset](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-task-cssset.jpg)
 
+### `cgroup_subsys` 结构
+
+`CGroup` 通过 `cgroup_subsys` 结构操作各个 `子系统`，每个 `子系统` 都要实现一个这样的结构，其定义如下：
+
+```cpp
+struct cgroup_subsys {
+    struct cgroup_subsys_state *(*create)(struct cgroup_subsys *ss,
+                          struct cgroup *cgrp);
+    void (*pre_destroy)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+    void (*destroy)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+    int (*can_attach)(struct cgroup_subsys *ss,
+              struct cgroup *cgrp, struct task_struct *tsk);
+    void (*attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
+            struct cgroup *old_cgrp, struct task_struct *tsk);
+    void (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
+    void (*exit)(struct cgroup_subsys *ss, struct task_struct *task);
+    int (*populate)(struct cgroup_subsys *ss,
+            struct cgroup *cgrp);
+    void (*post_clone)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+    void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
+
+    int subsys_id;
+    int active;
+    int disabled;
+    int early_init;
+    const char *name;
+    struct cgroupfs_root *root;
+    struct list_head sibling;
+    void *private;
+};
+```
+
+`cgroup_subsys` 结构包含了很多函数指针，通过这些函数指针，`CGroup` 可以对 `子系统` 进行一些操作。比如向 `CGroup` 的 `tasks` 文件添加要控制的进程PID时，就会调用 `cgroup_subsys` 结构的 `attach()` 函数。当在 `层级` 中创建新目录时，就会调用 `create()` 函数创建一些与 `子系统` 相关的文件。
+
+除了函数指针外，`cgroup_subsys` 结构还包含了很多字段，下面说明一下各个字段的作用：
+1. `subsys_id`: 表示了子系统的ID。
+2. `active`: 表示子系统是否被激活。
+3. `disabled`: 子系统是否被禁止。
+4. `name`: 子系统名称。
+5. `root`: 被附加到的层级挂载点。
+6. `sibling`: 用于连接被附加到同一个层级的所有子系统。
+7. `private`: 私有数据。
+
+`内存子系统` 定义了一个名为 `mem_cgroup_subsys` 的 `cgroup_subsys` 结构，如下：
+
+```cpp
+struct cgroup_subsys mem_cgroup_subsys = {
+    .name = "memory",
+    .subsys_id = mem_cgroup_subsys_id,
+    .create = mem_cgroup_create,
+    .pre_destroy = mem_cgroup_pre_destroy,
+    .destroy = mem_cgroup_destroy,
+    .populate = mem_cgroup_populate,
+    .attach = mem_cgroup_move_task,
+    .early_init = 0,
+};
+```
+
+另外 Linux 内核还定义了一个 `cgroup_subsys` 结构的数组 `subsys`，用于保存所有 `子系统` 的 `cgroup_subsys` 结构，如下：
+
+```cpp
+static struct cgroup_subsys *subsys[] = {
+    cpuset_subsys,
+    debug_subsys,
+    ns_subsys,
+    cpu_cgroup_subsys,
+    cpuacct_subsys,
+    mem_cgroup_subsys
+};
+```
+
 ### `CGroup` 的挂载
 
 前面介绍了 `CGroup` 相关的几个结构体，接下来我们分析一下 `CGroup` 的实现。
@@ -150,7 +221,7 @@ static int cgroup_get_sb(struct file_system_type *fs_type,
     }
 ```
 
-`cgroup_get_sb()` 函数首先会调用 `parse_cgroupfs_options()` 函数来解析挂载命令的参数，然后调用 `kzalloc()` 函数创建一个 `cgroupfs_root` 结构。`cgroupfs_root` 结构主要用于描述这个 `CGroup` 的挂载点，其定义如下：
+`cgroup_get_sb()` 函数首先会调用 `parse_cgroupfs_options()` 函数来解析挂载命令的参数，然后调用 `kzalloc()` 函数创建一个 `cgroupfs_root` 结构。`cgroupfs_root` 结构主要用于描述这个 `CGroup` 的挂载点，同时也代表 `层级` 的根节点，其定义如下：
 
 ```cpp
 struct cgroupfs_root {
