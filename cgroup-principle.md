@@ -125,4 +125,44 @@ $ mount -t cgroup -o memory memory /sys/fs/cgroup/memory
 
 在上面的命令中，`-t` 参数指定了要挂载的文件系统类型为 `cgroup`，而 `-o` 参数表示要附加到此 `层级` 的子系统，上面表示附加了 `内存子系统`，当然可以附加多个 `子系统`。而紧随 `-o` 参数后的 `memory` 指定了此 `CGroup` 的名字，最后一个参数表示要挂载的目录路径。
 
+挂载过程最终会调用内核函数 `cgroup_get_sb()` 完成，由于 `cgroup_get_sb()` 函数比较长，我们下面分段来分析其实现：
+
+```cpp
+static int cgroup_get_sb(struct file_system_type *fs_type,
+     int flags, const char *unused_dev_name,
+     void *data, struct vfsmount *mnt)
+{
+    ...
+
+    /* First find the desired set of subsystems */
+    ret = parse_cgroupfs_options(data, &opts);
+    if (ret) {
+        if (opts.release_agent)
+            kfree(opts.release_agent);
+        return ret;
+    }
+
+    root = kzalloc(sizeof(*root), GFP_KERNEL);
+    if (!root) {
+        if (opts.release_agent)
+            kfree(opts.release_agent);
+        return -ENOMEM;
+    }
+```
+
+`cgroup_get_sb()` 函数首先会调用 `parse_cgroupfs_options()` 函数来解析挂载命令的参数，然后调用 `kzalloc()` 函数创建一个 `cgroupfs_root` 结构。`cgroupfs_root` 结构主要用于描述这个 `CGroup` 的挂载点，其定义如下：
+
+```cpp
+struct cgroupfs_root {
+    struct super_block *sb;
+    unsigned long subsys_bits;
+    unsigned long actual_subsys_bits;
+    struct list_head subsys_list;
+    struct cgroup top_cgroup;
+    int number_of_cgroups;
+    struct list_head root_list;
+    unsigned long flags;
+    char release_agent_path[PATH_MAX];
+};
+```
 
