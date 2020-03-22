@@ -68,7 +68,9 @@ struct mem_cgroup {
 
 ![cgroup-state-memory](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/cgroup-state-memory.jpg)
 
-从上图可以看出，`mem_cgroup` 结构包含了 `cgroup_subsys_state` 结构，`内存子系统` 对外暴露出 `mem_cgroup` 结构的 `cgroup_subsys_state` 部分，而其余部分由自己维护和使用。要将 `cgroup_subsys_state` 结构转换成 `mem_cgroup` 结构，可以通过计算结构体的偏移量来实现。
+从上图可以看出，`mem_cgroup` 结构包含了 `cgroup_subsys_state` 结构，`内存子系统` 对外暴露出 `mem_cgroup` 结构的 `cgroup_subsys_state` 部分（返回 `cgroup_subsys_state` 结构的指针），而其余部分由 `内存子系统` 自己维护和使用。
+
+由于 `cgroup_subsys_state` 部分在 `mem_cgroup` 结构的首部，所以要将 `cgroup_subsys_state` 结构转换成 `mem_cgroup` 结构，只需要通过指针类型转换即可。
 
 ### `css_set` 结构体
 
