@@ -196,7 +196,7 @@ $ mount -t cgroup -o memory memory /sys/fs/cgroup/memory
 
 在上面的命令中，`-t` 参数指定了要挂载的文件系统类型为 `cgroup`，而 `-o` 参数表示要附加到此 `层级` 的子系统，上面表示附加了 `内存子系统`，当然可以附加多个 `子系统`。而紧随 `-o` 参数后的 `memory` 指定了此 `CGroup` 的名字，最后一个参数表示要挂载的目录路径。
 
-挂载过程最终会调用内核函数 `cgroup_get_sb()` 完成，由于 `cgroup_get_sb()` 函数比较长，所以我们分段来对其进行分析：
+挂载过程最终会调用内核函数 `cgroup_get_sb()` 完成，由于 `cgroup_get_sb()` 函数比较长，所以我们只分析重要部分：
 
 ```cpp
 static int cgroup_get_sb(struct file_system_type *fs_type,
@@ -204,15 +204,6 @@ static int cgroup_get_sb(struct file_system_type *fs_type,
      void *data, struct vfsmount *mnt)
 {
     ...
-
-    /* First find the desired set of subsystems */
-    ret = parse_cgroupfs_options(data, &opts);
-    if (ret) {
-        if (opts.release_agent)
-            kfree(opts.release_agent);
-        return ret;
-    }
-
     root = kzalloc(sizeof(*root), GFP_KERNEL);
     if (!root) {
         if (opts.release_agent)
@@ -221,7 +212,7 @@ static int cgroup_get_sb(struct file_system_type *fs_type,
     }
 ```
 
-`cgroup_get_sb()` 函数首先会调用 `parse_cgroupfs_options()` 函数来解析挂载命令的参数，然后调用 `kzalloc()` 函数创建一个 `cgroupfs_root` 结构。`cgroupfs_root` 结构主要用于描述这个 `CGroup` 的挂载点，同时也代表 `层级` 的根节点，其定义如下：
+`cgroup_get_sb()` 函数会调用 `kzalloc()` 函数创建一个 `cgroupfs_root` 结构。`cgroupfs_root` 结构主要用于描述这个挂载点的信息，其定义如下：
 
 ```cpp
 struct cgroupfs_root {
@@ -238,30 +229,24 @@ struct cgroupfs_root {
 ```
 
 下面介绍一下 `cgroupfs_root` 结构的各个字段含义：
-1. sb: 挂载的文件系统超级块。
-2. subsys_bits/actual_subsys_bits: 附加到此层级的子系统标志。
-3. subsys_list: 附加到此层级的子系统列表。
-4. top_cgroup: 此层级的根cgroup。
-5. number_of_cgroups: 层级中有多少个cgroup。
-6. root_list: 连接系统中所有的cgroupfs_root。
-7. flags: 标志位。
+1. `sb`: 挂载的文件系统超级块。
+2. `subsys_bits/actual_subsys_bits`: 附加到此层级的子系统标志。
+3. `subsys_list`: 附加到此层级的子系统(cgroup_subsys)列表。
+4. `top_cgroup`: 此层级的根cgroup。
+5. `number_of_cgroups`: 层级中有多少个cgroup。
+6. `root_list`: 连接系统中所有的cgroupfs_root。
+7. `flags`: 标志位。
 
 其中最重要的是 `subsys_list` 和 `top_cgroup` 字段，`subsys_list` 表示了附加到此 `层级` 的所有 `子系统`，而 `top_cgroup` 表示此 `层级` 的根 `cgroup`。
 
 我们接着分析 `cgroup_get_sb()` 函数，
 
 ```cpp
-    init_cgroup_root(root);
-
-    root->subsys_bits = opts.subsys_bits;
-    root->flags = opts.flags;
-    if (opts.release_agent) {
-        strcpy(root->release_agent_path, opts.release_agent);
-        kfree(opts.release_agent);
-    }
-
-    sb = sget(fs_type, cgroup_test_super, cgroup_set_super, root);
+    ...
+    ret = rebind_subsystems(root, root->subsys_bits);
+    ...
+    cgroup_populate_dir(cgrp);
+    ...
 ```
 
-接着调用 `init_cgroup_root()` 函数对 `cgroupfs_root` 结构进行初始化，然后调用 `sget()` 读取挂载点的超级块结构。
-
+接着调用 `rebind_subsystems()` 函数把挂载时指定附加的 `子系统` 添加到 `cgroupfs_root` 结构的 `subsys_list` 链表中，最后调用 `cgroup_populate_dir()` 函数向挂载目录创建 `cgroup` 的管理文件和各个 `子系统` 的管理文件。
