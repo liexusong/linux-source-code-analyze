@@ -204,12 +204,18 @@ static int cgroup_get_sb(struct file_system_type *fs_type,
      void *data, struct vfsmount *mnt)
 {
     ...
+    struct cgroupfs_root *root;
+    ...
     root = kzalloc(sizeof(*root), GFP_KERNEL);
-    if (!root) {
-        if (opts.release_agent)
-            kfree(opts.release_agent);
-        return -ENOMEM;
-    }
+    ...
+    ret = rebind_subsystems(root, root->subsys_bits);
+    ...
+
+    struct cgroup *cgrp = &root->top_cgroup;
+
+    cgroup_populate_dir(cgrp);
+    ...
+}
 ```
 
 `cgroup_get_sb()` 函数会调用 `kzalloc()` 函数创建一个 `cgroupfs_root` 结构。`cgroupfs_root` 结构主要用于描述这个挂载点的信息，其定义如下：
@@ -238,15 +244,5 @@ struct cgroupfs_root {
 7. `flags`: 标志位。
 
 其中最重要的是 `subsys_list` 和 `top_cgroup` 字段，`subsys_list` 表示了附加到此 `层级` 的所有 `子系统`，而 `top_cgroup` 表示此 `层级` 的根 `cgroup`。
-
-我们接着分析 `cgroup_get_sb()` 函数，
-
-```cpp
-    ...
-    ret = rebind_subsystems(root, root->subsys_bits);
-    ...
-    cgroup_populate_dir(cgrp);
-    ...
-```
 
 接着调用 `rebind_subsystems()` 函数把挂载时指定附加的 `子系统` 添加到 `cgroupfs_root` 结构的 `subsys_list` 链表中，最后调用 `cgroup_populate_dir()` 函数向挂载目录创建 `cgroup` 的管理文件和各个 `子系统` 的管理文件。
