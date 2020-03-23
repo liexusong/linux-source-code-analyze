@@ -145,7 +145,7 @@ struct cgroup_subsys {
 };
 ```
 
-`cgroup_subsys` 结构包含了很多函数指针，通过这些函数指针，`CGroup` 可以对 `子系统` 进行一些操作。比如向 `CGroup` 的 `tasks` 文件添加要控制的进程PID时，就会调用 `cgroup_subsys` 结构的 `attach()` 函数。当在 `层级` 中创建新目录时，就会调用 `create()` 函数创建一些与 `子系统` 相关的文件。
+`cgroup_subsys` 结构包含了很多函数指针，通过这些函数指针，`CGroup` 可以对 `子系统` 进行一些操作。比如向 `CGroup` 的 `tasks` 文件添加要控制的进程PID时，就会调用 `cgroup_subsys` 结构的 `attach()` 函数。当在 `层级` 中创建新目录时，就会调用 `create()` 函数创建一个 `子系统` 的资源控制统计信息对象 `cgroup_subsys_state`，并且调用 `populate()` 函数创建 `子系统` 相关的资源控制信息文件。
 
 除了函数指针外，`cgroup_subsys` 结构还包含了很多字段，下面说明一下各个字段的作用：
 1. `subsys_id`: 表示了子系统的ID。
@@ -245,7 +245,7 @@ struct cgroupfs_root {
 
 其中最重要的是 `subsys_list` 和 `top_cgroup` 字段，`subsys_list` 表示了附加到此 `层级` 的所有 `子系统`，而 `top_cgroup` 表示此 `层级` 的根 `cgroup`。
 
-接着调用 `rebind_subsystems()` 函数把挂载时指定附加的 `子系统` 添加到 `cgroupfs_root` 结构的 `subsys_list` 链表中，最后调用 `cgroup_populate_dir()` 函数向挂载目录创建 `cgroup` 的管理文件（如 `tasks` 文件）和各个 `子系统` 的管理文件（如 `memory.limit_in_bytes` 文件）。
+接着调用 `rebind_subsystems()` 函数把挂载时指定要附加的 `子系统` 添加到 `cgroupfs_root` 结构的 `subsys_list` 链表中，并且为根 `cgroup` 的 `subsys` 字段设置各个 `子系统` 的资源控制统计信息对象，最后调用 `cgroup_populate_dir()` 函数向挂载目录创建 `cgroup` 的管理文件（如 `tasks` 文件）和各个 `子系统` 的管理文件（如 `memory.limit_in_bytes` 文件）。
 
 ### 向 `CGroup` 添加要进行资源控制的进程
 
@@ -314,5 +314,11 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
     return 0;
 }
 ```
+
+`cgroup_attach_task()` 函数首先会调用 `find_css_set()` 函数查找或者创建一个 `css_set` 对象。前面说过 `css_set` 对象用于收集不同 `cgroup` 上附加的 `子系统` 资源统计信息对象。
+
+因为一个进程能够被加入到不同的 `cgroup` 进行资源控制，所以 `find_css_set()` 函数就是收集进程所在的所有 `cgroup` 上附加的 `子系统` 资源统计信息对象，并返回一个 `css_set` 对象。接着把进程描述符的 `cgroups` 字段设置为这个 `css_set` 对象，并且把进程添加到这个 `css_set` 对象的 `tasks` 链表中。
+
+最后，`cgroup_attach_task()` 函数会调用附加在 `层级` 上的所有 `子系统` 的 `attach()` 函数对新增进程进行一些其他的操作（这些操作由各自 `子系统` 去实现）。
 
 
