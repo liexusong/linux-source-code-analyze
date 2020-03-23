@@ -384,7 +384,7 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
             mem_cgroup_out_of_memory(mem, gfp_mask); // 如果尝试过5次后还是超出限制, 那么发出oom信号
             goto out;
         }
-        congestion_wait(WRITE, HZ/10);
+        ...
     }
     ...
 }
