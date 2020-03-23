@@ -330,7 +330,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
 最后，`cgroup_attach_task()` 函数会调用附加在 `层级` 上的所有 `子系统` 的 `attach()` 函数对新增进程进行一些其他的操作（这些操作由各自 `子系统` 去实现）。
 
 
-### 限制资源使用
+### 限制 `CGroup` 的资源使用
 
 本文主要是使用 `内存子系统` 作为例子，所以这里分析内存限制的原理。
 
@@ -339,5 +339,20 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
 ```bash
 $ echo 1048576 > /sys/fs/cgroup/memory/test/memory.limit_in_bytes
 ```
+
+向 `memory.limit_in_bytes` 写入数据主要通过 `mem_cgroup_write()` 函数实现的，其实现如下：
+
+```cpp
+static ssize_t mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+                struct file *file, const char __user *userbuf,
+                size_t nbytes, loff_t *ppos)
+{
+    return res_counter_write(&mem_cgroup_from_cont(cont)->res,
+                cft->private, userbuf, nbytes, ppos,
+                mem_cgroup_write_strategy);
+}
+```
+
+其主要工作就是把 `内存子系统` 的资源控制对象 `mem_cgroup` 的 `res.limit` 字段设置为指定的数值。
 
 
