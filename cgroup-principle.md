@@ -355,4 +355,39 @@ static ssize_t mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
 
 其主要工作就是把 `内存子系统` 的资源控制对象 `mem_cgroup` 的 `res.limit` 字段设置为指定的数值。
 
+### 限制进程使用资源
 
+当设置好 `cgroup` 的资源使用限制信息，并且把进程添加到这个 `cgroup` 的 `tasks` 列表后，进程的资源使用就会受到这个 `cgroup` 的限制。这里使用 `内存子系统`
+作为例子，来分析一下内核是怎么通过 `cgroup` 来限制进程对资源的使用的。
+
+当进程要使用内存时，会调用 `do_anonymous_page()` 来申请一些内存页，而 `do_anonymous_page()` 函数会调用 `mem_cgroup_charge()` 函数来检测进程是否超过了 `cgroup` 设置的资源限制。而 `mem_cgroup_charge()` 最终会调用 `mem_cgroup_charge_common()` 函数进行检测，`mem_cgroup_charge_common()` 函数实现如下：
+
+```cpp
+static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
+                gfp_t gfp_mask, enum charge_type ctype)
+{
+    struct mem_cgroup *mem;
+    ...
+    mem = rcu_dereference(mm->mem_cgroup); // 获取cgroup对内存限制的 mem_cgroup 对象
+    ...
+    while (res_counter_charge(&mem->res, PAGE_SIZE)) { // 判断进程使用内存是否超出限制
+        if (!(gfp_mask & __GFP_WAIT))
+            goto out;
+
+        if (try_to_free_mem_cgroup_pages(mem, gfp_mask)) // 如果超出限制, 就释放一些不用的内存
+            continue;
+
+        if (res_counter_check_under_limit(&mem->res))
+            continue;
+
+        if (!nr_retries--) {
+            mem_cgroup_out_of_memory(mem, gfp_mask); // 如果尝试过5次后还是超出限制, 那么发出oom信号
+            goto out;
+        }
+        congestion_wait(WRITE, HZ/10);
+    }
+    ...
+}
+```
+
+`mem_cgroup_charge_common()` 函数会对进程内存使用情况进行检测，如果进程已经超过了 `cgroup` 设置的限制，那么就会尝试进行释放一些不用的内存，如果还是超过限制，那么就会发出 `OOM (out of memory)` 的信号。
