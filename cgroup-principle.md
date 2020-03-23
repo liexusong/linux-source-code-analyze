@@ -368,7 +368,7 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
 {
     struct mem_cgroup *mem;
     ...
-    mem = rcu_dereference(mm->mem_cgroup); // 获取cgroup对内存限制的 mem_cgroup 对象
+    mem = rcu_dereference(mm->mem_cgroup); // 获取进程对应的内存限制对象
     ...
     while (res_counter_charge(&mem->res, PAGE_SIZE)) { // 判断进程使用内存是否超出限制
         if (!(gfp_mask & __GFP_WAIT))
