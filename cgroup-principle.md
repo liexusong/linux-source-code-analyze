@@ -249,7 +249,13 @@ struct cgroupfs_root {
 
 ### 向 `CGroup` 添加要进行资源控制的进程
 
-通过向 `CGroup` 的 `tasks` 文件写入要进行资源控制的进程PID，即可以对进程进行资源控制。向 `tasks` 文件写入进程PID是通过 `attach_task_by_pid()` 函数实现的，代码如下：
+通过向 `CGroup` 的 `tasks` 文件写入要进行资源控制的进程PID，即可以对进程进行资源控制。例如下面命令：
+
+```bash
+$ echo 123012 > /sys/fs/cgroup/memory/test/tasks
+```
+
+向 `tasks` 文件写入进程PID是通过 `attach_task_by_pid()` 函数实现的，代码如下：
 
 ```cpp
 static int attach_task_by_pid(struct cgroup *cgrp, char *pidbuf)
@@ -295,10 +301,11 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
     struct cgroupfs_root *root = cgrp->root;
 
     ...
-    newcg = find_css_set(cg, cgrp);
+    newcg = find_css_set(cg, cgrp); // 根据新的cgroup查找css_set对象
     ...
-    rcu_assign_pointer(tsk->cgroups, newcg);
+    rcu_assign_pointer(tsk->cgroups, newcg); // 把进程的cgroups字段设置为新的css_set对象
     ...
+    // 把进程添加到css_set对象的tasks列表中
     write_lock(&css_set_lock);
     if (!list_empty(&tsk->cg_list)) {
         list_del(&tsk->cg_list);
@@ -306,6 +313,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
     }
     write_unlock(&css_set_lock);
 
+    // 调用各个子系统的attach函数
     for_each_subsys(root, ss) {
         if (ss->attach)
             ss->attach(ss, cgrp, oldcgrp, tsk);
@@ -320,5 +328,16 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
 因为一个进程能够被加入到不同的 `cgroup` 进行资源控制，所以 `find_css_set()` 函数就是收集进程所在的所有 `cgroup` 上附加的 `子系统` 资源统计信息对象，并返回一个 `css_set` 对象。接着把进程描述符的 `cgroups` 字段设置为这个 `css_set` 对象，并且把进程添加到这个 `css_set` 对象的 `tasks` 链表中。
 
 最后，`cgroup_attach_task()` 函数会调用附加在 `层级` 上的所有 `子系统` 的 `attach()` 函数对新增进程进行一些其他的操作（这些操作由各自 `子系统` 去实现）。
+
+
+### 限制资源使用
+
+本文主要是使用 `内存子系统` 作为例子，所以这里分析内存限制的原理。
+
+可以向 `cgroup` 的 `memory.limit_in_bytes` 文件写入要限制使用的内存大小（单位为字节），如下面命令限制了这个 `cgroup` 只能使用 1MB 的内存：
+
+```bash
+$ echo 1048576 > /sys/fs/cgroup/memory/test/memory.limit_in_bytes
+```
 
 
