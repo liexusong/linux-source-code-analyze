@@ -151,3 +151,11 @@ static struct super_block *minix_read_super(
 
 ![minix-filesystem-read](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/minix-filesystem-read.jpg)
 
+读文件时，首先需要打开文件，然后通过调用 `read()` 系统调用来读取文件中的内容。`read()` 系统调用原型如下：
+```cpp
+ssize_t read(int fd, void *buf, size_t count);
+```
+
+`read()` 系统调用会触发调用 `虚拟文件系统层（VFS）` 的 `sys_read()` 函数，而对于 MINIX 文件系统，`sys_read()` 函数会接着调用 `generic_file_read()` 函数，`generic_file_read()` 函数又接着调用 `do_generic_file_read()` 函数。
+
+`do_generic_file_read()` 函数的实现比较复杂，首先会去缓存中查找要读取的内容是否已经存在，如果存在直接返回缓存的数据即可。如果还没有缓存，那么调用 `minix_readpage()` 从磁盘中读取文件的内容到缓存中，最后调用 `file_read_actor()` 函数把数据复制都用户空间。
