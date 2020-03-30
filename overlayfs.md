@@ -60,5 +60,30 @@ static struct dentry *ovl_mount(struct file_system_type *fs_type,
 }
 ```
 
-从上面的代码可以看出，`ovl_mount()` 函数调用了 `mount_nodev()` 函数进行挂载，`mount_nodev()` 函数会进行一些挂载过程的通用逻辑（如创建文件系统超级块），然后调用 `ovl_fill_super()` 函数对超级块进行填充。
+从上面的代码可以看出，`ovl_mount()` 函数调用了 `mount_nodev()` 函数进行挂载。`mount_nodev()` 函数会处理挂载过程的通用逻辑（如创建文件系统超级块），然后调用 `ovl_fill_super()` 函数对超级块进行填充。
 
+下面我们来分析一下 `ovl_fill_super()` 函数的实现，在分析 `ovl_fill_super()` 函数前先介绍一下 `ovl_fs` 和 `ovl_entry` 这两个结构，因为 `ovl_fill_super()` 函数使用了这两个结构。
+
+
+`ovl_fs` 结构定义如下：
+```cpp
+struct ovl_config {
+    char *lowerdir;
+    char *upperdir;
+    char *workdir;
+};
+
+struct ovl_fs {
+    struct vfsmount *upper_mnt;
+    struct vfsmount *lower_mnt;
+    struct dentry *workdir;
+    long lower_namelen;
+    struct ovl_config config;
+};
+```
+下面介绍一下 `ovl_fs` 结构的各个字段：
+1. upper_mnt：upper目录的挂载点。
+2. lower_mnt：lower目录的挂载点。
+3. workdir：保存work目录的dentry对象。
+4. lower_namelen：lower目录的名字长度。
+5. config：用于保存挂载文件系统时传入的参数（如lower目录路径、upper目录路径和work目录路径）。
