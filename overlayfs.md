@@ -28,3 +28,23 @@ $ mount -t overlay overlay -o lowerdir=lower1:lower2,upperdir=upper,workdir=work
 
 ### `OverlayFS` 实现原理
 
+下面我们开始分析 `OverlayFS` 的实现原理。
+
+#### `OverlayFS` 文件系统注册
+
+要让 Linux 提供 `OverlayFS` 文件系统的功能，首先需要进行注册。注册过程通过 `ovl_init()` 函数实现，代码如下：
+```cpp
+static struct file_system_type ovl_fs_type = {
+    .owner      = THIS_MODULE,
+    .name       = "overlay",
+    .mount      = ovl_mount,
+    .kill_sb    = kill_anon_super,
+};
+
+static int __init ovl_init(void)
+{
+    return register_filesystem(&ovl_fs_type);
+}
+```
+
+`ovl_init()` 函数通过调用 `register_filesystem()` 函数向系统注册 `OverlayFS` 文件系统，`ovl_fs_type` 参数的类型为 `file_system_type`，其中的 `mount` 字段指定当挂载 `OverlayFS` 文件系统时进行的相应操作例程，
