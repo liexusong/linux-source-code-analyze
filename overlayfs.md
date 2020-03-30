@@ -10,7 +10,7 @@
 
 我们先来看看 `OverlayFS` 基本原理图：
 
-![overlayfs-map]()
+![overlayfs-map](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-map.png)
 
 使用 `OverlayFS` 前需要进行挂载操作，挂载 `OverlayFS` 文件系统的基本命令如下：
 
