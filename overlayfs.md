@@ -32,7 +32,7 @@ $ mount -t overlay overlay -o lowerdir=lower1:lower2,upperdir=upper,workdir=work
 
 #### `OverlayFS` 文件系统注册
 
-要让 Linux 提供 `OverlayFS` 文件系统的功能，首先需要进行注册。注册过程通过 `ovl_init()` 函数实现，代码如下：
+要让 Linux 提供 `OverlayFS` 文件系统的功能，首先需要对 `OverlayFS` 文件系统进行注册。注册过程通过 `ovl_init()` 函数实现，代码如下：
 ```cpp
 static struct file_system_type ovl_fs_type = {
     .owner      = THIS_MODULE,
@@ -47,4 +47,18 @@ static int __init ovl_init(void)
 }
 ```
 
-`ovl_init()` 函数通过调用 `register_filesystem()` 函数向系统注册 `OverlayFS` 文件系统，`ovl_fs_type` 参数的类型为 `file_system_type`，其中的 `mount` 字段指定当挂载 `OverlayFS` 文件系统时进行的相应操作例程，
+`ovl_init()` 函数通过调用 `register_filesystem()` 函数向系统注册 `OverlayFS` 文件系统，`register_filesystem()` 函数需要提供一个类型为 `file_system_type` 结构的参数，`file_system_type` 结构的 `mount` 字段指定当挂载文件系统时进行的相应操作例程，而 `name` 字段表示文件系统的名字。
+
+注册完 `OverlayFS` 文件系统后就可以进行挂载。我们抛弃 `虚拟文件系统` 挂载的一般过程，只针对 `OverlayFS` 文件系统的特殊处理。
+
+当挂载 `OverlayFS` 文件系统时会触发调用 `ovl_mount()` 函数，`ovl_mount()` 函数代码如下：
+```cpp
+static struct dentry *ovl_mount(struct file_system_type *fs_type,
+    int flags, const char *dev_name, void *raw_data)
+{
+    return mount_nodev(fs_type, flags, raw_data, ovl_fill_super);
+}
+```
+
+从上面的代码可以看出，`ovl_mount()` 函数调用了 `mount_nodev()` 函数进行挂载，`mount_nodev()` 函数会进行一些挂载过程的通用逻辑（如创建文件系统超级块），然后调用 `ovl_fill_super()` 函数对超级块进行填充。
+
