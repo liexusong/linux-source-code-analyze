@@ -8,19 +8,23 @@
 
 ### `OverlayFS` 使用
 
-我们先来看看 `OverlayFS` 基本原理图：
+我们先来看看 `OverlayFS` 基本原理（图片来源于网络）：
 
 ![overlayfs-map](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-map.png)
+
+从上图可知，`OverlayFS` 文件系统主要有三个角色，`lowerdir`、`upperdir` 和 `merged`。`lowerdir` 是只读层，用户不能修改这个层的文件；`upperdir` 是可读写层，用户能够修改这个层的文件；而 `merged` 是合并层，把 `lowerdir` 层和 `upperdir` 层的文件合并展示。
 
 使用 `OverlayFS` 前需要进行挂载操作，挂载 `OverlayFS` 文件系统的基本命令如下：
 
 ```bash
-$ mount -t overlay overlay -o lowerdir=lower1:lower2:lower3,upperdir=upper,workdir=work merged
+$ mount -t overlay overlay -o lowerdir=lower1:lower2,upperdir=upper,workdir=work merged
 ```
 
 参数 `-t` 表示挂载的文件系统类型，这里设置为 `overlay` 表示文件系统类型为 `OverlayFS`，而参数 `-o` 指定的是 `lowerdir`、`upperdir` 和 `workdir`，最后的 `merged` 目录就是最终的挂载点目录。下面说明一下 `-o` 参数几个目录的作用：
 
-1. `lowerdir`：指定用户需要挂载的lower层目录（支持多lower，最大支持500层）。
+1. `lowerdir`：指定用户需要挂载的lower层目录，指定多个目录可以使用 `:` 来分隔（最大支持500层）。
 2. `upperdir`：指定用户需要挂载的upper层目录。
 3. `workdir`：指定文件系统的工作基础目录，挂载后内容会被清空，且在使用过程中其内容用户不可见。
+
+### `OverlayFS` 实现原理
 
