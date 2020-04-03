@@ -33,7 +33,9 @@ $ mount -t overlay overlay -o lowerdir=lower1:lower2,upperdir=upper,workdir=work
 `OverlayFS` 文件系统的作用是合并 `upper` 目录和 `lower` 目录的中的内容，如果 `upper` 目录与 `lower` 目录同时存在同一文件或目录，那么 `OverlayFS` 文件系统怎么处理呢？
 
 1. 如果 `upper` 和 `lower` 目录下同时存在同一文件，那么按 `upper` 目录的文件为准。比如 `upper` 与 `lower` 目录下同时存在文件 `a.txt`，那么按 `upper` 目录的 `a.txt` 文件为准。
-2. 如果 `upper` 和 `lower` 目录下同时存在同一目录，那么把 `upper` 目录与 `lower` 目录的内容合并起来。比如 `upper` 与 `lower` 目录下同时存在目录 `test`，那么把 `upper` 目录下的 `test` 目录的内容与 `lower` 目录下的 `test` 目录的内容合并起来。
+2. 如果 `upper` 和 `lower` 目录下同时存在同一目录，那么把 `upper` 目录与 `lower` 目录的内容合并起来。比如 `upper` 与 `lower` 目录下同时存在目录 `test`，那么把 `upper` 目录下的 `test` 目录中的内容与 `lower` 目录下的 `test` 目录中的内容合并起来。
 
-#### `OverlayFS` 文件系统注册
+为了简单起见，本文使用的是 Linux3.18.3 版本，此版本的 `OverlayFS` 文件系统只支持一层的 `lower` 目录，所以简化了多层 `lower` 合并的逻辑。
+
+#### `OverlayFS` 文件系统挂载
 
