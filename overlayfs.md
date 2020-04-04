@@ -82,6 +82,10 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 5. 将 `root_dentry` 的 `d_fsdata` 字段指向 `oe`。
 6. 将 `超级块对象` 的 `s_root` 字段指向新创建的 `dentry` 对象。
 
+其各个数据结构的关系如下图：
+
+![overlayfs-relation](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-relation.png)
+
 在上面的代码中出现的 `ovl_entry` 结构用于记录 `OverlayFS` 文件系统中某个文件或者目录所在的真实位置，由于 `OverlayFS` 文件系统是一个联合文件系统，并不是真正存在于磁盘的文件系统，所以在 `OverlayFS` 文件系统中的文件都要指向真实文件系统中的位置。
 
 而 `ovl_entry` 结构就是用来指向真实文件系统的位置，其定义如下：
