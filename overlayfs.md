@@ -122,6 +122,7 @@ struct ovl_entry {
 1. 调用 `openat()` 系统调用打开目录。
 2. 调用 `getdents()` 系统调用读取目录的列表。
 
+__ 打开目录 __
 `open()` 系统调用最终会调用具体文件系统的 `open()` 方法来打开文件，对于 `OverlayFS` 文件系统调用的是 `ovl_dir_open()` 函数，其实现如下：
 ```cpp
 static int ovl_dir_open(struct inode *inode, struct file *file)
@@ -178,3 +179,13 @@ struct ovl_dir_cache {
     struct list_head entries;
 };
 ```
+`ovl_dir_file` 对象各个字段的含义如下：
+1. is_real：如不需要合并，设置为true。
+2. is_upper：是否需要从 `upper` 目录中读取。
+3. cache：用于缓存目录的文件列表。
+4. cursor：与cache配合使用。
+5. realfile：真实文件或目录的dentry对象。
+6. upperfile：指向文件或目录所在 `upper` 目录中的dentry对象。
+
+__ 读取目录列表 __
+
