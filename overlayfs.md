@@ -41,3 +41,36 @@ $ mount -t overlay overlay -o lowerdir=lower1:lower2,upperdir=upper,workdir=work
 
 前面介绍过挂载 `OverlayFS` 文件系统的命令，挂载 `OverlayFS` 文件系统会触发系统调用 `sys_mount()`，而 `sys_mount()` 会执行 `虚拟文件系统` 的通用挂载过程，如申请和初始化 `超级块对象(super block)`（可参考：[虚拟文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_file_system.md)）。然后调用具体文件系统的 `fill_super()` 接口来填充 `超级块对象`，对于 `OverlayFS` 文件系统而言，最终会调用 `ovl_fill_super()` 函数来填充 `超级块对象`。
 
+我们来分析一下 `ovl_fill_super()` 函数的主要部分：
+```cpp
+static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+{
+    struct path lowerpath;
+    struct path upperpath;
+    struct path workpath;
+    struct inode *root_inode;
+    struct dentry *root_dentry;
+    struct ovl_entry *oe;
+
+    ...
+    oe = ovl_alloc_entry(); // 新建一个ovl_entry对象
+    ...
+
+    // 新建一个inode对象
+    root_inode = ovl_new_inode(sb, S_IFDIR, oe);
+
+    // 新建一个dentry对象, 并且指向新建的inode对象root_inode
+    root_dentry = d_make_root(root_inode);
+    ...
+
+    oe->__upperdentry = upperpath.dentry; // 指向upper目录的dentry对象
+    oe->lowerdentry = lowerpath.dentry;   // 指向lower目录的dentry对象
+
+    root_dentry->d_fsdata = oe; // 保存ovl_entry对象到新建dentry对象的d_fsdata字段中
+
+    ...
+    sb->s_root = root_dentry; // 保存新建的dentry对象到超级块的s_root字段中
+    ...
+    return 0;
+}
+```
