@@ -157,7 +157,7 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
 ```
 `ovl_dir_open()` 函数主要完成的工作包括：
 1. 创建一个 `ovl_dir_file` 对象 `od`。
-2. 调用 `ovl_path_real()` 函数分析当前文件或目录所属的类型，主要有3中：
+2. 调用 `ovl_path_real()` 函数分析当前文件或目录所属的类型：
     1. 如果是一个目录，并且 `upper` 目录和 `lower` 目录同时存在，那么返回 `OVL_PATH_MERGE`，表示需要对目录进行合并。
     2. 如果是一个目录，并且只存在于 `upper` 目录中。或者是一个文件，并且存在于 `upper` 目录中，那么返回 `OVL_PATH_UPPER`，表示从 `upper` 目录中读取。
     3. 否则返回 `OVL_PATH_LOWER`，表示从 `lower` 目录中读取。
@@ -235,7 +235,7 @@ static int ovl_iterate(struct file *file, struct dir_context *ctx)
 2. 如果 `ovl_dir_file` 对象的缓存没有被创建，那么调用 `ovl_cache_get()` 创建缓存对象，`ovl_cache_get()` 除了创建缓存对象外，还会读取合并后的目录中的文件列表，并保存到缓存对象的 `entries` 链表中。
 3. 遍历合并后的目录中的文件列表，并把文件列表写到用户空间的缓存中，这样用户就可以获取合并后的文件列表。
 
-我们主要来分析以下怎么通过 `ovl_cache_get()` 函数来读取合并后的目录中的文件列表：
+我们主要来分析一下怎么通过 `ovl_cache_get()` 函数来读取合并后的目录中的文件列表：
 ```cpp
 static struct ovl_dir_cache *ovl_cache_get(struct dentry *dentry)
 {
