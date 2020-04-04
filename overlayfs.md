@@ -159,4 +159,22 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
     1. 如果是一个目录，并且 `upper` 目录和 `lower` 目录同时存在，那么返回 `OVL_PATH_MERGE`，表示需要对目录进行合并。
     2. 如果是一个目录，并且只存在于 `upper` 目录中。或者是一个文件，并且存在于 `upper` 目录中，那么返回 `OVL_PATH_UPPER`，表示从 `upper` 目录中读取。
     3. 否则返回 `OVL_PATH_LOWER`，表示从 `lower` 目录中读取。
-3. 把 `ovl_dir_file` 对象保存到 file 对象的 private_data 字段中。
+3. 把 `ovl_dir_file` 对象保存到 file 对象的 `private_data` 字段中。
+
+`ovl_dir_file` 对象用于描述 `OverlayFS` 文件系统的目录或文件的信息，其定义如下：
+```cpp
+struct ovl_dir_file {
+    bool is_real;
+    bool is_upper;
+    struct ovl_dir_cache *cache;
+    struct ovl_cache_entry cursor;
+    struct file *realfile;
+    struct file *upperfile;
+};
+
+struct ovl_dir_cache {
+    long refcount;
+    u64 version;
+    struct list_head entries;
+};
+```
