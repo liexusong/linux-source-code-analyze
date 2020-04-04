@@ -84,7 +84,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 
 最后，其各个数据结构的关系如下图：
 
-![overlayfs-relation](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-relation.png)
+![overlayfs-relation](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-relation.jpg)
 
 在上面的代码中出现的 `ovl_entry` 结构用于记录 `OverlayFS` 文件系统中某个文件或者目录所在的真实位置，由于 `OverlayFS` 文件系统是一个联合文件系统，并不是真正存在于磁盘的文件系统，所以在 `OverlayFS` 文件系统中的文件都要指向真实文件系统中的位置。
 
@@ -112,7 +112,7 @@ struct ovl_entry {
 
 `__upperdentry` 和 `lowerdentry` 是 `ovl_entry` 结构比较重要的两个字段，一个指向文件所在 `upper` 目录中的dentry对象，另外一个指向文件所在 `lower` 目录中的dentry对象，如下图：
 
-![overlayfs-mount](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-mount.png)
+![overlayfs-mount](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-mount.jpg)
 
 在 `OverlayFS` 文件系统中，每个文件或目录都由一个 `ovl_entry` 结构管理。如果我们把 `dentry` 结构当成是文件或目录的实体，那么 `__upperdentry` 指向的就是文件或目录所在 `upper` 目录中的实体，而 `lowerdentry` 指向的就是文件或目录所在 `lower` 目录的实体。
 
