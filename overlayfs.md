@@ -39,3 +39,5 @@ $ mount -t overlay overlay -o lowerdir=lower1:lower2,upperdir=upper,workdir=work
 
 #### `OverlayFS` 文件系统挂载
 
+前面介绍过挂载 `OverlayFS` 文件系统的命令，挂载 `OverlayFS` 文件系统会触发系统调用 `sys_mount()`，而 `sys_mount()` 会执行 `虚拟文件系统` 的通用挂载过程，如申请和初始化 `超级块对象(super block)`（可参考：[虚拟文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_file_system.md)）。然后调用具体文件系统的 `fill_super()` 接口来填充 `超级块对象`，对于 `OverlayFS` 文件系统而言，最终会调用 `ovl_fill_super()` 函数来填充 `超级块对象`。
+
