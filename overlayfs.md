@@ -98,3 +98,7 @@ struct ovl_entry {
 4. `version`：用于记录此 `ovl_entry` 结构的版本。
 5. `opaque`：此文件或目录是否被隐藏。
 
+`__upperdentry` 和 `lowerdentry` 是 `ovl_entry` 结构比较重要的两个字段，一个指向文件所在 `upper` 目录中的dentry对象，另外一个指向文件所在 `lower` 目录中的dentry对象，如下图：
+
+![overlayfs-mount](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-mount.png)
+
