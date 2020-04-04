@@ -74,7 +74,15 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
     return 0;
 }
 ```
-在上面的代码中出现的 `ovl_entry` 结构是用于记录 `OverlayFS` 文件系统中某个文件或者目录所在的真实位置，由于 `OverlayFS` 文件系统是一个联合文件系统，并不是真正存在于磁盘的文件系统，所以在 `OverlayFS` 文件系统中的文件都要指向真实文件系统中的位置。
+`ovl_fill_super()` 函数主要完成以下几个步骤：
+1. 调用 `ovl_alloc_entry()` 创建一个 `ovl_entry` 对象（稍后介绍）`oe`。
+2. 调用 `ovl_new_inode()` 创建一个新的 `inode` 对象 `root_inode`。
+3. 调用 `d_make_root()` 创建一个 `dentry` 对象 `root_dentry`，并且将其指向 `root_inode`。
+4. 接着将 `oe` 的 `__upperdentry` 字段指向 `upper` 目录的 `dentry`，而 `lowerdentry` 字段指向 `lower` 目录的 `dentry`。
+5. 将 `root_dentry` 的 `d_fsdata` 字段指向 `oe`。
+6. 将 `超级块对象` 的 `s_root` 字段指向新创建的 `dentry` 对象。
+
+在上面的代码中出现的 `ovl_entry` 结构用于记录 `OverlayFS` 文件系统中某个文件或者目录所在的真实位置，由于 `OverlayFS` 文件系统是一个联合文件系统，并不是真正存在于磁盘的文件系统，所以在 `OverlayFS` 文件系统中的文件都要指向真实文件系统中的位置。
 
 而 `ovl_entry` 结构就是用来指向真实文件系统的位置，其定义如下：
 ```cpp
