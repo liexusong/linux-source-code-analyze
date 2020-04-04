@@ -74,3 +74,27 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
     return 0;
 }
 ```
+在上面的代码中出现的 `ovl_entry` 结构是用于记录 `OverlayFS` 文件系统中某个文件或者目录所在的真实位置，由于 `OverlayFS` 文件系统是一个联合文件系统，并不是真正存在于磁盘的文件系统，所以在 `OverlayFS` 文件系统中的文件都要指向真实文件系统中的位置。
+
+而 `ovl_entry` 结构就是用来指向真实文件系统的位置，其定义如下：
+```cpp
+struct ovl_entry {
+    struct dentry *__upperdentry;
+    struct dentry *lowerdentry;
+    struct ovl_dir_cache *cache;
+    union {
+        struct {
+            u64 version;
+            bool opaque;
+        };
+        struct rcu_head rcu;
+    };
+};
+```
+下面解析一下 `ovl_entry` 结构各个字段的作用：
+1. `__upperdentry`：如果文件存在于 `upper` 目录中，那么指向此文件的dentry对象。
+2. `lowerdentry`：如果文件存在于 `lower` 目录中，那么指向此文件的dentry对象。
+3. `cache`：如果指向的目录，那么缓存此目录的文件列表。
+4. `version`：用于记录此 `ovl_entry` 结构的版本。
+5. `opaque`：此文件或目录是否被隐藏。
+
