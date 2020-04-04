@@ -75,14 +75,14 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 }
 ```
 `ovl_fill_super()` 函数主要完成以下几个步骤：
-1. 调用 `ovl_alloc_entry()` 创建一个 `ovl_entry` 对象（稍后介绍）`oe`。
-2. 调用 `ovl_new_inode()` 创建一个新的 `inode` 对象 `root_inode`。
+1. 调用 `ovl_alloc_entry()` 创建一个 `ovl_entry` 对象 `oe`。
+2. 调用 `ovl_new_inode()` 创建一个 `inode` 对象 `root_inode`。
 3. 调用 `d_make_root()` 创建一个 `dentry` 对象 `root_dentry`，并且将其指向 `root_inode`。
-4. 接着将 `oe` 的 `__upperdentry` 字段指向 `upper` 目录的 `dentry`，而 `lowerdentry` 字段指向 `lower` 目录的 `dentry`。
+4. 将 `oe` 的 `__upperdentry` 字段指向 `upper` 目录的 `dentry`，而将 `lowerdentry` 字段指向 `lower` 目录的 `dentry`。
 5. 将 `root_dentry` 的 `d_fsdata` 字段指向 `oe`。
-6. 将 `超级块对象` 的 `s_root` 字段指向新创建的 `dentry` 对象。
+6. 将 `超级块对象` 的 `s_root` 字段指向 `root_dentry`。
 
-其各个数据结构的关系如下图：
+最后，其各个数据结构的关系如下图：
 
 ![overlayfs-relation](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-relation.png)
 
@@ -113,4 +113,8 @@ struct ovl_entry {
 `__upperdentry` 和 `lowerdentry` 是 `ovl_entry` 结构比较重要的两个字段，一个指向文件所在 `upper` 目录中的dentry对象，另外一个指向文件所在 `lower` 目录中的dentry对象，如下图：
 
 ![overlayfs-mount](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/overlayfs-mount.png)
+
+在 `OverlayFS` 文件系统中，每个文件或目录都由一个 `ovl_entry` 结构管理。如果我们把 `dentry` 结构当成是文件或目录的实体，那么 `__upperdentry` 指向的就是文件或目录所在 `upper` 目录中的实体，而 `lowerdentry` 指向的就是文件或目录所在 `lower` 目录的实体。
+
+#### 读取 `OverlayFS` 文件系统的目录
 
