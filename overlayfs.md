@@ -185,8 +185,118 @@ struct ovl_dir_cache {
 2. `is_upper`：是否需要从 `upper` 目录中读取。
 3. `cache`：用于缓存目录的文件列表。
 4. `cursor`：用于迭代目录列表时的游标。
-5. `realfile`：真实文件或目录的dentry对象。
-6. `upperfile`：指向文件或目录所在 `upper` 目录中的dentry对象。
+5. `realfile`：真实文件或目录的 `dentry` 对象。
+6. `upperfile`：指向文件或目录所在 `upper` 目录中的 `dentry` 对象。
 
 __读取目录列表__
 
+读取目录中的文件列表是通过 `getdents()` 系统调用，而 `getdents()` 系统调用最终会调用具体文件系统的 `iterate()` 接口，对于 `OverlayFS` 文件系统而言，调用的就是 `ovl_iterate()` 函数。其实现如下：
+```cpp
+static int ovl_iterate(struct file *file, struct dir_context *ctx)
+{
+    struct ovl_dir_file *od = file->private_data;
+    struct dentry *dentry = file->f_path.dentry;
+
+    if (!ctx->pos)
+        ovl_dir_reset(file);
+
+    if (od->is_real) // 如果不需要合并, 直接调用 iterate_dir() 函数读取真实的目录列表即可
+        return iterate_dir(od->realfile, ctx);
+
+    if (!od->cache) { // 如果还没有创建缓存对象
+        struct ovl_dir_cache *cache;
+
+        cache = ovl_cache_get(dentry); // 读取合并后目录的文件列表, 并且缓存起来
+        if (IS_ERR(cache))
+            return PTR_ERR(cache);
+
+        od->cache = cache; // 保持缓存对象
+        ovl_seek_cursor(od, ctx->pos); // 移动游标
+    }
+
+    while (od->cursor.l_node.next != &od->cache->entries) { // 遍历合并后的目录中的文件列表
+        struct ovl_cache_entry *p;
+
+        p = list_entry(od->cursor.l_node.next, struct ovl_cache_entry, l_node);
+        if (!p->is_cursor) {
+            if (!p->is_whiteout) {
+                if (!dir_emit(ctx, p->name, p->len, p->ino, p->type)) // 写到用户空间的缓冲区中
+                    break;
+            }
+            ctx->pos++;
+        }
+        list_move(&od->cursor.l_node, &p->l_node); // 移动到下一个文件
+    }
+    return 0;
+}
+```
+`ovl_iterate()` 函数的主要工作有以下几个步骤：
+1. 如果不需要合并目录（就是 `is_real` 为true），那么直接调用 `iterate_dir()` 函数读取真实的目录列表。
+2. 如果 `ovl_dir_file` 对象的缓存没有被创建，那么调用 `ovl_cache_get()` 创建缓存对象，`ovl_cache_get()` 除了创建缓存对象外，还会读取合并后的目录中的文件列表，并保存到缓存对象的 `entries` 链表中。
+3. 遍历合并后的目录中的文件列表，并把文件列表写到用户空间的缓存中，这样用户就可以获取合并后的文件列表。
+
+我们主要来分析以下怎么通过 `ovl_cache_get()` 函数来读取合并后的目录中的文件列表：
+```cpp
+static struct ovl_dir_cache *ovl_cache_get(struct dentry *dentry)
+{
+    int res;
+    struct ovl_dir_cache *cache;
+    ...
+    cache = kzalloc(sizeof(struct ovl_dir_cache), GFP_KERNEL);
+    if (!cache)
+        return ERR_PTR(-ENOMEM);
+
+    cache->refcount = 1;
+    INIT_LIST_HEAD(&cache->entries);
+
+    res = ovl_dir_read_merged(dentry, &cache->entries);
+    ...
+    cache->version = ovl_dentry_version_get(dentry);
+    ovl_set_dir_cache(dentry, cache);
+
+    return cache;
+}
+```
+`ovl_cache_get()` 函数首先创建一个 `ovl_dir_cache` 缓存对象，并且调用 `ovl_dir_read_merged()` 函数读取合并目录的文件列表，`ovl_dir_read_merged()` 函数实现如下：
+```cpp
+static int ovl_dir_read_merged(struct dentry *dentry, struct list_head *list)
+{
+    int err;
+    struct path lowerpath;
+    struct path upperpath;
+    struct ovl_readdir_data rdd = {
+        .ctx.actor = ovl_fill_merge,
+        .list = list,
+        .root = RB_ROOT,
+        .is_merge = false,
+    };
+
+    ovl_path_lower(dentry, &lowerpath); // 获取lower目录
+    ovl_path_upper(dentry, &upperpath); // 获取upper目录
+
+    if (upperpath.dentry) { // 如果upper目录存在, 读取upper目录中的文件列表
+        err = ovl_dir_read(&upperpath, &rdd);
+        if (err)
+            goto out;
+
+        if (lowerpath.dentry) {
+            err = ovl_dir_mark_whiteouts(upperpath.dentry, &rdd);
+            if (err)
+                goto out;
+        }
+    }
+    if (lowerpath.dentry) { // 如果lower目录存在, 读取lower目录中的文件列表
+        list_add(&rdd.middle, rdd.list);
+        rdd.is_merge = true;
+        err = ovl_dir_read(&lowerpath, &rdd);
+        list_del(&rdd.middle);
+    }
+out:
+    return err;
+}
+```
+`ovl_dir_read_merged()` 函数比较简单，就是读取 `lower` 目录和 `upper` 目录中的文件列表，并保存到 `list` 参数中。
+
+这里有个问题，就是如果 `lower` 目录和 `upper` 目录同时存在相同的文件怎办？
+
+在把文件列表写到用户空间缓存时，`ovl_fill_merge()` 函数会通过红黑树来过滤相同的文件，如果文件存在于 `upper` 目录，那么就使用 `upper` 目录中的文件，否则就使用 `lower` 目录中的文件。
