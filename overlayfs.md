@@ -118,3 +118,45 @@ struct ovl_entry {
 
 #### 读取 `OverlayFS` 文件系统的目录
 
+一般来说，我们调用 `ls` 命令读取目录的列表时，会触发内存以下过程：
+1. 调用 `openat()` 系统调用打开目录。
+2. 调用 `getdents()` 系统调用读取目录的列表。
+
+`open()` 系统调用最终会调用具体文件系统的 `open()` 方法来打开文件，对于 `OverlayFS` 文件系统调用的是 `ovl_dir_open()` 函数，其实现如下：
+```cpp
+static int ovl_dir_open(struct inode *inode, struct file *file)
+{
+    struct path realpath;
+    struct file *realfile;
+    struct ovl_dir_file *od;
+    enum ovl_path_type type;
+
+    // 申请一个 ovl_dir_file 对象
+    od = kzalloc(sizeof(struct ovl_dir_file), GFP_KERNEL);
+    if (!od)
+        return -ENOMEM;
+
+    type = ovl_path_real(file->f_path.dentry, &realpath);
+    realfile = ovl_path_open(&realpath, file->f_flags);
+    if (IS_ERR(realfile)) {
+        kfree(od);
+        return PTR_ERR(realfile);
+    }
+    // 初始化 ovl_dir_file 对象
+    INIT_LIST_HEAD(&od->cursor.l_node);
+    od->realfile = realfile;
+    od->is_real = (type != OVL_PATH_MERGE);
+    od->is_upper = (type != OVL_PATH_LOWER);
+    od->cursor.is_cursor = true;
+    file->private_data = od; // 保存到 file 对象的 private_data 字段中
+
+    return 0;
+}
+```
+`ovl_dir_open()` 函数主要完成的工作包括：
+1. 创建一个 `ovl_dir_file` 对象 `od`。
+2. 调用 `ovl_path_real()` 函数分析当前文件或目录所属的类型，主要有3中：
+    1. 如果是一个目录，并且 `upper` 目录和 `lower` 目录同时存在，那么返回 `OVL_PATH_MERGE`，表示需要对目录进行合并。
+    2. 如果是一个目录，并且只存在于 `upper` 目录中。或者是一个文件，并且存在于 `upper` 目录中，那么返回 `OVL_PATH_UPPER`，表示从 `upper` 目录中读取。
+    3. 否则返回 `OVL_PATH_LOWER`，表示从 `lower` 目录中读取。
+3. 把 `ovl_dir_file` 对象保存到 file 对象的 private_data 字段中。
