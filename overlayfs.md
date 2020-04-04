@@ -181,12 +181,12 @@ struct ovl_dir_cache {
 };
 ```
 `ovl_dir_file` 对象各个字段的含义如下：
-1. is_real：如不需要合并，设置为true。
-2. is_upper：是否需要从 `upper` 目录中读取。
-3. cache：用于缓存目录的文件列表。
-4. cursor：与cache配合使用。
-5. realfile：真实文件或目录的dentry对象。
-6. upperfile：指向文件或目录所在 `upper` 目录中的dentry对象。
+1. `is_real`：如不需要合并，设置为true。
+2. `is_upper`：是否需要从 `upper` 目录中读取。
+3. `cache`：用于缓存目录的文件列表。
+4. `cursor`：用于迭代目录列表时的游标。
+5. `realfile`：真实文件或目录的dentry对象。
+6. `upperfile`：指向文件或目录所在 `upper` 目录中的dentry对象。
 
 __读取目录列表__
 
