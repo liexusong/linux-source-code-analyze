@@ -295,8 +295,8 @@ out:
     return err;
 }
 ```
-`ovl_dir_read_merged()` 函数比较简单，就是读取 `lower` 目录和 `upper` 目录中的文件列表，并保存到 `list` 参数中。
+`ovl_dir_read_merged()` 函数的实现比较简单，调用了 `ovl_dir_read()` 函数读取 `lower` 和 `upper` 目录中的文件列表，并保存到 `list` 参数中。
 
 这里有个问题，就是如果 `lower` 目录和 `upper` 目录同时存在相同的文件怎办？
 
-在把文件列表写到用户空间缓存时，`ovl_fill_merge()` 函数会通过红黑树来过滤相同的文件，如果文件存在于 `upper` 目录，那么就使用 `upper` 目录中的文件，否则就使用 `lower` 目录中的文件。
+在调用 `ovl_dir_read()` 函数读取 `lower` 和 `upper` 目录中的文件列表时会调用 `ovl_fill_merge()` 函数过滤相同的文件，过滤操作通过红黑树来实现，规则是：如果文件存在于 `upper` 目录，那么就使用 `upper` 目录中的文件，否则就使用 `lower` 目录中的文件。
