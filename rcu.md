@@ -73,9 +73,40 @@ void foo_update(foo* new_fp)
 #define rcu_read_unlock()   preempt_enable()  // 开启抢占
 ```
 
+例子如下：
+```cpp
+void foo_read(void)
+{
+    rcu_read_lock();
+
+    foo *fp = gbl_foo;
+    if (fp != NULL)
+        dosomething(fp->a, fp->b, fp->c);
+
+    rcu_read_unlock();
+}
+```
+
 #### RCU 更新者
 
 对于更新者，有两种方式：
 1. 调用 `call_rcu()` 异步销毁，非阻塞。
 2. 调用 `synchronize_kernel()` 同步销毁，阻塞。
+
+例子如下：
+```cpp
+void foo_update(foo* new_fp)
+{
+    spin_lock(&foo_mutex);
+    foo *old_fp = gbl_foo;
+    gbl_foo = new_fp;
+    spin_unlock(&foo_mutex);
+
+    synchronize_kernel();
+
+    free(old_fp);
+}
+```
+
+### RCU 实现
 
