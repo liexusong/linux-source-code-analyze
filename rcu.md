@@ -112,3 +112,31 @@ void foo_update(foo* new_fp)
 
 ### RCU 实现
 
+在介绍 `RCU` 实现前，先要介绍两个重要的数据结构：`rcu_ctrlblk` 和 `rcu_data`。`rcu_ctrlblk` 结构用于记录当前系统宽限期批次信息，而 `rcu_data` 结构用于记录每个CPU的调度次数与需要延迟执行的函数列表。
+
+#### rcu_ctrlblk 结构
+```cpp
+struct rcu_ctrlblk {
+    spinlock_t  mutex;
+    long        curbatch;
+    long        maxbatch;
+    cpumask_t   rcu_cpu_mask;
+};
+```
+rcu_ctrlblk 结构各个字段的作用：
+1. `mutex`：由于 `rcu_ctrlblk` 结构是全局变量，所需通过这个锁来进行同步。
+2. `curbatch`：当前宽限期的批次数。
+3. `maxbatch`：系统最大批次数。
+4. `rcu_cpu_mask`：当前批次还没有进行调度的CPU列表，因为前面说过，必须所有CPU进行一次调度宽限期才能算结束。
+
+#### rcu_data 结构
+```cpp
+struct rcu_data {
+    long              qsctr;         /* User-mode/idle loop etc. */
+    long              last_qsctr;    /* value of qsctr at beginning */
+                                     /* of rcu grace period */
+    long              batch;         /* Batch # for current RCU batch */
+    struct list_head  nxtlist;
+    struct list_head  curlist;
+};
+```
