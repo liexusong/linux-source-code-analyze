@@ -43,8 +43,10 @@ void foo_update(foo* new_fp)
 
 为了解决这个问题，`RCU` 提出 `宽限期` 的概念。
 
-`宽限期` 是指线程引用旧数据结束前的一段时间，如下图：
+`宽限期` 是指线程引用旧数据结束前的一段时间，如下图（图片来源：[RCU原理分析](https://www.cnblogs.com/chaozhu/p/6265740.html)）：
 
 ![rcu-grace-period](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/rcu-grace-period.png)
 
-对于 `RCU` 来说，`宽限期` 是所有CPU都进行一次用户态调度的时间。
+如上图所示，线程1、线程2和线程5在删除（替换）旧数据前已经在使用旧数据，所以必须等待它们不再引用旧数据时才能对旧数据进行销毁，这个等待的时间就是 `宽限期`。由于线程3、线程4和线程6使用的是新数据（已经被替换成新的指针），所以不需要等到它们。
+
+> 由于 `RCU` 的读者要禁止抢占，所以对于 `RCU` 来说，`宽限期` 是所有CPU都进行一次用户态调度的时间。
