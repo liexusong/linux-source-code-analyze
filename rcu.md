@@ -211,4 +211,63 @@ static void rcu_process_callbacks(unsigned long unused)
 3. 调用 `rcu_check_quiescent_state()` 函数检测所有CPU是否都退出临界区（宽限期结束），如果是则对全局批次数进行加一操作。
 4. 如果CPU当前批次执行的函数列表不为空，那么就执行函数列表中的函数。
 
+从上面的代码可知，每个CPU的当前批次要执行的函数列表必须等待全局批次数大于当前CPU的批次数才能被执行。全局批次数由 `rcu_check_quiescent_state()` 函数推动，我们来看看 `rcu_check_quiescent_state()` 函数的实现：
+```cpp
+static void rcu_check_quiescent_state(void)
+{
+    int cpu = smp_processor_id();
 
+    // 如果当前CPU不在rcu_cpu_mask列表中，表示当前CPU已经经历了一次调用，所有不需要再执行下去
+    if (!cpu_isset(cpu, rcu_ctrlblk.rcu_cpu_mask))
+        return;
+
+    if (RCU_last_qsctr(cpu) == RCU_QSCTR_INVALID) { // 宽限期开始记录点
+        RCU_last_qsctr(cpu) = RCU_qsctr(cpu);
+        return;
+    }
+    if (RCU_qsctr(cpu) == RCU_last_qsctr(cpu)) // 还没有被调度过，直接返回
+        return;
+
+    spin_lock(&rcu_ctrlblk.mutex);
+    if (!cpu_isset(cpu, rcu_ctrlblk.rcu_cpu_mask))
+        goto out_unlock;
+
+    // 当前CPU已经被调度了，清空其所在rcu_cpu_mask列表的标志位
+    cpu_clear(cpu, rcu_ctrlblk.rcu_cpu_mask);
+    RCU_last_qsctr(cpu) = RCU_QSCTR_INVALID;
+
+    // 如果还有CPU没有经历一次调度，直接返回
+    if (!cpus_empty(rcu_ctrlblk.rcu_cpu_mask))
+        goto out_unlock;
+
+    // 执行到这里表示所有CPU都执行了一次调度
+    rcu_ctrlblk.curbatch++; // 全局批次数加一
+    rcu_start_batch(rcu_ctrlblk.maxbatch); // 开始下一轮批次
+
+out_unlock:
+    spin_unlock(&rcu_ctrlblk.mutex);
+}
+```
+`rcu_check_quiescent_state()` 函数主要做以下几件事情：
+1. 判断当前CPU是否已经经历一次调度，如果是，就把其从 `rcu_ctrlblk.rcu_cpu_mask` 列表中清除。
+2. 如果所有CPU都经历了一次调度，那么就对全局批次数进行加一操作。
+3. 开始下一轮的批次周期。
+
+从上面的分析可以看出，推动 `RCU` 对旧数据进行销毁的动力是时钟中断。
+
+`call_rcu()` 函数会把销毁函数添加到当前CPU的 `nxtlist` 函数列表中，代码如下：
+```cpp
+void call_rcu(struct rcu_head *head, void (*func)(void *arg), void *arg)
+{
+    int cpu;
+    unsigned long flags;
+
+    head->func = func;
+    head->arg = arg;
+    local_irq_save(flags);
+    cpu = smp_processor_id();
+    list_add_tail(&head->list, &RCU_nxtlist(cpu)); // 添加到CPU的nxtlist列表中
+    local_irq_restore(flags);
+}
+```
+随着时钟中断的推动，`nxtlist` 函数列表会移动到 `curlist` 函数列表中，然后会在适当的时机执行 `curlist` 函数列表中的函数。
