@@ -2,6 +2,35 @@
 
 Linux内核有多种锁机制，比如 `自旋锁`、`信号量` 和 `读写锁` 等。不同的场景使用不同的锁，如在读多写少的场景可以使用读写锁，而在锁粒度比较小的场景可以使用自旋锁。
 
-本文主要介绍一种比较有趣的锁，名为：`RCU`，`RCU` 是 `Read Copy Update` 这几个单词的缩写，中文翻译是 `读 复制 更新`，顾名思义这个锁需要三个步骤完成：1) 读、 2) 复制、 3) 更新。但是往往现实并不是那么美好的，这个锁机制要比这个名字复杂很多。
+本文主要介绍一种比较有趣的锁，名为：`RCU`，`RCU` 是 `Read Copy Update` 这几个单词的缩写，中文翻译是 `读 复制 更新`，顾名思义这个锁只需要三个步骤就能完成：__1) 读__、 __2) 复制__、 __3) 更新__。但是往往现实并不是那么美好的，这个锁机制要比这个名字复杂很多。
 
-我们先来介绍一下这个锁的使用场景，
+我们先来介绍一下 `RCU` 的使用场景，`RCU` 的特点是：多个 `reader（读者）` 可以同时读取共享的数据，而 `updater（更新者）` 更新共享的数据时需要复制一份，然后对副本进行修改，修改完把原来的共享数据替换成新的副本，而对旧数据的销毁（释放）等待到所有读者都不再引用旧数据时进行。
+
+分析下面代码存在的问题（例子参考：[RCU原理分析](https://www.cnblogs.com/chaozhu/p/6265740.html)）：
+```cpp
+struct foo {
+    int a;
+    char b;
+    long c;
+ };
+
+DEFINE_SPINLOCK(foo_mutex);
+
+struct foo *gbl_foo;
+
+void foo_read(void)
+{
+    foo *fp = gbl_foo;
+    if (fp != NULL)
+        dosomething(fp->a, fp->b , fp->c );
+}
+
+void foo_update(foo* new_fp)
+{
+    spin_lock(&foo_mutex);
+    foo *old_fp = gbl_foo;
+    gbl_foo = new_fp;
+    spin_unlock(&foo_mutex);
+    kfee(old_fp);
+}
+```
