@@ -31,7 +31,7 @@ void foo_update(foo* new_fp)
     foo *old_fp = gbl_foo;
     gbl_foo = new_fp;
     spin_unlock(&foo_mutex);
-    kfee(old_fp);
+    free(old_fp);
 }
 ```
 假如有线程A和线程B同时执行 `foo_read()`，而另线程C执行 `foo_update()`，那么会出现以下情况：
@@ -39,4 +39,12 @@ void foo_update(foo* new_fp)
 2) 线程A和线程B同时读取到新的 `gbl_foo` 的指针。
 3) 线程A和线程B有一个读取到新的 `gbl_foo` 的指针，另外一个读取到旧的 `gbl_foo` 的指针。
 
+如果线程A或线程B在读取旧的 `gbl_foo` 数据还没完成时，线程C释放了旧的 `gbl_foo` 指针，那么将会导致程序奔溃。
 
+为了解决这个问题，`RCU` 提出 `宽限期` 的概念。
+
+`宽限期` 是指线程引用旧数据结束前的一段时间，如下图：
+
+![rcu-grace-period](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/rcu-grace-period.png)
+
+对于 `RCU` 来说，`宽限期` 是所有CPU都进行一次用户态调度的时间。
