@@ -59,6 +59,8 @@ void foo_update(foo* new_fp)
 
 ### RCU 使用
 
+#### RCU 读者
+
 要做Linux内核中使用 `RCU`，读者需要使用 `rcu_read_lock()` 来对临界区进行 “上锁”，本质上 `rcu_read_lock()` 就是禁止CPU进行抢占，如下代码：
 ```cpp
 #define rcu_read_lock()     preempt_disable()  // 禁止抢占
@@ -69,4 +71,8 @@ void foo_update(foo* new_fp)
 #define rcu_read_unlock()   preempt_enable()  // 开启抢占
 ```
 
+#### RCU 更新者
 
+对于更新者，有两种方式：
+1. 调用 `call_rcu()` 异步销毁。
+2. 调用 `synchronize_kernel()` 同步销毁。
