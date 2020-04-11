@@ -6,7 +6,7 @@ Linux内核有多种锁机制，比如 `自旋锁`、`信号量` 和 `读写锁`
 
 我们先来介绍一下 `RCU` 的使用场景，`RCU` 的特点是：多个 `reader（读者）` 可以同时读取共享的数据，而 `updater（更新者）` 更新共享的数据时需要复制一份，然后对副本进行修改，修改完把原来的共享数据替换成新的副本，而对旧数据的销毁（释放）等待到所有读者都不再引用旧数据时进行。
 
-分析下面代码存在的问题（例子参考：[RCU原理分析](https://www.cnblogs.com/chaozhu/p/6265740.html)）：
+分析下面代码存在的问题（例子参考：《深入理解并行编程》）：
 ```cpp
 struct foo {
     int a;
@@ -22,7 +22,7 @@ void foo_read(void)
 {
     foo *fp = gbl_foo;
     if (fp != NULL)
-        dosomething(fp->a, fp->b , fp->c );
+        dosomething(fp->a, fp->b, fp->c);
 }
 
 void foo_update(foo* new_fp)
@@ -34,3 +34,9 @@ void foo_update(foo* new_fp)
     kfee(old_fp);
 }
 ```
+假如有线程A和线程B同时执行 `foo_read()`，而另线程C执行 `foo_update()`，那么会出现以下情况：
+1) 线程A和线程B同时读取到旧的 `gbl_foo` 的指针。
+2) 线程A和线程B同时读取到新的 `gbl_foo` 的指针。
+3) 线程A和线程B有一个读取到新的 `gbl_foo` 的指针，另外一个读取到旧的 `gbl_foo` 的指针。
+
+
