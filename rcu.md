@@ -160,22 +160,26 @@ void rcu_check_callbacks(int cpu, int user)
 }
 ```
 这个函数主要做两件事情：
-1. 判断当前进程是否处于用户态，如果是就对当前CPU的 `rcu_data` 结构的 `qsctr` 字段进行加一操作。
+1. 判断当前进程是否处于用户态，如果是就对当前CPU的 `rcu_data` 结构的 `qsctr` 字段进行加一操作。前面说过，如果进程处于用户态，代表内核已经推出了临界区，也就是说不再引用旧数据。
 2. 调用 `rcu_process_callbacks()` 函数继续进行其他工作。
 
 我们解析来分析 `rcu_process_callbacks()` 函数：
 ```cpp
 static void rcu_process_callbacks(unsigned long unused)
 {
-    int cpu = smp_processor_id();
+    int cpu = smp_processor_id(); // 获取CPU ID
     LIST_HEAD(list);
 
+    // 1. 如果CPU的当前批次有要执行的函数列表, 并且全局批次数大于CPU的当前批次数,
+    // 那么把当前批次要执行的函数列表移动到list列表中, 并且清空当前批次要执行的函数列表。
     if (!list_empty(&RCU_curlist(cpu)) &&
         rcu_batch_after(rcu_ctrlblk.curbatch, RCU_batch(cpu))) {
         list_splice(&RCU_curlist(cpu), &list);
         INIT_LIST_HEAD(&RCU_curlist(cpu));
     }
 
+    // 2. 如果CPU下一个批次要执行的函数列表不为空, 并且当前批次要执行的函数列表为空,
+    // 那么把下一个批次要执行的函数列表移动到当前批次要执行的函数列表, 并且清空下一个批次要执行的函数列表
     local_irq_disable();
     if (!list_empty(&RCU_nxtlist(cpu)) && list_empty(&RCU_curlist(cpu))) {
         list_splice(&RCU_nxtlist(cpu), &RCU_curlist(cpu));
@@ -186,16 +190,25 @@ static void rcu_process_callbacks(unsigned long unused)
          * start the next batch of callbacks
          */
         spin_lock(&rcu_ctrlblk.mutex);
-        RCU_batch(cpu) = rcu_ctrlblk.curbatch + 1;
-        rcu_start_batch(RCU_batch(cpu));
+        RCU_batch(cpu) = rcu_ctrlblk.curbatch + 1; // 把CPU当前批次设置为全局批次数加一
+        rcu_start_batch(RCU_batch(cpu)); // 开始新的批次周期(宽限期)
         spin_unlock(&rcu_ctrlblk.mutex);
     } else {
         local_irq_enable();
     }
 
+    // 调用 rcu_check_quiescent_state() 函数检测所有CPU是否都退出临界区（宽限期结束），如果是则对全局批次数进行加一操作。
     rcu_check_quiescent_state();
 
+    // 执行CPU当前批次函数列表的函数
     if (!list_empty(&list))
         rcu_do_batch(&list);
 }
 ```
+`rcu_process_callbacks()` 函数主要完成4件事情：
+1. 如果CPU的当前批次（`rcu_data` 结构的 `curlist` 字段）有要执行的函数列表（一般都是销毁旧数据的函数），并且全局批次数大于CPU的当前批次数。那么把列表移动到 `list` 中，并且清空当前批次的函数列表。
+2. 如果CPU的下一次批次（`rcu_data` 结构的 `nxtlist` 字段）有要执行的函数列表，并且当前批次要执行的函数列表为空。那么把其移动到当前批次的函数列表，并清空下一次批次的函数列表。接着把CPU的当前批次数设置为全局批次数加一，然后调用 `rcu_start_batch()` 函数开始一个新的批次周期（宽限期）。
+3. 调用 `rcu_check_quiescent_state()` 函数检测所有CPU是否都退出临界区（宽限期结束），如果是则对全局批次数进行加一操作。
+4. 如果CPU当前批次执行的函数列表不为空，那么就执行函数列表中的函数。
+
+
