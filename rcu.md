@@ -125,8 +125,8 @@ struct rcu_ctrlblk {
 ```
 rcu_ctrlblk 结构各个字段的作用：
 1. `mutex`：由于 `rcu_ctrlblk` 结构是全局变量，所需通过这个锁来进行同步。
-2. `curbatch`：当前宽限期的批次数。
-3. `maxbatch`：系统最大批次数。
+2. `curbatch`：当前批次数（`RCU` 的实现把每个宽限期当成是一个批次）。
+3. `maxbatch`：系统最大批次数，如果 `maxbatch` 大于 `curbatch` 说明还有没有完成的批次。
 4. `rcu_cpu_mask`：当前批次还没有进行调度的CPU列表，因为前面说过，必须所有CPU进行一次调度宽限期才能算结束。
 
 #### rcu_data 结构
@@ -140,3 +140,10 @@ struct rcu_data {
     struct list_head  curlist;
 };
 ```
+每个CPU都有一个 `rcu_data` 结构，其各个字段的作用如下：
+1. `qsctr`：当前CPU调度的次数。
+2. `last_qsctr`：用于记录宽限期开始时的调度次数，如果 `qsctr` 比它大，说明当前CPU的宽限期已经结束。
+3. `batch`：用于记录当前CPU的批次数。
+4. `nxtlist`：下一次批次要执行的函数列表。
+5. `curlist`：当前批次要执行的函数列表。
+
