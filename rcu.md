@@ -147,3 +147,55 @@ struct rcu_data {
 4. `nxtlist`：下一次批次要执行的函数列表。
 5. `curlist`：当前批次要执行的函数列表。
 
+#### 时钟中断
+
+每次时钟中断都会触发调用 `scheduler_tick()` 函数，而 `scheduler_tick()` 函数会调用 `rcu_check_callbacks()` 函数，调用链：`scheduler_tick() -> rcu_check_callbacks()`。`rcu_check_callbacks()` 函数实现如下：
+```cpp
+void rcu_check_callbacks(int cpu, int user)
+{
+    if (user || (idle_cpu(cpu) && !in_softirq() && hardirq_count() <= (1 << HARDIRQ_SHIFT))) {
+        RCU_qsctr(cpu)++;
+    }
+    tasklet_schedule(&RCU_tasklet(cpu)); // 这里会调用 rcu_process_callbacks() 函数
+}
+```
+这个函数主要做两件事情：
+1. 判断当前进程是否处于用户态，如果是就对当前CPU的 `rcu_data` 结构的 `qsctr` 字段进行加一操作。
+2. 调用 `rcu_process_callbacks()` 函数继续进行其他工作。
+
+我们解析来分析 `rcu_process_callbacks()` 函数：
+```cpp
+static void rcu_process_callbacks(unsigned long unused)
+{
+    int cpu = smp_processor_id();
+    LIST_HEAD(list);
+
+    if (!list_empty(&RCU_curlist(cpu)) &&
+        rcu_batch_after(rcu_ctrlblk.curbatch, RCU_batch(cpu))) {
+        list_splice(&RCU_curlist(cpu), &list);
+        INIT_LIST_HEAD(&RCU_curlist(cpu));
+    }
+
+    local_irq_disable();
+    if (!list_empty(&RCU_nxtlist(cpu)) && list_empty(&RCU_curlist(cpu))) {
+        list_splice(&RCU_nxtlist(cpu), &RCU_curlist(cpu));
+        INIT_LIST_HEAD(&RCU_nxtlist(cpu));
+        local_irq_enable();
+
+        /*
+         * start the next batch of callbacks
+         */
+        spin_lock(&rcu_ctrlblk.mutex);
+        RCU_batch(cpu) = rcu_ctrlblk.curbatch + 1;
+        rcu_start_batch(RCU_batch(cpu));
+        spin_unlock(&rcu_ctrlblk.mutex);
+    } else {
+        local_irq_enable();
+    }
+
+    rcu_check_quiescent_state();
+
+    if (!list_empty(&list))
+        rcu_do_batch(&list);
+}
+```
