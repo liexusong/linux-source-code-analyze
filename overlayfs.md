@@ -65,7 +65,7 @@ static struct dentry *ovl_mount(struct file_system_type *fs_type,
 下面我们来分析一下 `ovl_fill_super()` 函数的实现，在分析 `ovl_fill_super()` 函数前先介绍一下 `ovl_fs` 和 `ovl_entry` 这两个结构，因为 `ovl_fill_super()` 函数使用了这两个结构。
 
 
-__`ovl_fs` 结构定义如下：__
+`ovl_fs` 结构用于保存 `OverlayFS` 文件系统挂载点的私有数据，定义如下：
 ```cpp
 struct ovl_config {
     char *lowerdir;
