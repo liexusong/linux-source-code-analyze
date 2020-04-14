@@ -49,3 +49,6 @@ struct runqueue {
     atomic_t nr_iowait;
 };
 ```
+`runqueue` 结构有两个重要的字段：`active` 和 `expired`，这两个字段在 `O(1)调度算法` 中起着至关重要的作用。我们先来了解一下 `O(1)调度算法` 的大概原理。
+
+我们注意到 `active` 和 `expired` 字段的类型为 `prio_array`，也就是任务的优先队列。`active` 代表可以调度的任务队列，而 `expired` 字段表示时间片已经用完的任务队列。如果在 `active` 中的任务时间片用完，那么就会被移动到 `expired` 中。
