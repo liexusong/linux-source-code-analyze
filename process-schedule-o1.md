@@ -22,3 +22,9 @@ struct prio_array {
 1. `nr_active`: 所有优先级队列中的总任务数。
 2. `bitmap`: 位图，每个位对应一个优先级队列，用于记录哪个优先级队列不为空。
 3. `queue`: 优先级队列数组，每个元素维护一个优先级队列，比如索引为0的元素维护着优先级为0的任务队列。
+
+下图更直观地展示了 `prio_array` 结构各个字段的关系：
+
+![prio_array](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/process-schedule-o1.jpg)
+
+从上图可以看出，`bitmap` 的第2位和第6位为1（红色代表为1，白色代表为0），表示优先级为2和6的任务队列不为空，也就是说 `queue` 数组的第2个元素和第6个元素的队列不为空。
