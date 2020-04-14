@@ -53,4 +53,6 @@ struct runqueue {
 
 我们注意到 `active` 和 `expired` 字段的类型为 `prio_array`，指向任务优先队列。`active` 代表可以调度的任务队列，而 `expired` 字段代表时间片已经用完的任务队列。
 
-当 `active` 中的任务时间片用完，那么就会被移动到 `expired` 中。而当 `active` 中已经没有任务可以运行，就把 `expired` 与 `active` 交换，从而 `expired` 中的任务可以重新被调度。
+当 `active` 中的任务时间片用完，那么就会被移动到 `expired` 中。而当 `active` 中已经没有任务可以运行，就把 `expired` 与 `active` 交换，从而 `expired` 中的任务可以重新被调度。如下图所示：
+
+![process-schedule-o1-move](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/process-schedule-o1-move.jpg)
