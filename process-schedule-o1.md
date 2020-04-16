@@ -10,6 +10,8 @@ Linux2.4版本使用的调度算法的时间复杂度为O(n)，其主要原理�
 
 ### O(1)调度算法原理
 
+#### `prio_array` 结构
+
 `O(1)调度算法` 通过优先级来对任务进行分组，可分为140个优先级（0 ~ 139，数值越小优先级越高），每个优先级的任务由一个队列来维护。`prio_array` 结构就是用来维护这些任务队列，如下代码：
 ```cpp
 #define MAX_USER_RT_PRIO    100
@@ -34,6 +36,8 @@ struct prio_array {
 ![prio_array](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/process-schedule-o1.jpg)
 
 如上图所述，`bitmap` 的第2位和第6位为1（红色代表为1，白色代表为0），表示优先级为2和6的任务队列不为空，也就是说 `queue` 数组的第2个元素和第6个元素的队列不为空。
+
+#### `runqueue` 结构
 
 另外，为了减少多核CPU之间的竞争，所以每个CPU都需要维护一份本地的优先队列。因为如果使用全局的优先队列，那么多核CPU就需要对全局优先队列进行上锁，从而导致性能下降。
 
