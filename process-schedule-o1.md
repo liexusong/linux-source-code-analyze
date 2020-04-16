@@ -140,3 +140,45 @@ void scheduler_tick(int user_ticks, int sys_ticks)
 6. 如果当前进程是交互进程或者出来饥饿状态，那么重新加入到 `active` 队列。
 7. 否则把今天移动到 `expired` 队列。
 
+#### 任务调度
+
+如果进程设置了 `TIF_NEED_RESCHED` 标志，那么当从时钟中断返回到用户空间时，会调用 `schedule()` 函数进行任务调度。`schedule()` 函数代码如下：
+```cpp
+void schedule(void)
+{
+    ...
+    prev = current;  // 当前需要被调度的进程
+    rq = this_rq();  // 获取当前CPU的runqueue
+
+    array = rq->active; // active队列
+
+    // 如果active队列中没有进程, 那么替换成expired队列
+    if (unlikely(!array->nr_active)) {
+        rq->active = rq->expired;
+        rq->expired = array;
+        array = rq->active;
+        rq->expired_timestamp = 0;
+    }
+
+    idx = sched_find_first_bit(array->bitmap); // 找到最高优先级的任务队列
+    queue = array->queue + idx;
+    next = list_entry(queue->next, task_t, run_list); // 获取到下一个将要运行的进程
+
+    ...
+    prev->sleep_avg -= run_time; // 减少当前进程的睡眠时间
+    ...
+
+    if (likely(prev != next)) {
+        ...
+        prev = context_switch(rq, prev, next); // 切换到next进程进行运行
+        ...
+    }
+    ...
+}
+```
+上面代码主要完成以下几个步骤：
+1. 如果当前 `runqueue` 的 `active` 队列为空，那么把 `active` 队列与 `expired` 队列进行交换。
+2. 调用 `sched_find_first_bit()` 函数在 `bitmap` 中找到优先级最高并且不为空的任务队列索引。
+3. 减少当前进程的睡眠时间。
+4. 调用 `context_switch()` 函数切换到next进程进行运行。
+
