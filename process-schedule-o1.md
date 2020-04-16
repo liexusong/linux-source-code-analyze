@@ -100,4 +100,34 @@ struct runqueue {
 
 接下来我们分析一下 `O(1)调度算法` 在内核中的实现。
 
+#### 时钟中断
 
+时钟中断是由硬件触发的，可以通过编程来设置其频率，Linux内核一般设置为每秒产生100 ~ 1000次。时钟中断会触发调用 `scheduler_tick()` 内核函数，其主要工作是：减少进程的可运行时间片，如果时间片用完，那么把进程从 `active` 队列移动到 `expired` 队列中。代码如下：
+```cpp
+void scheduler_tick(int user_ticks, int sys_ticks)
+{
+    runqueue_t *rq = this_rq();
+    task_t *p = current;
+
+    ...
+
+    // 处理普通进程
+    if (!--p->time_slice) {                // 如果时间片用完
+        dequeue_task(p, rq->active);       // 把进程从运行队列中删除
+        set_tsk_need_resched(p);           // 设置要重新调度标志
+        p->prio = effective_prio(p);       // 重新计算动态优先级
+        p->time_slice = task_timeslice(p); // 重新计算时间片
+        p->first_time_slice = 0;
+
+        if (!rq->expired_timestamp)
+            rq->expired_timestamp = jiffies;
+
+        // 如果不是交互进程或者没有出来饥饿状态
+        if (!TASK_INTERACTIVE(p) || EXPIRED_STARVING(rq)) {
+            enqueue_task(p, rq->expired); // 移动到expired队列
+        } else
+            enqueue_task(p, rq->active);  // 重新放置到active队列
+    }
+    ...
+}
+```
