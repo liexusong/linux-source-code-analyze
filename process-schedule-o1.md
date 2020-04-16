@@ -112,7 +112,7 @@ void scheduler_tick(int user_ticks, int sys_ticks)
     ...
 
     // 处理普通进程
-    if (!--p->time_slice) {                // 如果时间片用完
+    if (!--p->time_slice) {                // 减少时间片, 如果时间片用完
         dequeue_task(p, rq->active);       // 把进程从运行队列中删除
         set_tsk_need_resched(p);           // 设置要重新调度标志
         p->prio = effective_prio(p);       // 重新计算动态优先级
@@ -131,3 +131,12 @@ void scheduler_tick(int user_ticks, int sys_ticks)
     ...
 }
 ```
+上面代码主要完成以下几个工作：
+1. 减少进程的时间片，并且判断时间片是否已经使用完。
+2. 如果时间片使用完，那么把进程从 `active` 队列中删除。
+3. 调用 `set_tsk_need_resched()` 函数设 `TIF_NEED_RESCHED` 标志，表示当前进程需要重新调度。
+4. 调用 `effective_prio()` 函数重新计算进程的动态优先级。
+5. 调用 `task_timeslice()` 函数重新计算进程的可运行时间片。
+6. 如果当前进程是交互进程或者出来饥饿状态，那么重新加入到 `active` 队列。
+7. 否则把今天移动到 `expired` 队列。
+
