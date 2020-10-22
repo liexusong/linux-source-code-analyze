@@ -4,13 +4,13 @@
 
 直接内存映射区从 `3GB` 开始到 `3GB+896MB` 处结束，直接内存映射区的特点就是物理地址与虚拟地址的关系为：`虚拟地址 = 物理地址 + 3GB`。而动态内存映射区不能通过这种简单的关系关联，而是需要访问动态内存映射区时，由内核动态申请物理内存并且映射到动态内存映射区中。下图是动态内存映射区在内存空间的位置：
 
-![vmalloc-memory](F:\work\markdown\vmalloc-memory.jpg)
+![vmalloc-memory](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vmalloc-memory.jpg)
 
 ## 为什么需要vmalloc区
 
 由于直接内存映射区（`3GB ~ 3GB+896MB`）是直接映射到物理地址（`0 ~ 896MB`）的，所以内核不能通过直接内存映射区使用到超过 896MB 之外的物理内存。这时候就需要提供一个机制能够让内核使用 896MB 之外的物理内存，所以 Linux 就实现了一个 vmalloc 机制。vmalloc 机制的目的是在内核内存空间提供一个内存区，能够让这个内存区映射到 896MB 之外的物理内存。如下图：
 
-![vmalloc-map](F:\work\markdown\vmalloc-map.jpg)
+![vmalloc-map](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vmalloc-map.jpg)
 
 那么什么时候使用 vmalloc 呢？一般来说，如果要申请大块的内存就可以用vmalloc。
 
@@ -103,7 +103,7 @@ out:
 
 `get_vm_area()` 函数比较简单，首先申请一个类型为 `vm_struct` 的结构 `area` 用于保存申请到的虚拟内存地址。然后查找可用的虚拟内存地址，如果找到，就把虚拟内存到虚拟内存地址保存到 `area` 变量中。最后把 `area` 连接到 `vmalloc` 虚拟内存地址管理链表 `vmlist` 中。`vmlist` 链表最终结果如下图：
 
-![vmalloc-address-manager](F:\work\markdown\vmalloc-address-manager.jpg)
+![vmalloc-address-manager](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/vmalloc-address-manager.jpg)
 
 申请到虚拟内存地址后，`__vmalloc()` 函数会调用 `vmalloc_area_pages()` 函数来对虚拟内存地址与物理内存地址进行映射。
 
