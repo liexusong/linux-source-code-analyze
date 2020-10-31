@@ -74,7 +74,13 @@ ptrace  ptrace.c
 
 从上面的例子可以知道，通过向 `ptrace()` 函数的 `request` 参数传入不同的值时，就有不同的效果。比如传入 `PTRACE_TRACEME` 就可以让进程进入被追踪状态，而传入 `PTRACE_GETREGS` 时，就可以获取被追踪的子进程各个寄存器的值等。
 
-本来我想使用 `ptrace` 实现一个简单的调试工具的，但在网上找到了一位 Google 的大神 `Eli Bendersky` 写了一篇类似的文章，所以这里就贴一下 `Eli Bendersky` 大神的文章链接：https://eli.thegreenplace.net/2011/01/23/how-debuggers-work-part-1/
+本来我想使用 `ptrace` 实现一个简单的调试工具的，但在网上找到了一位 Google 的大神 `Eli Bendersky` 写了系列类似的文章，所以这里就贴一下 `Eli Bendersky` 大神的文章链接：
+
+https://eli.thegreenplace.net/2011/01/23/how-debuggers-work-part-1/
+https://eli.thegreenplace.net/2011/01/27/how-debuggers-work-part-2-breakpoints
+https://eli.thegreenplace.net/2011/02/07/how-debuggers-work-part-3-debugging-information
 
 但由于 `Eli Bendersky` 大神的文章只是介绍使用 `ptrace` 实现一个简单的进程调试工具，而没有介绍 `ptrace` 的原理和实现，所以这里为了填补这个空缺，下面就详细介绍一下 `ptrace` 的原理与实现。
+
+## ptrace实现原理
 
