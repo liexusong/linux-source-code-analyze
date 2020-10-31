@@ -23,7 +23,7 @@ long ptrace(enum __ptrace_request request,  pid_t pid, void *addr,  void *data);
 
 ## ptrace使用示例
 
-下面通过一个简单例子来说明 `ptrace()` 系统调用的使用，这个例子主要介绍怎么使用 `ptrace()` 系统调用获取当前被调试（追踪）进程的各个寄存器的值，代码如下：
+下面通过一个简单例子来说明 `ptrace()` 系统调用的使用，这个例子主要介绍怎么使用 `ptrace()` 系统调用获取当前被调试（追踪）进程的各个寄存器的值，代码如下（ptrace.c）：
 
 ```c
 #include <sys/ptrace.h>
@@ -54,7 +54,7 @@ int main()
 }
 ```
 
-编译并运行上面的程序会输出如下结果：
+通过命令 `gcc ptrace.c -o ptrace` 编译并运行上面的程序会输出如下结果：
 
 ```shell
 Register: rdi[0], rsi[0], rdx[0], rax[0], orig_rax[59]
