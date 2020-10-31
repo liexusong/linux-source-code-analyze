@@ -33,6 +33,7 @@
 * 其他
     * [定时器实现](https://github.com/liexusong/linux-source-code-analyze/blob/master/kernel-timer.md)
     * [多路复用I/O](https://github.com/liexusong/linux-source-code-analyze/blob/master/multiplexing-io.md)
+    * [GDB原理之ptrace](https://github.com/liexusong/linux-source-code-analyze/blob/master/ptrace.md)
 * 容器相关
     * [docker实现原理之 - namespace](https://github.com/liexusong/linux-source-code-analyze/blob/master/namespace.md)
     * [docker实现原理之 - CGroup介绍](https://github.com/liexusong/linux-source-code-analyze/blob/master/cgroup.md)
