@@ -43,7 +43,7 @@ int main()
         execl("/bin/ls", "ls", NULL);          // 执行 `/bin/ls` 程序
     } 
     else { // 父进程
-        wait(NULL); // 等待子进程发送一个SIGTRAP信号
+        wait(NULL); // 等待子进程发送一个 SIGTRAP 信号
         ptrace(PTRACE_GETREGS, child, NULL, &regs); // 获取子进程的各个寄存器的值
         printf("Register: rdi[%ld], rsi[%ld], rdx[%ld], rax[%ld], orig_rax[%ld]\n",
                 regs.rdi, regs.rsi, regs.rdx,regs.rax, regs.orig_rax); // 打印寄存器的值
@@ -61,7 +61,14 @@ Register: rdi[0], rsi[0], rdx[0], rax[0], orig_rax[59]
 ptrace  ptrace.c
 ```
 
-上面的第一行是由父进程输出的，主要是打印了子进程执行 `/bin/ls` 程序后各个寄存器的值。而第二行是由子进程输出的，主要是打印了执行 `/bin/ls` 程序后输出的结果。
+上面结果的第一行是由父进程输出的，主要是打印了子进程执行 `/bin/ls` 程序后各个寄存器的值。而第二行是由子进程输出的，主要是打印了执行 `/bin/ls` 程序后输出的结果。
 
 下面解释一下上面程序的执行流程：
+
+1.  主进程调用 `fork()` 系统调用创建一个子进程。
+2.  子进程调用 `ptrace(PTRACE_TRACEME,...)` 把自己设置为被追踪状态，并且调用 `execl()` 执行 `/bin/ls` 程序。
+3.  被设置为追踪（TRACE）状态的子进程执行 `execl()` 的程序后，会向父进程发送 `SIGTRAP` 信号，并且暂停执行。
+4.  父进程通过调用 `wait()` 接收子进程发送过来的信号，并且开始追踪子进程。
+5.  父进程通过调用 `ptrace(PTRACE_GETREGS, child, ...)` 来获取到子进程各个寄存器的值，并且打印寄存器的值。
+6.  父进程通过调用 `ptrace(PTRACE_CONT, child, ...)` 让子进程继续执行下去。
 
