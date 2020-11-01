@@ -86,7 +86,7 @@ ptrace  ptrace.c
 
 >   本文使用的 Linux 2.4.16 版本的内核
 >
->   看懂本文需要的基础：进程调度相关知识，内存管理相关知识。
+>   看懂本文需要的基础：进程调度，内存管理和信号处理相关知识。
 
 调用 `ptrace()` 系统函数时会触发调用内核的 `sys_ptrace()` 函数，由于不同的 CPU 架构有着不同的调试方式，所以 Linux 为每种不同的 CPU 架构实现了不同的 `sys_ptrace()` 函数，而本文主要介绍的是 `X86 CPU` 的调试方式，所以 `sys_ptrace()` 函数所在文件是 `linux-2.4.16/arch/i386/kernel/ptrace.c`。
 
@@ -182,3 +182,39 @@ out:
 *   调试进程（如GDB）调用 `ptrace(PTRACE_ATTACH, pid, ...)` 来使指定的进程进入被追踪模式。
 
 第一种方式是进程自己主动进入被追踪模式，而第二种是进程被动进入被追踪模式。
+
+被调试的进程必须进入被追踪模式才能进行调试，因为 Linux 会对被追踪的进程进行一些特殊的处理。下面我们主要介绍第一种进入被追踪模式的实现，就是 `PTRACE_TRACEME` 的操作过程，代码如下：
+
+```c
+asmlinkage int sys_ptrace(long request, long pid, long addr, long data)
+{
+    ...
+    if (request == PTRACE_TRACEME) {
+        if (current->ptrace & PT_PTRACED)
+            goto out;
+        current->ptrace |= PT_PTRACED; // 标志 PTRACE 状态
+        ret = 0;
+        goto out;
+    }
+    ...
+}
+```
+
+从上面的代码可以发现，`ptrace()` 对 `PTRACE_TRACEME` 的处理就是把当前进程标志为 `PTRACE` 状态。
+
+当然事情不会这么简单，因为当一个进程被标记为 `PTRACE` 状态后，当调用 `exec()` 函数去执行一个外部程序时，将会暂停当前进程的运行，并且发送一个 `SIGCHLD` 给父进程。父进程接收到 `SIGCHLD` 信号后就可以对被调试的进程进行调试。
+
+我们来看看 `exec()` 函数是怎样实现上述功能的，`exec()` 函数的执行过程为 `sys_execve() -> do_execve() -> load_elf_binary()`：
+
+```c
+static int load_elf_binary(struct linux_binprm * bprm, struct pt_regs * regs)
+{
+    ...
+    if (current->ptrace & PT_PTRACED)
+        send_sig(SIGTRAP, current, 0);
+    ...
+}
+```
+
+从上面代码可以看出，当进程被标记为 `PTRACE` 状态时，执行 `exec()` 函数后便会发送一个 `SIGTRAP` 的信号给当前进程。
+
