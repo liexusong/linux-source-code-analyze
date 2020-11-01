@@ -84,3 +84,56 @@ ptrace  ptrace.c
 
 ## ptrace实现原理
 
+`ptrace()` 函数的主体是一个 `switch` 语句，会传入的 `request` 参数不同进行不同的操作，如下：
+```c
+asmlinkage int sys_ptrace(long request, long pid, long addr, long data)
+{
+    struct task_struct *child;
+    struct user *dummy = NULL;
+    int i, ret;
+
+    ...
+
+    read_lock(&tasklist_lock);
+    child = find_task_by_pid(pid); // 获取 pid 对用的进程task_struct对象
+    if (child)
+        get_task_struct(child);
+    read_unlock(&tasklist_lock);
+    if (!child)
+        goto out;
+
+    if (request == PTRACE_ATTACH) {
+        ret = ptrace_attach(child);
+        goto out_tsk;
+    }
+
+    ...
+
+    switch (request) {
+    case PTRACE_PEEKTEXT: /* read word at location addr. */
+    case PTRACE_PEEKDATA:
+        ...
+    case PTRACE_PEEKUSR:
+        ...
+    case PTRACE_POKETEXT: /* write the word at location addr. */
+    case PTRACE_POKEDATA:
+        ...
+    case PTRACE_POKEUSR: /* write the word at location addr in the USER area */
+        ...
+    case PTRACE_SYSCALL: /* continue and stop at next (return from) syscall */
+    case PTRACE_CONT:    /* restart after signal. */
+        ...
+    case PTRACE_KILL: 
+        ...
+    case PTRACE_SINGLESTEP:   /* set the trap flag. */
+        ...
+    case PTRACE_DETACH:
+        ...
+    }
+out_tsk:
+    free_task_struct(child);
+out:
+    unlock_kernel();
+    return ret;
+}
+```
