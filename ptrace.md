@@ -174,7 +174,7 @@ out:
 
 由于 `ptrace()` 提供的操作比较多，所以本文只会挑选一些比较有代表性的操作进行解说，比如 `PTRACE_TRACEME`、`PTRACE_SINGLESTEP`、`PTRACE_PEEKTEXT`、`PTRACE_PEEKDATA` 和 `PTRACE_CONT` 等，而其他的操作，有兴趣的朋友可以自己去分析其实现原理。
 
-### 进入被追踪模式
+### 进入被追踪模式（PTRACE_TRACEME操作）
 
 当要调试一个进程时，需要使进程进入被追踪模式，怎么使进程进入被追踪模式呢？有两个方法：
 
@@ -218,3 +218,33 @@ static int load_elf_binary(struct linux_binprm * bprm, struct pt_regs * regs)
 
 从上面代码可以看出，当进程被标记为 `PTRACE` 状态时，执行 `exec()` 函数后便会发送一个 `SIGTRAP` 的信号给当前进程。
 
+我们再来看看，进程是怎么处理 `SIGTRAP` 信号的。信号是通过 `do_signal()` 函数进行处理的，而对 `SIGTRAP` 信号的处理逻辑如下：
+
+```c
+int do_signal(struct pt_regs *regs, sigset_t *oldset) 
+{
+    for (;;) {
+        unsigned long signr;
+
+        spin_lock_irq(&current->sigmask_lock);
+        signr = dequeue_signal(&current->blocked, &info);
+        spin_unlock_irq(&current->sigmask_lock);
+
+        // 如果进程被标记为 PTRACE 状态
+        if ((current->ptrace & PT_PTRACED) && signr != SIGKILL) {
+            /* 让调试器运行  */
+            current->exit_code = signr;
+            current->state = TASK_STOPPED;   // 让自己进入停止运行状态
+            notify_parent(current, SIGCHLD); // 发送 SIGCHLD 信号给父进程
+            schedule();                      // 让出CPU的执行权限
+            ...
+        }
+    }
+}
+```
+
+上面的代码主要做了3件事：
+
+1.  如果当前进程被标记为 PTRACE 状态，那么就使自己进入停止运行状态。
+2.  发送 SIGCHLD 信号给父进程。
+3.  让出 CPU 的执行权限，使 CPU 执行其他进程。
