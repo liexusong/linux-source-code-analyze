@@ -248,3 +248,57 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset)
 1.  如果当前进程被标记为 PTRACE 状态，那么就使自己进入停止运行状态。
 2.  发送 SIGCHLD 信号给父进程。
 3.  让出 CPU 的执行权限，使 CPU 执行其他进程。
+
+执行以上过程后，被追踪进程便进入了调试模式，过程如下图：
+
+![traceme](C:\books\nginx\images\traceme.jpg)
+
+当父进程（调试进程）接收到 `SIGCHLD` 信号后，表示被调试进程已经标记为被追踪状态并且停止运行，那么调试进程就可以开始进行调试了。
+
+### 获取被调试进程的内存数据（PTRACE_PEEKTEXT / PTRACE_PEEKDATA）
+
+调试进程（如GDB）可以通过调用 `ptrace(PTRACE_PEEKDATA, pid, addr, data)` 来获取被调试进程 `addr` 处虚拟内存地址的数据，但每次只能读取一个大小为 4字节的数据。
+
+我们来看看 `ptrace()` 对 `PTRACE_PEEKDATA` 操作的处理过程，代码如下：
+
+```c
+asmlinkage int sys_ptrace(long request, long pid, long addr, long data)
+{
+    ...
+    switch (request) {
+    case PTRACE_PEEKTEXT:
+    case PTRACE_PEEKDATA: {
+        unsigned long tmp;
+        int copied;
+
+        copied = access_process_vm(child, addr, &tmp, sizeof(tmp), 0);
+        ret = -EIO;
+        if (copied != sizeof(tmp))
+            break;
+        ret = put_user(tmp, (unsigned long *)data);
+        break;
+    }
+    ...
+}
+```
+
+从上面代码可以看出，对 `PTRACE_PEEKTEXT` 和 `PTRACE_PEEKDATA` 的处理是相同的，主要是通过调用 `access_process_vm()` 函数来读取被调试进程 `addr` 处的虚拟内存地址的数据。
+
+`access_process_vm()` 函数的实现主要涉及到 `内存管理` 相关的知识，可以参考我以前对内存管理分析的文章，这里主要大概说明一下 `access_process_vm()` 的原理。
+
+我们知道每个进程都有个 `mm_struct` 的内存管理对象，而 `mm_struct` 对象有个表示虚拟内存与物理内存映射关系的页目录的指针 `pgd`。如下：
+
+```c
+struct mm_struct {
+    ...
+    pgd_t *pgd; /* 页目录指针 */
+    ...
+}
+```
+
+而 `access_process_vm()` 函数就是通过进程的页目录来找到 `addr` 虚拟内存地址映射的物理内存地址，然后把此物理内存地址处的数据复制到 `data` 变量中。如下图所示：
+
+![memory_map](C:\books\linux-source-code-analyze\images\memory_map.jpg)
+
+`access_process_vm()` 函数的实现这里就不分析了，有兴趣的读者可以参考我之前对内存管理分析的文章自行进行分析。
+
