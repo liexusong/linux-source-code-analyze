@@ -147,5 +147,30 @@ out:
 
 从上面的代码可以看出，`sys_ptrace()` 函数首先根据进程的 `pid` 获取到进程的 `task_struct` 对象。然后根据传入不同的 `request` 参数在 `switch` 语句中进行不同的操作。
 
-由于 `ptrace()` 提供的操作比较多，所以本文只会挑选一些比较有代表性的操作进行解说，比如 `PTRACE_TRACEME`、`PTRACE_SINGLESTEP`、`PTRACE_PEEKTEXT`、`PTRACE_PEEKDATA` 和 `PTRACE_CONT` 等，而其他的操作有兴趣的可以自己去分析其实现原理。
+`ptrace()` 支持的所有 `request` 操作定义在 `linux-2.4.16/include/linux/ptrace.h` 文件中，如下：
+
+```c
+#define PTRACE_TRACEME		   0
+#define PTRACE_PEEKTEXT		   1
+#define PTRACE_PEEKDATA		   2
+#define PTRACE_PEEKUSR		   3
+#define PTRACE_POKETEXT		   4
+#define PTRACE_POKEDATA		   5
+#define PTRACE_POKEUSR		   6
+#define PTRACE_CONT		       7
+#define PTRACE_KILL		       8
+#define PTRACE_SINGLESTEP	   9
+#define PTRACE_ATTACH		0x10
+#define PTRACE_DETACH		0x11
+#define PTRACE_SYSCALL		  24
+#define PTRACE_GETREGS        12
+#define PTRACE_SETREGS        13
+#define PTRACE_GETFPREGS      14
+#define PTRACE_SETFPREGS      15
+#define PTRACE_GETFPXREGS     18
+#define PTRACE_SETFPXREGS     19
+#define PTRACE_SETOPTIONS     21
+```
+
+由于 `ptrace()` 提供的操作比较多，所以本文只会挑选一些比较有代表性的操作进行解说，比如 `PTRACE_TRACEME`、`PTRACE_SINGLESTEP`、`PTRACE_PEEKTEXT`、`PTRACE_PEEKDATA` 和 `PTRACE_CONT` 等，而其他的操作，有兴趣的朋友可以自己去分析其实现原理。
 
