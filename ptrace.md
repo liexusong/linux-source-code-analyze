@@ -84,7 +84,12 @@ ptrace  ptrace.c
 
 ## ptrace实现原理
 
-`ptrace()` 函数的主体是一个 `switch` 语句，会传入的 `request` 参数不同进行不同的操作，如下：
+>   本文使用的 Linux 2.4.16 版本的内核
+
+调用 `ptrace()` 系统函数时会触发调用内核的 `sys_ptrace()` 函数，由于不同的 CPU 架构有着不同的调试方式，所以 Linux 为每种不同的 CPU 架构实现了不同的 `sys_ptrace()` 函数，而本文主要介绍的是 `X86 CPU` 的调试方式，所以 `sys_ptrace()` 函数所在文件是 `linux-2.4.16/arch/i386/kernel/ptrace.c`。
+
+`sys_ptrace()` 函数的主体是一个 `switch` 语句，会传入的 `request` 参数不同进行不同的操作，如下：
+
 ```c
 asmlinkage int sys_ptrace(long request, long pid, long addr, long data)
 {
@@ -137,3 +142,4 @@ out:
     return ret;
 }
 ```
+
