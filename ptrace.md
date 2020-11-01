@@ -174,3 +174,11 @@ out:
 
 由于 `ptrace()` 提供的操作比较多，所以本文只会挑选一些比较有代表性的操作进行解说，比如 `PTRACE_TRACEME`、`PTRACE_SINGLESTEP`、`PTRACE_PEEKTEXT`、`PTRACE_PEEKDATA` 和 `PTRACE_CONT` 等，而其他的操作，有兴趣的朋友可以自己去分析其实现原理。
 
+### 进入被追踪模式
+
+当要调试一个进程时，需要使进程进入被追踪模式，怎么使进程进入被追踪模式呢？有两个方法：
+
+*   被调试的进程调用 `ptrace(PTRACE_TRACEME, ...)` 来使自己进入被追踪模式。
+*   调试进程（如GDB）调用 `ptrace(PTRACE_ATTACH, pid, ...)` 来使指定的进程进入被追踪模式。
+
+第一种方式是进程自己主动进入被追踪模式，而第二种是进程被动进入被追踪模式。
