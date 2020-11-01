@@ -85,6 +85,8 @@ ptrace  ptrace.c
 ## ptrace实现原理
 
 >   本文使用的 Linux 2.4.16 版本的内核
+>
+>   看懂本文需要的基础：进程调度相关知识，内存管理相关知识。
 
 调用 `ptrace()` 系统函数时会触发调用内核的 `sys_ptrace()` 函数，由于不同的 CPU 架构有着不同的调试方式，所以 Linux 为每种不同的 CPU 架构实现了不同的 `sys_ptrace()` 函数，而本文主要介绍的是 `X86 CPU` 的调试方式，所以 `sys_ptrace()` 函数所在文件是 `linux-2.4.16/arch/i386/kernel/ptrace.c`。
 
@@ -100,7 +102,7 @@ asmlinkage int sys_ptrace(long request, long pid, long addr, long data)
     ...
 
     read_lock(&tasklist_lock);
-    child = find_task_by_pid(pid); // 获取 pid 对用的进程task_struct对象
+    child = find_task_by_pid(pid); // 获取 pid 对应的进程 task_struct 对象
     if (child)
         get_task_struct(child);
     read_unlock(&tasklist_lock);
@@ -115,22 +117,22 @@ asmlinkage int sys_ptrace(long request, long pid, long addr, long data)
     ...
 
     switch (request) {
-    case PTRACE_PEEKTEXT: /* read word at location addr. */
+    case PTRACE_PEEKTEXT:
     case PTRACE_PEEKDATA:
         ...
     case PTRACE_PEEKUSR:
         ...
-    case PTRACE_POKETEXT: /* write the word at location addr. */
+    case PTRACE_POKETEXT:
     case PTRACE_POKEDATA:
         ...
-    case PTRACE_POKEUSR: /* write the word at location addr in the USER area */
+    case PTRACE_POKEUSR:
         ...
-    case PTRACE_SYSCALL: /* continue and stop at next (return from) syscall */
-    case PTRACE_CONT:    /* restart after signal. */
+    case PTRACE_SYSCALL:
+    case PTRACE_CONT:
         ...
     case PTRACE_KILL: 
         ...
-    case PTRACE_SINGLESTEP:   /* set the trap flag. */
+    case PTRACE_SINGLESTEP:
         ...
     case PTRACE_DETACH:
         ...
@@ -142,4 +144,8 @@ out:
     return ret;
 }
 ```
+
+从上面的代码可以看出，`sys_ptrace()` 函数首先根据进程的 `pid` 获取到进程的 `task_struct` 对象。然后根据传入不同的 `request` 参数在 `switch` 语句中进行不同的操作。
+
+由于 `ptrace()` 提供的操作比较多，所以本文只会挑选一些比较有代表性的操作进行解说，比如 `PTRACE_TRACEME`、`PTRACE_SINGLESTEP`、`PTRACE_PEEKTEXT`、`PTRACE_PEEKDATA` 和 `PTRACE_CONT` 等，而其他的操作有兴趣的可以自己去分析其实现原理。
 
