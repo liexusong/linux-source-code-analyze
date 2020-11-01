@@ -302,3 +302,61 @@ struct mm_struct {
 
 `access_process_vm()` 函数的实现这里就不分析了，有兴趣的读者可以参考我之前对内存管理分析的文章自行进行分析。
 
+### 单步调试模式（PTRACE_SINGLESTEP）
+
+单步调试是一个比较有趣的功能，当把被调试进程设置为单步调试模式后，被调试进程没执行一条CPU指令都会停止执行，并且向父进程（调试进程）发送一个 SIGCHLD 信号。
+
+我们来看看 `ptrace()` 函数对 `PTRACE_SINGLESTEP` 操作的处理过程，代码如下：
+
+```c
+asmlinkage int sys_ptrace(long request, long pid, long addr, long data)
+{
+    ...
+    switch (request) {
+    case PTRACE_SINGLESTEP: {  /* set the trap flag. */
+        long tmp;
+        ...
+        tmp = get_stack_long(child, EFL_OFFSET) | TRAP_FLAG;
+        put_stack_long(child, EFL_OFFSET, tmp);
+        child->exit_code = data;
+        /* give it a chance to run. */
+        wake_up_process(child);
+        ret = 0;
+        break;
+    }
+    ...
+}
+```
+
+要把被调试的进程设置为单步调试模式，英特尔的 X86 CPU 提供了一个硬件的机制，就是通过把 `eflags` 寄存器的 `Trap Flag` 设置为1即可。
+
+当把 `eflags` 寄存器的 `Trap Flag` 设置为1后，CPU 每执行一条指令便会产生一个异常，然后会触发 Linux 的异常处理，Linux 便会发送一个 `SIGTRAP` 信号给被调试的进程。`eflags` 寄存器的各个标志如下图：
+
+![](C:\books\nginx\images\eflags-register.png)
+
+从上图可知，`eflags` 寄存器的第8位就是单步调试模式的标志。
+
+所以 `ptrace()` 函数的以下2行代码就是设置 `eflags` 进程的单步调试标志：
+
+```c
+tmp = get_stack_long(child, EFL_OFFSET) | TRAP_FLAG;
+put_stack_long(child, EFL_OFFSET, tmp);
+```
+
+而 `get_stack_long(proccess, offset)` 函数用于获取进程栈 `offset` 处的值，而 `EFL_OFFSET` 偏移量就是 `eflags` 寄存器的值。所以上面两行代码的意思就是：
+
+1.  获取进程的 `eflags` 寄存器的值，并且设置 `Trap Flag` 标志。
+2.  把新的值设置到进程的 `eflags` 寄存器中。
+
+设置完 `eflags` 寄存器的值后，就调用 `wake_up_process()` 函数把被调试的进程唤醒，让其进入运行状态。单步调试过程如下图：
+
+![](C:\books\nginx\images\single-trace.jpg)
+
+处于单步调试模式时，被调试进程每执行一条指令都会触发一次 `SIGTRAP` 信号，而被调试进程处理 `SIGTRAP` 信号时会发送一个 `SIGCHLD` 信号给父进程（调试进程），并且让自己停止执行。
+
+而父进程（调试进程）接收到 `SIGCHLD` 后，就可以对被调试的进程进行各种操作，比如读取被调试进程内存的数据和寄存器的数据，或者通过调用 `ptrace(PTRACE_CONT, child,...)` 来让被调试进程进行运行等。
+
+## 小结
+
+由于 `ptrace()` 的功能十分强大，所以本文只能抛砖引玉，没能对其所有功能进行分析。另外断点功能并不是通过 `ptrace()` 函数实现的，而是通过 `int3` 指令来实现的，在 `Eli Bendersky` 大神的文章有介绍。而对于 `ptrace()` 的所有功能，只能读者自己慢慢看代码来体会了。
+
