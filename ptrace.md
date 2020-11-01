@@ -251,7 +251,7 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset)
 
 执行以上过程后，被追踪进程便进入了调试模式，过程如下图：
 
-![traceme](C:\books\nginx\images\traceme.jpg)
+![traceme](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/traceme.jpg)
 
 当父进程（调试进程）接收到 `SIGCHLD` 信号后，表示被调试进程已经标记为被追踪状态并且停止运行，那么调试进程就可以开始进行调试了。
 
@@ -298,7 +298,7 @@ struct mm_struct {
 
 而 `access_process_vm()` 函数就是通过进程的页目录来找到 `addr` 虚拟内存地址映射的物理内存地址，然后把此物理内存地址处的数据复制到 `data` 变量中。如下图所示：
 
-![memory_map](C:\books\linux-source-code-analyze\images\memory_map.jpg)
+![memory_map](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/memory_map.jpg)
 
 `access_process_vm()` 函数的实现这里就不分析了，有兴趣的读者可以参考我之前对内存管理分析的文章自行进行分析。
 
@@ -332,7 +332,7 @@ asmlinkage int sys_ptrace(long request, long pid, long addr, long data)
 
 当把 `eflags` 寄存器的 `Trap Flag` 设置为1后，CPU 每执行一条指令便会产生一个异常，然后会触发 Linux 的异常处理，Linux 便会发送一个 `SIGTRAP` 信号给被调试的进程。`eflags` 寄存器的各个标志如下图：
 
-![](C:\books\nginx\images\eflags-register.png)
+![eflags-register](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/eflags-register.png)
 
 从上图可知，`eflags` 寄存器的第8位就是单步调试模式的标志。
 
@@ -350,7 +350,7 @@ put_stack_long(child, EFL_OFFSET, tmp);
 
 设置完 `eflags` 寄存器的值后，就调用 `wake_up_process()` 函数把被调试的进程唤醒，让其进入运行状态。单步调试过程如下图：
 
-![](C:\books\nginx\images\single-trace.jpg)
+![single-trace](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/single-trace.jpg)
 
 处于单步调试模式时，被调试进程每执行一条指令都会触发一次 `SIGTRAP` 信号，而被调试进程处理 `SIGTRAP` 信号时会发送一个 `SIGCHLD` 信号给父进程（调试进程），并且让自己停止执行。
 
