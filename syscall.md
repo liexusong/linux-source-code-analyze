@@ -71,4 +71,21 @@ ENTRY(sys_call_table)
 * 第5个参数放置在 `edi` 寄存器。
 * 第6个参数放置在 `ebp` 寄存器。
 
+而 Linux 进入中断处理程序时，会把这些寄存器的值保存到内核栈中，这样 `系统调用` 就能通过内核栈来获取到参数。
 
+下面我们通过 `sys_open()` 系统调用来说明一下 `系统调用` 的运作方式，`sys_open()` 实现如下：
+
+```c
+asmlinkage long sys_open(const char *filename, int flags, int mode)
+{
+    ...
+}
+```
+
+一般 `系统调用` 都需要使用 `asmlinkage` 编译选项，`asmlinkage` 编译选项是告诉编译器从栈中读取参数，其实际是封装了 GCC 的编译选项，如下：
+
+```c
+#define asmlinkage CPP_ASMLINKAGE __attribute__((regparm(0)))
+```
+
+`__attribute__((regparm(0)))` 就是告诉 GCC 所有参数都从栈中读取，而 Linux 进入中断处理上下文时，会把 `ebx`、`ecx`、`edx`、`esi`、`edi`、`ebp` 寄存器的值保存到内核栈中，那么 `系统调用` 就可以从内核栈获取到参数的值。
