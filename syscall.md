@@ -60,7 +60,7 @@ ENTRY(sys_call_table)
 
 用户调用 `系统调用` 时，通过向 `eax` 寄存器写入要调用的 `系统调用` 编号，这个编号就是 `sys_call_table` 数组的下标。 `system_call` 过程获取 `eax` 寄存器的值，然后通过 `eax` 寄存器的值找到要调用的 `系统调用` 入口，并且进行调用。调用完成后，`系统调用` 会把返回值保存到 `eax` 寄存器中。
 
-原理如下图（图片来源 https://developer.ibm.com/zh/technologies/linux/tutorials/l-system-calls/）：
+原理如下图（图片来源 https://developer.ibm.com/zh/technologies/linux/tutorials/l-system-calls/ ）：
 
 ![system_call](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/system_call.gif)
 
