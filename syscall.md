@@ -36,7 +36,6 @@ ENTRY(system_call)
 void system_call()
 {
     ...
-
     // 变量 eax 代表 eax 寄存器的值
     syscall = sys_call_table[eax];
     eax = syscall();
@@ -44,7 +43,7 @@ void system_call()
 }
 ```
 
-`sys_call_table` 变量是一个数组，数组的每一个元素代表一个 `系统调用` 的入口。用户调用 `系统调用` 时，需要通过向 `eax` 寄存器写入要调用的 `系统调用` 编号，这个编号其实是指 `sys_call_table` 数组的下标。 `sys_call_table` 数组定义如下：
+`sys_call_table` 变量是一个数组，数组的每一个元素代表一个 `系统调用` 的入口，其定义如下（在文件 arch/i386/kernel/entry.S 中）：
 
 ```asm
 .data
@@ -58,3 +57,7 @@ ENTRY(sys_call_table)
     .long SYMBOL_NAME(sys_close)
     ...
 ```
+
+用户调用 `系统调用` 时，通过向 `eax` 寄存器写入要调用的 `系统调用` 编号，这个编号就是 `sys_call_table` 数组的下标。 `system_call` 过程获取 `eax` 寄存器的值，然后通过 `eax` 寄存器的值找到要调用的 `系统调用` 入口，并且进行调用。调用完成后，`系统调用` 会把返回值保存到 `eax` 寄存器中。
+
+
