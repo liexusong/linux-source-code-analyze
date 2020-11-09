@@ -21,26 +21,13 @@ void __init trap_init(void)
 }
 ```
 
-系统初始化时，会在 `trap_init()` 函数中对 `int 0x80` 中断进行初始化，设置其中断处理过程入口为 `system_call`。`system_call` 是一段由汇编语言编写的代码，如下：
+系统初始化时，会在 `trap_init()` 函数中对 `int 0x80` 中断处理进行初始化，设置其中断处理过程入口为 `system_call`。`system_call` 是一段由汇编语言编写的代码，我们看看关键部分，如下：
 ```asm
 ENTRY(system_call)
-    pushl %eax          # save orig_eax
-    SAVE_ALL
-    GET_CURRENT(%ebx)
-    testb $0x02,tsk_ptrace(%ebx)    # PT_TRACESYS
-    jne tracesys
-    cmpl $(NR_syscalls),%eax
-    jae badsys
+    ...
     call *SYMBOL_NAME(sys_call_table)(,%eax,4)
     movl %eax,EAX(%esp)     # save the return value
-ENTRY(ret_from_sys_call)
-    cli             # need_resched and signals atomic test
-    cmpl $0,need_resched(%ebx)
-    jne reschedule
-    cmpl $0,sigpending(%ebx)
-    jne signal_return
-restore_all:
-    RESTORE_ALL
+    ...
 ```
 
 我们把上面的汇编改写成 C 代码如下：
@@ -51,27 +38,14 @@ void system_call()
     ...
 
     // 变量 eax 代表 eax 寄存器的值
-    if (NR_syscalls < eax) {
-        goto badsys;
-    }
-
     syscall = sys_call_table[eax];
-
     eax = syscall();
-
-    if (current->need_resched) {
-        goto reschedule;
-    }
-
-    if (current->sigpending) {
-        goto signal_return;
-    }
-
     ...
 }
 ```
 
-用户调用 `系统调用` 时，需要通过向 `eax` 寄存器写入要调用的 `系统调用` 编号，这个编号其实是指 `sys_call_table` 数组的下标。 `sys_call_table` 数组定义如下：
+`sys_call_table` 变量是一个数组，数组的每一个元素代表一个 `系统调用` 的入口。用户调用 `系统调用` 时，需要通过向 `eax` 寄存器写入要调用的 `系统调用` 编号，这个编号其实是指 `sys_call_table` 数组的下标。 `sys_call_table` 数组定义如下：
+
 ```asm
 .data
 ENTRY(sys_call_table)
@@ -84,5 +58,3 @@ ENTRY(sys_call_table)
     .long SYMBOL_NAME(sys_close)
     ...
 ```
-
-`sys_call_table` 数组的每一个元素代表一个 `系统调用` 的入口，所以通过指定 `sys_call_table` 数组的下标就可以调用具体的 `系统调用`。
