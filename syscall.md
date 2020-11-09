@@ -42,3 +42,47 @@ ENTRY(ret_from_sys_call)
 restore_all:
     RESTORE_ALL
 ```
+
+我们把上面的汇编改写成 C 代码如下：
+
+```c
+void system_call()
+{
+    ...
+
+    // 变量 eax 代表 eax 寄存器的值
+    if (NR_syscalls < eax) {
+        goto badsys;
+    }
+
+    syscall = sys_call_table[eax];
+
+    eax = syscall();
+
+    if (current->need_resched) {
+        goto reschedule;
+    }
+
+    if (current->sigpending) {
+        goto signal_return;
+    }
+
+    ...
+}
+```
+
+用户调用 `系统调用` 时，需要通过向 `eax` 寄存器写入要调用的 `系统调用` 编号，这个编号其实是指 `sys_call_table` 数组的下标。 `sys_call_table` 数组定义如下：
+```asm
+.data
+ENTRY(sys_call_table)
+    .long SYMBOL_NAME(sys_ni_syscall)
+    .long SYMBOL_NAME(sys_exit)
+    .long SYMBOL_NAME(sys_fork)
+    .long SYMBOL_NAME(sys_read)
+    .long SYMBOL_NAME(sys_write)
+    .long SYMBOL_NAME(sys_open)
+    .long SYMBOL_NAME(sys_close)
+    ...
+```
+
+`sys_call_table` 数组的每一个元素代表一个 `系统调用` 的入口，所以通过指定 `sys_call_table` 数组的下标就可以调用具体的 `系统调用`。
