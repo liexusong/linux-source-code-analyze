@@ -89,3 +89,17 @@ asmlinkage long sys_open(const char *filename, int flags, int mode)
 ```
 
 `__attribute__((regparm(0)))` 就是告诉 GCC 所有参数都从栈中读取，而 Linux 进入中断处理上下文时，会把 `ebx`、`ecx`、`edx`、`esi`、`edi`、`ebp` 寄存器的值保存到内核栈中，那么 `系统调用` 就可以从内核栈获取到参数的值。
+
+但由于寄存器只能传递 32 位的整型值（x86 CPU），所以参数一般只能传递指针或者整型的数值，如果要获取指针对应结构的数据，就必须通过从用户空间复制到内核空间，如 `sys_open()` 系统调用获取要打开的文件路径：
+
+```c
+asmlinkage long sys_open(const char *filename, int flags, int mode)
+{
+    char * tmp;
+    ...
+    tmp = getname(filename);
+    ...
+}
+```
+
+`getname()` 函数就是用于从用户空间复制数据到内核空间。
