@@ -138,49 +138,39 @@ again:
     spin_lock_irq(&io_request_lock); // 关闭中断并且上自旋锁
 
     insert_here = head->prev; // 插入到IO请求队列的最后
-    if (list_empty(head)) {   // 如果没有正在处理I/O请求, 启动I/O请求软中断
-        q->plug_device_fn(q, bh->b_rdev);
-        goto get_rq;
-    } else if (q->head_active && !q->plugged)
-        head = head->next;
-
-    // 合并I/O请求
+    ...
+    // 尝试合并I/O请求
     el_ret = elevator->elevator_merge_fn(q, &req, head, bh, rw, max_sectors); 
     switch (el_ret) {
         case ELEVATOR_BACK_MERGE:
             ...
             goto out;
-
         case ELEVATOR_FRONT_MERGE:
             ...
             goto out;
-
-        case ELEVATOR_NO_MERGE:
+        case ELEVATOR_NO_MERGE: // 如果不能合并I/O请求
             if (req)
                 insert_here = &req->queue;
             break;
         ...
     }
 
-get_rq:
-    if (freereq) {
-        req = freereq;
-        freereq = NULL;
-    } else if ((req = get_request(q, rw)) == NULL) { // 获取一个空闲的I/O请求对象
-        ...
-        goto again;
-    }
-
+    req = get_request(q, rw); // 获取一个空闲的I/O请求对象
     ...
     req->cmd = rw;
-    ...
-    req->buffer = bh->b_data;
+    req->errors = 0;
+    req->hard_sector = req->sector = sector;        // 读写操作的开始扇区号
+    req->hard_nr_sectors = req->nr_sectors = count; // 要读写多少个扇区
+    req->current_nr_sectors = count;
+    req->nr_segments = 1;
+    req->nr_hw_segments = 1;
+    req->buffer = bh->b_data;  // 读写数据存放的缓冲区
     req->waiting = NULL;
     req->bh = bh;
     req->bhtail = bh;
     req->rq_dev = bh->b_rdev;
-    blk_started_io(count);
     add_request(q, req, insert_here); // 把I/O请求对象添加到I/O请求队列中
+out:
     ...
     return 0;
 }
