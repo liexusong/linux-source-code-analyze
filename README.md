@@ -23,6 +23,7 @@
 * 文件系统
     * [虚拟文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/virtual_file_system.md)
     * [MINIX文件系统](https://github.com/liexusong/linux-source-code-analyze/blob/master/minix_file_system.md)
+    * [通用块层](https://github.com/liexusong/linux-source-code-analyze/blob/master/generic-block-layer.md)
 * 进程间通信
     * [信号处理机制](https://github.com/liexusong/linux-source-code-analyze/blob/master/signal.md)
     * [共享内存](https://github.com/liexusong/linux-source-code-analyze/blob/master/ipc-shm.md)
