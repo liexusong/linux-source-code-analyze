@@ -101,3 +101,20 @@ void submit_bh(int rw, struct buffer_head *bh)
 
 数据块是 `通用块层` 的概念，而真实的块设备是以扇区作为读写单元的。所以在进行IO操作前，必须将数据块号转换成真正的扇区号，而代码 `bh->b_blocknr * count` 就是用于将数据块号转换成扇区号。转换成扇区号后，`submit_bh()` 函数接着调用 `generic_make_request()` 进行下一步的操作。
 
+我们接着分析  `generic_make_request()` 函数的实现：
+
+```c
+void generic_make_request(int rw, struct buffer_head * bh)
+{
+    request_queue_t *q;
+    ...
+    do {
+        q = blk_get_queue(bh->b_rdev); // 获取块设备对应的I/O请求队列
+        if (!q) {
+            ...
+            break;
+        }
+    } while (q->make_request_fn(q, rw, bh)); // 把I/O请求发送到块设备的I/O请求队列中
+}
+```
+
