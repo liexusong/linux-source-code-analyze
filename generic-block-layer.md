@@ -66,3 +66,36 @@ void ll_rw_block(int rw, int nr, struct buffer_head *bhs[])
 }
 ```
 
+下面介绍一下 `ll_rw_block()` 函数各个参数的作用：
+
+*   `rw`：要进行的读或者写操作，一般可选的值为 `READ`、`WRITE` 或者 `READA` 等。
+*   `nr`：`bhs` 数组的大小。
+*   `bhs`：要进行读写操作的数据块数组。
+
+`ll_rw_block()` 函数的实现比较简单，遍历 `bhs` 数组，并且对所有的 `buffer_head` 进行上锁和增加其计数器，然后调用 `submit_bh()` 函数把其提交到 `IO调度层` 进行I/O操作。
+
+我们接着看看 `submit_bh()` 函数的实现：
+
+```c
+void submit_bh(int rw, struct buffer_head *bh)
+{
+    int count = bh->b_size >> 9; // 一个数据块需要的扇区数
+    ...
+    set_bit(BH_Req, &bh->b_state);
+
+    bh->b_rdev = bh->b_dev;
+    bh->b_rsector = bh->b_blocknr * count;
+
+    generic_make_request(rw, bh);
+
+    switch (rw) {
+    case WRITE:
+        kstat.pgpgout += count;
+        break;
+    default:
+        kstat.pgpgin += count;
+        break;
+    }
+}
+```
+
