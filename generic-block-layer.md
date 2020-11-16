@@ -22,24 +22,47 @@
 void ll_rw_block(int rw, int nr, struct buffer_head *bhs[]);
 ```
 
-在分析 `ll_rw_block()` 函数前，我们先来介绍一下 `struct buffer_head` 这个结构，因为要理解 `ll_rw_block()` 函数必须先了解  `struct buffer_head` 结构。
+在分析 `ll_rw_block()` 函数前，我们先来介绍一下 `buffer_head` 这个结构，因为要理解 `ll_rw_block()` 函数必须先了解  `buffer_head` 结构。
 
  `struct buffer_head` 结构代表一个要进行读或者写的数据块，其定义如下：
 
 ```c
 struct buffer_head {
-    struct buffer_head *b_next;     /* 用于快速查找 */
+    struct buffer_head *b_next;     /* 用于快速查找数据块缓存 */
     unsigned long b_blocknr;        /* 数据块号 */
     unsigned short b_size;          /* 数据块大小 */
     unsigned short b_list;          /* List that this buffer appears */
-    kdev_t b_dev;                   /* device (B_FREE = free) */
+    kdev_t b_dev;                   /* 数据块所属设备 */
 
-    atomic_t b_count;               /* users using this block */
-    kdev_t b_rdev;                  /* Real device */
+    atomic_t b_count;               /* 引用计数器 */
+    kdev_t b_rdev;                  /* 数据块所属真正设备 */
     ...
 };
 ```
 
+为了让读者更加清晰，上面忽略了 `buffer_head` 结构的某些字段，上面比较重要的是 `b_blocknr` 字段和 `b_size` 字段， `b_blocknr` 字段指定了要读写的数据块号，而 `b_size` 字段指定了数据块的大小。还有就是 `b_rdev` 字段，其指定了数据块所属的设备。
 
+有了 `buffer_head` 结构，就可以对数据块进行读写操作。接下来，我们看看 `ll_rw_block()` 函数的实现：
 
+```c
+void ll_rw_block(int rw, int nr, struct buffer_head *bhs[])
+{
+    ...
+    for (i = 0; i < nr; i++) {
+        struct buffer_head *bh = bhs[i];
+
+        /* 上锁 */
+        if (test_and_set_bit(BH_Lock, &bh->b_state))
+            continue;
+
+        /* 增加buffer_head的计数器 */
+        atomic_inc(&bh->b_count);
+        bh->b_end_io = end_buffer_io_sync;
+        ...
+        submit_bh(rw, bh);
+    }
+    return;
+    ...
+}
+```
 
