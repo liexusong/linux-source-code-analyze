@@ -2,7 +2,7 @@
 
 由于不同块设备（如磁盘，机械硬盘等）有着不同的设备驱动程序，为了让文件系统有统一的读写块设备接口，Linux实现了一个 `通用块层`。如下图中的红色部分：
 
-![linux-filesystem](F:\work\markdown\linux-filesystem.jpg)
+![linux-filesystem](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/linux-filesystem.jpg)
 
 `通用块层` 的引入为了提供一个统一的接口让文件系统实现者使用，而不用关心不同设备驱动程序的差异，这样实现出来的文件系统就能用于任何的块设备。
 
@@ -10,7 +10,7 @@
 
 >   注意：不同的文件系统可能对逻辑数据块定义的大小不一样，比如 ext2文件系统 的逻辑数据块大小为 4KB。
 
-![device-block](F:\work\markdown\device-block.jpg)
+![device-block](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/device-block.jpg)
 
 通过对设备进行抽象后，不管是磁盘还是机械硬盘，对于文件系统都可以使用相同的接口对逻辑数据块进行读写操作。
 
