@@ -209,5 +209,10 @@ static void generic_plug_device(request_queue_t *q, kdev_t dev)
 }
 ```
 
-通过 Linux 的任务队列机制，设备的I/O请求队列将会被执行。
+通过 Linux 的任务队列机制，设备的I/O请求队列将会被执行。执行I/O请求主要是由块设备驱动完成，在块设备驱动程序初始化时可以通过调用 `blk_init_queue()` 函数指定处理I/O请求队列的方法。`blk_init_queue()` 函数原型如下：
 
+```c
+void blk_init_queue(request_queue_t *q, request_fn_proc *rfn);
+```
+
+参数 `rfn` 就是处理I/O请求队列的例程函数。
