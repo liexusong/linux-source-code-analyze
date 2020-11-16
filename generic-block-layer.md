@@ -128,27 +128,25 @@ static int __make_request(request_queue_t *q, int rw, struct buffer_head *bh)
     ...
     elevator_t *elevator = &q->elevator;
 
-    count = bh->b_size >> 9;
-    sector = bh->b_rsector;
+    count = bh->b_size >> 9; // 要读写的扇区数
+    sector = bh->b_rsector;  // 进行读写操作的开始扇区号
     ...
 again:
     req = NULL;
-    head = &q->queue_head; // I/O请求队列头部
-
+    head = &q->queue_head;           // I/O请求队列头部
     spin_lock_irq(&io_request_lock); // 关闭中断并且上自旋锁
-
-    insert_here = head->prev; // 插入到IO请求队列的最后
+    insert_here = head->prev;        // 插入到IO请求队列的最后
     ...
     // 尝试合并I/O请求
     el_ret = elevator->elevator_merge_fn(q, &req, head, bh, rw, max_sectors); 
     switch (el_ret) {
-        case ELEVATOR_BACK_MERGE:
+        case ELEVATOR_BACK_MERGE:  // 与其他I/O请求合并成功
             ...
             goto out;
-        case ELEVATOR_FRONT_MERGE:
+        case ELEVATOR_FRONT_MERGE: // 与其他I/O请求合并成功
             ...
             goto out;
-        case ELEVATOR_NO_MERGE: // 如果不能合并I/O请求
+        case ELEVATOR_NO_MERGE:    // 如果不能合并I/O请求
             if (req)
                 insert_here = &req->queue;
             break;
@@ -164,7 +162,7 @@ again:
     req->current_nr_sectors = count;
     req->nr_segments = 1;
     req->nr_hw_segments = 1;
-    req->buffer = bh->b_data;  // 读写数据存放的缓冲区
+    req->buffer = bh->b_data;                       // 读写数据存放的缓冲区
     req->waiting = NULL;
     req->bh = bh;
     req->bhtail = bh;
@@ -175,4 +173,22 @@ out:
     return 0;
 }
 ```
+
+`__make_request()` 函数首先通过调用 `elevator->elevator_merge_fn()` 方法尝试将当前I/O请求与其他正在排队的I/O请求进行合并，因为如果当前I/O请求与正在排队的I/O请求相邻，那么就可以合并为一个I/O请求，从而减少对设备I/O请求的次数。
+
+如果不能与排队的I/O请求进行合并，那么就调用 `get_request()` 函数申请一个I/O请求对象，然后初始化此对象各个字段，再通过调用 `add_request()` 函数把I/O请求对象添加到I/O请求队列中。`add_request()` 函数实现如下：
+
+```c
+static inline void
+add_request(request_queue_t *q, struct request *req, struct list_head *insert_here)
+{
+    drive_stat_acct(req->rq_dev, req->cmd, req->nr_sectors, 1);
+    ...
+    list_add(&req->queue, insert_here);
+}
+```
+
+`add_request()` 函数的实现非常简单，首先调用 `drive_stat_acct()` 函数更新统计信息，然后调用 `list_add()` 函数把I/O请求添加到I/O请求队列中。
+
+## 执行I/O请求
 
