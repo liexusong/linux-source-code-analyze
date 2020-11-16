@@ -84,7 +84,7 @@ void submit_bh(int rw, struct buffer_head *bh)
     set_bit(BH_Req, &bh->b_state);
 
     bh->b_rdev = bh->b_dev;
-    bh->b_rsector = bh->b_blocknr * count;
+    bh->b_rsector = bh->b_blocknr * count; // 转换成真实的扇区号
 
     generic_make_request(rw, bh);
 
@@ -98,4 +98,6 @@ void submit_bh(int rw, struct buffer_head *bh)
     }
 }
 ```
+
+数据块是 `通用块层` 的概念，而真实的块设备是以扇区作为读写单元的。所以在进行IO操作前，必须将数据块号转换成真正的扇区号，而代码 `bh->b_blocknr * count` 就是用于将数据块号转换成扇区号。转换成扇区号后，`submit_bh()` 函数接着调用 `generic_make_request()` 进行下一步的操作。
 
