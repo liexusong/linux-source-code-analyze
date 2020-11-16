@@ -205,7 +205,7 @@ static void generic_plug_device(request_queue_t *q, kdev_t dev)
         return;
 
     q->plugged = 1;
-    queue_task(&q->plug_tq, &tq_disk); // 把I/O请求队列添加到 tq_disk 软中断队列中
+    queue_task(&q->plug_tq, &tq_disk); // 把I/O请求队列添加到 tq_disk 任务队列中
 }
 ```
 
@@ -216,3 +216,4 @@ void blk_init_queue(request_queue_t *q, request_fn_proc *rfn);
 ```
 
 参数 `rfn` 就是处理I/O请求队列的例程函数。
+
