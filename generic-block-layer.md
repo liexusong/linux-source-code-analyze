@@ -192,3 +192,22 @@ add_request(request_queue_t *q, struct request *req, struct list_head *insert_he
 
 ## 执行I/O请求
 
+`ll_rw_block()` 函数只是把I/O请求添加到设备的I/O请求队列中，那么I/O请求队列中的I/O请求什么时候会执行呢？答案就是当调用 `run_task_queue(&tq_disk)` 函数时。
+
+`run_task_queue()` 函数是 Linux 用于运行任务队列的入口，而 `tq_disk` 队列就是块设备I/O的任务队列。当执行  `run_task_queue(&tq_disk)` 函数时，便会处理 `tq_disk` 任务队列中的例程。
+
+当调用 `ll_rw_block()` 函数添加I/O请求时，会触发调用 `generic_plug_device()` 函数，而 `generic_plug_device()` 函数会把设备的I/O请求队列添加到 `tq_disk` 任务队列中， `generic_plug_device()` 函数实现如下：
+
+```c
+static void generic_plug_device(request_queue_t *q, kdev_t dev)
+{
+    if (!list_empty(&q->queue_head) || q->plugged)
+        return;
+
+    q->plugged = 1;
+    queue_task(&q->plug_tq, &tq_disk); // 把I/O请求队列添加到 tq_disk 软中断队列中
+}
+```
+
+通过 Linux 的任务队列机制，设备的I/O请求队列将会被执行。
+
