@@ -46,4 +46,5 @@
     * [O(1)调度算法](https://github.com/liexusong/linux-source-code-analyze/blob/master/process-schedule-o1.md)
 
 > PowerBy: Liexusong
+>
 > WeChat: `JaydenSongLie`
