@@ -50,7 +50,7 @@
 #include <stdio.h>
 
 typedef struct {
-   char *Author;
+   char *Email;
    char *WeChat;
 } Information;
 
@@ -59,10 +59,10 @@ int main(int argc, char *argv[])
 {
     Information info;
     
-    info.Author = "Liexusong";
+    info.Email = "liexusong@qq.com";
     info.WeChat = "JaydenSongLie";
     
-    printf("Author: %s and WeChat: %s", info.Author, info.WeChat);
+    printf("You can contact me by Email: %s and WeChat: %s", info.Email, info.WeChat);
 }
 ```
 ------------------------------------------------------------------------------------------------------------------
