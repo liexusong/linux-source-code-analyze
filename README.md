@@ -45,7 +45,7 @@
     * [RCU原理与实现](https://github.com/liexusong/linux-source-code-analyze/blob/master/rcu.md)
     * [O(1)调度算法](https://github.com/liexusong/linux-source-code-analyze/blob/master/process-schedule-o1.md)
 
-
+------------------------------------------------------------------------------------------------------------------
 ```c
 typedef struct {
    char *Author;
