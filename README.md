@@ -47,6 +47,8 @@
 
 ------------------------------------------------------------------------------------------------------------------
 ```c
+#include <stdio.h>
+
 typedef struct {
    char *Author;
    char *WeChat;
@@ -59,6 +61,8 @@ int main(int argc, char *argv[])
     
     info.Author = "Liexusong";
     info.WeChat = "JaydenSongLie";
+    
+    printf("Author: %s and WeChat: %s", info.Author, info.WeChat);
 }
 ```
 ------------------------------------------------------------------------------------------------------------------
