@@ -4,7 +4,7 @@
 
 由于 `TUN/TAP设备` 是虚拟的设备，所以不能像网卡一样从网络中接收数据包，那么 `TUN/TAP设备` 从哪里读取数据，又把数据发送到哪里去呢？下面通过一张图来阐述 `TUN/TAP设备` 的工作方式 (图片来源于https://www.ibm.com/developerworks/cn/linux/l-tuntap/index.html )：
 
-![TUN/TAP](C:\books\my-new-book\images\books\tun_tap.jpg)
+![TUN/TAP](https://www.ibm.com/developerworks/cn/linux/l-tuntap/images/image002.jpg)
 
 上图的右下角是物理网卡设备，它能从 `物理链路` 读取和发送数据。
 
