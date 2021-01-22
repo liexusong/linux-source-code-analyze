@@ -14,11 +14,11 @@ LVS的工作模式分为三种：`NAT模式（NAT）`、`直接路由模式（DR
 
 NAT模式的运行方式如下图：
 
-![NAT](F:\work\markdown\lvs\nat-arch.jpg)
+![NAT](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/nat-arch.jpg)
 
 __整个请求过程示意：__
 
-*   client 发送请求到 LVS 的 VIP 上，LVS 首先根据 client 的 IP 和端口从连接信息表中查询是否已经存在，如果存在就直接使用当前连接进行处理。否则根据负载算法选择一个 Real-Server（真正提供服务的服务器），并记录连接到连接信息表中，然后把 client 请求的目的 IP 地址修改为 Real-Server 的地址，将请求发给 Real-Server。
+*   `client` 发送请求到 `LVS` 的 `VIP` 上，LVS 首先根据 client 的 IP 和端口从连接信息表中查询是否已经存在，如果存在就直接使用当前连接进行处理。否则根据负载算法选择一个 `Real-Server`（真正提供服务的服务器），并记录连接到连接信息表中，然后把 client 请求的目的 IP 地址修改为 Real-Server 的地址，将请求发给 Real-Server。
 
 *   Real-Server 收到请求包后，发现目的 IP 是自己的 IP，于是处理请求，然后发送回复给 LVS。
 
@@ -26,7 +26,7 @@ __整个请求过程示意：__
 
 *   当 client 发送完毕，此次连接结束或者连接超时，那么 LVS 自动将连接从连接信息表中删除此条记录。
 
-
+上图中的蓝色连接线表示请求的数据流向，而红色连接线表示回复的数据流向。由于进出流量都需要经过`LVS` 服务器，所以 `LVS` 服务器可能会成功瓶颈。
 
 
 
