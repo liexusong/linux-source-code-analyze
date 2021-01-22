@@ -14,7 +14,7 @@ LVS的工作模式分为三种：`NAT模式（NAT）`、`直接路由模式（DR
 
 NAT模式的运行方式如下图：
 
-![NAT](F:\work\markdown\lvs\nat-arch.jpg)
+![NAT](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/nat-arch.jpg)
 
 __整个请求过程示意：__
 
