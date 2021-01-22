@@ -23,19 +23,25 @@ NAT模式的运行方式如下图：
 
 __整个请求过程示意：__
 
-*   `client` 发送请求到 `LVS` 的 `VIP` 上，`Director` 服务器首先根据 client 的 IP 和端口从连接信息表中查询是否已经存在，如果存在就直接使用当前连接进行处理。否则根据负载算法选择一个 `Real-Server`（真正提供服务的服务器），并记录连接到连接信息表中，然后把 client 请求的目的 IP 地址修改为 Real-Server 的地址，将请求发给 Real-Server。
+1.  `client` 发送请求到 `LVS` 的 `VIP` 上，`Director` 服务器首先根据 client 的 IP 和端口从连接信息表中查询是否已经存在，如果存在就直接使用当前连接进行处理。否则根据负载算法选择一个 `Real-Server`（真正提供服务的服务器），并记录连接到连接信息表中，然后把 client 请求的目的 IP 地址修改为 Real-Server 的地址，将请求发给 Real-Server。
 
-*   Real-Server 收到请求包后，发现目的 IP 是自己的 IP，于是处理请求，然后发送回复给 LVS。
+2.  Real-Server 收到请求包后，发现目的 IP 是自己的 IP，于是处理请求，然后发送回复给 LVS。
 
-*   LVS 收到回复包后，修改回复包的的源地址为VIP，发送给 client。
+3.  LVS 收到回复包后，修改回复包的的源地址为VIP，发送给 client。
 
-*   当 client 发送完毕，此次连接结束或者连接超时，那么 LVS 自动将连接从连接信息表中删除此条记录。
+4.  当 client 发送完毕，此次连接结束或者连接超时，那么 LVS 自动将连接从连接信息表中删除此条记录。
 
 上图中的蓝色连接线表示请求的数据流向，而红色连接线表示回复的数据流向。由于进出流量都需要经过 `Director` 服务器，所以 `Director` 服务器可能会成功瓶颈。
 
 下面通过一幅图来说明一个请求数据包在 LVS 服务器中的地址变化情况：
 
 ![NAT-PACKAGE](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/nat-package.jpg)
+
+下面解释一下请求数据包的地址变化过程：
+
+1.  client 向 LVS 集群发起请求，源IP地址和源端口为：`192.168.11.100:11021`，而目标IP地址和端口为：`192.168.10.10:80`。当 `Director` 服务器接收到 client 的请求后，会根据调度算法选择一台合适的 `Real-Server` 服务器，并且把请求数据包的目标IP地址和端口改为 `Real-Server` 服务器的IP地址和端口，如上图选择的 `Real-Server` 服务器的IP地址和端口为：`192.168.1.2:80`。
+2.  当 `Real-Server` 服务器接收到请求后，对请求进行处理，处理完后会把数据包的源IP地址和端口跟目标IP地址和端口交互，然后发送给网关 `192.168.1.1`（也就是 `Director` 服务器）。
+3.  `Director` 服务器接收到来自 `Real-Server` 服务器的回复数据，然后根据连接信息把源IP地址更改为虚拟IP地址。
 
 
 
