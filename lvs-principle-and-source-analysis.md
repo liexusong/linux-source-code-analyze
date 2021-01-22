@@ -33,5 +33,9 @@ __整个请求过程示意：__
 
 上图中的蓝色连接线表示请求的数据流向，而红色连接线表示回复的数据流向。由于进出流量都需要经过 `Director` 服务器，所以 `Director` 服务器可能会成功瓶颈。
 
+下面通过一幅图来说明一个请求数据包在 LVS 服务器中的地址变化情况：
+
+![NAT-PACKAGE](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/nat-package.jpg)
+
 
 
