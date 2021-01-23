@@ -63,3 +63,7 @@ __请求过程说明：__
 *   `Real-Server` 服务器处理完请求后，把处理结果直接发送给 `client`，而不会通过 `Director` 服务器。
 
 > 注意：`Real-Server` 服务器必须设置回环设备的 IP 地址为 VIP 地址，因为如果不设置 VIP，那么 `Real-Server` 服务器会认为这个数据包发送给本机的，从而丢弃这个数据包。
+
+下面通过一幅图来说明一个请求数据包在 LVS 服务器中的地址变化情况：
+
+![DR-PACKAGE](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/dr-package.jpg)
