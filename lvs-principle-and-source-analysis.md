@@ -48,5 +48,5 @@ __整个请求过程示意：__
 
 由于 `Real-Server` 服务器需要把 `Director` 服务器设置为网关，所以 `Director` 服务器与 `Real-Server` 服务器需要部署在同一个网络下。
 
-## DR模式
+### 2. DR模式
 
