@@ -128,7 +128,11 @@ LBLCR调度算法先根据请求的目标IP地址找到对应的服务器组，�
 本文主要简单的介绍了 LVS 的运行原理与调度算法，更多相关的资料可以查阅参考链接，而 LVS 的实现部分将会在另外一篇文章介绍。
 
 参考链接：
-[VS-NAT](http://www.linuxvirtualserver.org/VS-NAT.html)
-[VS-DRouting](http://www.linuxvirtualserver.org/VS-DRouting.html)
-[VS-IPTunneling](http://www.linuxvirtualserver.org/VS-IPTunneling.html)
 
+[LVS-Documents](http://www.linuxvirtualserver.org/Documents.html)
+
+[LVS-NAT](http://www.linuxvirtualserver.org/VS-NAT.html)
+
+[LVS-DRouting](http://www.linuxvirtualserver.org/VS-DRouting.html)
+
+[LVS-IPTunneling](http://www.linuxvirtualserver.org/VS-IPTunneling.html)
