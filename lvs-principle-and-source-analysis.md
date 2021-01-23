@@ -129,10 +129,12 @@ LBLCR调度算法先根据请求的目标IP地址找到对应的服务器组，�
 
 参考链接：
 
-[LVS-Documents](http://www.linuxvirtualserver.org/Documents.html)
+[http://www.linuxvirtualserver.org/Documents.html](http://www.linuxvirtualserver.org/Documents.html)
 
-[LVS-NAT](http://www.linuxvirtualserver.org/VS-NAT.html)
+[http://www.linuxvirtualserver.org/VS-NAT.html](http://www.linuxvirtualserver.org/VS-NAT.html)
 
-[LVS-DRouting](http://www.linuxvirtualserver.org/VS-DRouting.html)
+[http://www.linuxvirtualserver.org/VS-DRouting.html](http://www.linuxvirtualserver.org/VS-DRouting.html)
 
-[LVS-IPTunneling](http://www.linuxvirtualserver.org/VS-IPTunneling.html)
+[http://www.linuxvirtualserver.org/VS-IPTunneling.html](http://www.linuxvirtualserver.org/VS-IPTunneling.html)
+
+[https://blog.51cto.com/blief/1745134](https://blog.51cto.com/blief/1745134)
