@@ -22,7 +22,7 @@ LVS的工作模式分为三种：`NAT模式（网络地址转换）`、`DR模式
 
 ![NAT-ARCH](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/nat-arch.jpg)
 
-__整个请求过程示意：__
+__请求过程说明：__
 
 *   `client` 发送请求到 `LVS` 的 `VIP` 上，`Director` 服务器首先根据 client 的 IP 和端口从连接信息表中查询是否已经存在，如果存在就直接使用当前连接进行处理。否则根据负载算法选择一个 `Real-Server`（真正提供服务的服务器），并记录连接到连接信息表中，然后把 client 请求的目的 IP 地址修改为 Real-Server 的地址，将请求发给 Real-Server。
 
@@ -53,3 +53,7 @@ __整个请求过程示意：__
 `DR模式` 的运行方式如下图：
 
 ![DR-ARCH](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/dr-arch.jpg)
+
+__请求过程说明：__
+
+
