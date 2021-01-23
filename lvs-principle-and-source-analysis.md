@@ -117,9 +117,18 @@ LBLCR调度算法先根据请求的目标IP地址找到对应的服务器组，�
 
 * __7. 目标地址散列调度（Destination Hashing, DH）__
 
-也是针对请求报文目标IP地址的负载均衡调度，但它是一种静态映射算法，通过一个散列（hash）函数将一个目标IP地址映射到一台服务器。DH算法先根据请求的目标IP地址，作为散列键（hash key）从静态分配的散列表找出对应的服务器，若该服务器是可用的且为超载，将请求发送到该服务器，否则返回空。
+也是针对请求报文目标IP地址的负载均衡调度，但它是一种静态映射算法，通过一个散列（Hash）函数将一个目标IP地址映射到一台服务器。DH算法先根据请求的目标IP地址，作为散列键（Hash Key）从静态分配的散列表找出对应的服务器，若该服务器是可用的且为超载，将请求发送到该服务器，否则返回空。
 
-* __8. 源地址Hash调度（Source Hashing, SH）__
+* __8. 源地址散列调度（Source Hashing, SH）__
 
 该算法正好与DH调度算法相反，它根据请求的源IP地址，作为散列键从静态分配的散列表找出对应的服务器，若该服务器是可用的且未超载，将请求发送到该服务器，否则返回空。算法流程与目标地址散列调度算法基本相似，只不过将请求的目标IP地址换成请求的源IP地址。
+
+## 总结
+
+本文主要简单的介绍了 LVS 的运行原理与调度算法，更多相关的资料可以查阅参考链接，而 LVS 的实现部分将会在另外一篇文章介绍。
+
+参考链接：
+[VS-NAT](http://www.linuxvirtualserver.org/VS-NAT.html)
+[VS-DRouting](http://www.linuxvirtualserver.org/VS-DRouting.html)
+[VS-IPTunneling](http://www.linuxvirtualserver.org/VS-IPTunneling.html)
 
