@@ -60,4 +60,6 @@ __请求过程说明：__
 
 *   由于 `Director` 服务器与 `Real-Server` 服务器在同一局域网中，所以通过数据包的目标 MAC 地址可以找到对应的 `Real-Server` 服务器（以太网协议），而 `Real-Server` 服务器接收到数据包后，会对数据包进行处理。
 
+*   `Real-Server` 服务器处理完请求后，把处理结果直接发送给 `client`，而不会通过 `Director` 服务器。
+
 > 注意：`Real-Server` 服务器必须设置回环设备的 IP 地址为 VIP 地址，因为如果不设置 VIP，那么 `Real-Server` 服务器会认为这个数据包发送给本机的，从而丢弃这个数据包。
