@@ -67,3 +67,11 @@ __请求过程说明：__
 下面通过一幅图来说明一个请求数据包在 LVS 服务器中的地址变化情况：
 
 ![DR-PACKAGE](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/dr-package.jpg)
+
+下面解释一下请求数据包的地址变化过程：
+
+*   client 向 LVS 集群发起请求，源IP地址和源端口为：`192.168.11.100:11021`，而目标IP地址和端口为：`192.168.10.10:80`。当 `Director` 服务器接收到 client 的请求后，会根据调度算法选择一台合适的 `Real-Server` 服务器，并且把请求数据包的目标 MAC 地址改为 `Real-Server` 服务器的 MAC 地址，并记录连接信息到连接信息表中，然后通过局域网把数据包发送出去。
+
+*   
+
+从上图可以看出，整个请求过程中，数据包只有 MAC 地址发生变化，
