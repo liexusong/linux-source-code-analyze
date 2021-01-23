@@ -45,7 +45,7 @@ __整个请求过程示意：__
 
 *   `Director` 服务器接收到来自 `Real-Server` 服务器的回复数据，然后根据连接信息把源IP地址更改为虚拟IP地址。
 
-由于需要把 `Director` 服务器设置为网关，所以 `Director` 服务器与 `Real-Server` 服务器需要部署在同一个网络下。
+由于 `Real-Server` 服务器需要把 `Director` 服务器设置为网关，所以 `Director` 服务器与 `Real-Server` 服务器需要部署在同一个网络下。
 
 ## 直接路由模式
 
