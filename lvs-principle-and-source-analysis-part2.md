@@ -31,6 +31,12 @@ int nf_register_hook(struct nf_hook_ops *reg);
 其中参数 `reg` 是类型为 `struct nf_hook_ops` 结构的指针，`struct nf_hook_ops` 结构的定义如下：
 
 ```c
+typedef unsigned int nf_hookfn(unsigned int hooknum,
+                               struct sk_buff **skb,
+                               const struct net_device *in,
+                               const struct net_device *out,
+                               int (*okfn)(struct sk_buff *));
+
 struct nf_hook_ops
 {
     struct list_head list;
@@ -40,4 +46,12 @@ struct nf_hook_ops
     int priority;
 };
 ```
+
+`struct nf_hook_ops` 结构各个字段的作用如下：
+
+*   `list`：用于连接同一阶段中所有相同的钩子函数列表。
+*   `hook`：钩子函数指针。
+*   `pf`：协议类型，因为 `Netfilter` 可以用于不同的协议，如IPV4和IPV6等。
+*   `hooknum`：所处的阶段，也就是上面所说的5个不同的阶段。
+*   `priority`：优先级，值越大优先级约小。
 
