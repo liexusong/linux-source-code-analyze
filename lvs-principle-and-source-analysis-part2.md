@@ -10,3 +10,6 @@
 
 >   `Netfilter`：顾名思义就是网络过滤器（Network Filter），是 Linux 系统特有的网络子系统，用于过滤或修改进出内核协议栈的网络数据包。一般可以用来实现网络防火墙功能，其中 `iptables` 就是基于 `Netfilter` 实现的。
 
+Linux 内核处理进出网络协议栈的数据包分为5个不同的阶段，`Netfilter` 通过这5个阶段注入钩子函数（回调函数）来实现对数据包的过滤和修改。如下图的蓝色方框所示：
+
+![netfilter-hooks](C:\books\linux-source-code-analyze\images\netfilter-hooks.png)
