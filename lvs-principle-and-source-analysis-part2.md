@@ -61,6 +61,8 @@ struct nf_hook_ops
 
 ## LVS 实现
 
+### 1. 钩子函数注册
+
 `LVS` 主要通过向 `Netfilter` 的3个阶段注册钩子函数来对数据包进行处理，如下图：
 
 ![lvs-hooks](C:\books\linux-source-code-analyze\images\lvs-hooks.png)
