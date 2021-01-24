@@ -61,3 +61,11 @@ struct nf_hook_ops
 
 ## LVS 实现
 
+`LVS` 主要通过向 `Netfilter` 的3个阶段注册钩子函数来对数据包进行处理，如下图：
+
+![](C:\books\linux-source-code-analyze\images\lvs-hooks.png)
+
+*   在 `LOCAL_IN` 阶段注册了 `ip_vs_in()` 钩子函数。
+*   在 `FORWARD` 阶段注册了 `ip_vs_out()` 钩子函数。
+*   在 `POST_ROUTING` 阶段注册了 `ip_vs_post_routing()` 钩子函数。
+
