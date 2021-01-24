@@ -63,9 +63,41 @@ struct nf_hook_ops
 
 `LVS` 主要通过向 `Netfilter` 的3个阶段注册钩子函数来对数据包进行处理，如下图：
 
-![](C:\books\linux-source-code-analyze\images\lvs-hooks.png)
+![lvs-hooks](C:\books\linux-source-code-analyze\images\lvs-hooks.png)
 
 *   在 `LOCAL_IN` 阶段注册了 `ip_vs_in()` 钩子函数。
 *   在 `FORWARD` 阶段注册了 `ip_vs_out()` 钩子函数。
 *   在 `POST_ROUTING` 阶段注册了 `ip_vs_post_routing()` 钩子函数。
+
+我们在 LVS 的初始化函数 `ip_vs_init()` 可以找到这些钩子函数的注册代码，如下：
+
+```c
+static struct nf_hook_ops ip_vs_in_ops = {
+    { NULL, NULL },
+    ip_vs_in, PF_INET, NF_IP_LOCAL_IN, 100
+};
+
+static struct nf_hook_ops ip_vs_out_ops = {
+    { NULL, NULL },
+    ip_vs_out, PF_INET, NF_IP_FORWARD, 100
+};
+
+static struct nf_hook_ops ip_vs_post_routing_ops = {
+    { NULL, NULL },
+    ip_vs_post_routing, PF_INET, NF_IP_POST_ROUTING, NF_IP_PRI_NAT_SRC-1
+};
+
+static int __init ip_vs_init(void)
+{
+    int ret;
+    ...
+    ret = nf_register_hook(&ip_vs_in_ops);
+    ...
+    ret = nf_register_hook(&ip_vs_out_ops);
+    ...
+    ret = nf_register_hook(&ip_vs_post_routing_ops);
+    ...
+    return ret;
+}
+```
 
