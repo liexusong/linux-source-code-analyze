@@ -8,5 +8,5 @@
 
 在介绍 `LVS` 的实现前，我们需要了解以下 `Netfilter` 这个功能。
 
-`Netfilter` 顾名思义就是网络过滤器，是 Linux 系统独有的，用于处理进出内核协议栈的网络数据包，其中 `iptables` 就是基于 `Netfilter` 实现的。
+>   `Netfilter`：顾名思义就是网络过滤器（Network Filter），是 Linux 系统独有的，用于处理进出内核协议栈的网络数据包。一般可以用来实现网络防火墙功能，其中 `iptables` 就是基于 `Netfilter` 实现的。
 
