@@ -12,7 +12,7 @@
 
 Linux 内核处理进出网络协议栈的数据包分为5个不同的阶段，`Netfilter` 通过这5个阶段注入钩子函数（Hooks Function）来实现对数据包的过滤和修改。如下图的蓝色方框所示：
 
-![netfilter-hooks](C:\books\linux-source-code-analyze\images\netfilter-hooks.png)
+![netfilter-hooks](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/netfilter-hooks.png)
 
 这5个阶段分为：
 
@@ -67,7 +67,7 @@ struct nf_hook_ops
 
 `LVS` 主要通过向 `Netfilter` 的3个阶段注册钩子函数来对数据包进行处理，如下图：
 
-![lvs-hooks](C:\books\linux-source-code-analyze\images\lvs-hooks.png)
+![lvs-hooks](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/lvs-hooks.png)
 
 *   在 `LOCAL_IN` 阶段注册了 `ip_vs_in()` 钩子函数。
 *   在 `FORWARD` 阶段注册了 `ip_vs_out()` 钩子函数。
