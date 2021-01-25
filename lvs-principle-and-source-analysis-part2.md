@@ -136,3 +136,6 @@ static int __init ip_vs_init(void)
 
 ![lvs-roles](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/lvs-roles.png)
 
+从上图可以看出，`ip_vs_service` 对象的 `destinations` 字段用于保存 `ip_vs_dest` 对象的列表，而 `scheduler` 字段指向了一个  `ip_vs_scheduler` 对象。
+
+`ip_vs_scheduler` 对象的 `schedule` 字段指向了一个调度算法函数，通过这个调度函数可以从 `ip_vs_service` 对象的  `ip_vs_dest` 对象列表中选择一个合适的真实服务器。
