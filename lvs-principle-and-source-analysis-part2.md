@@ -31,12 +31,6 @@ int nf_register_hook(struct nf_hook_ops *reg);
 其中参数 `reg` 是类型为 `struct nf_hook_ops` 结构的指针，`struct nf_hook_ops` 结构的定义如下：
 
 ```c
-typedef unsigned int nf_hookfn(unsigned int hooknum,
-                               struct sk_buff **skb,
-                               const struct net_device *in,
-                               const struct net_device *out,
-                               int (*okfn)(struct sk_buff *));
-
 struct nf_hook_ops
 {
     struct list_head list;
@@ -56,6 +50,21 @@ struct nf_hook_ops
 *   `priority`：优先级，值越大优先级约小。
 
 所以要使用 `Netfilter` 对网络数据包进行处理，只需要编写好处理数据包的钩子函数，然后通过调用 `nf_register_hook()` 函数向 `Netfilter` 注册即可。
+
+另外，钩子函数 `nf_hookfn` 的原型如下：
+
+```c
+typedef unsigned int nf_hookfn(unsigned int hooknum, struct sk_buff **skb, 
+    const struct net_device *in, const struct net_device *out, int (*okfn)(struct sk_buff *));
+```
+
+其参数说明如下：
+
+*   `hooknum`：所处的阶段，也就是上面所说的5个不同的阶段。
+*   `skb`：要处理的数据包。
+*   `in`：输入设备。
+*   `out`：输出设备。
+*   `okfn`：如果钩子函数执行成功，即调用这个函数完成对数据包的后续处理工作。
 
 `Netfilter` 相关的知识点就介绍到这里，以后有机会会详解讲解 `Netfilter` 的原理和现实。
 
@@ -105,3 +114,24 @@ static int __init ip_vs_init(void)
 }
 ```
 
+*   `LOCAL_IN` 阶段：在路由判决之后，如果发现数据包是发送给本机的，那么就调用 `ip_vs_in()` 函数对数据包进行处理。
+
+*   `FORWARD` 阶段：在路由判决之后，如果发现数据包不是发送给本机的，调用 `ip_vs_out()` 函数对数据包进行处理。
+
+*   `POST_ROUTING` 阶段：在发送数据前，需要调用 `ip_vs_post_routing()` 函数对数据包进行处理。
+
+### 2. LVS 角色介绍
+
+在介绍这些钩子函数之前，我们先来了解一下 `LVS` 中的四个角色。如下：
+
+*   `ip_vs_service`：服务配置对象，主要用于保存 LVS 的配置信息，如 支持的 `传输层协议`、`虚拟IP` 和 `端口` 等。
+
+*   `ip_vs_dest`：真实服务器对象，主要用于保存真实服务器 (Real-Server) 的配置，如 `真实IP`、`端口` 和 `权重` 等。
+
+*   `ip_vs_scheduler`：调度器对象，主要通过使用不同的调度算法来选择合适的真实服务器对象。
+
+*   `ip_vs_conn`：连接对象，主要为了维护相同的客户端与真实服务器之间的连接关系。这是由于 TCP 协议是面向连接的，所以同一个的客户端每次选择真实服务器的时候必须保存一致，否则会出现连接中断的情况，而连接对象就是为了维护这种关系。
+
+各个角色之间的关系如下图所示：
+
+![lvs-roles](F:\linux-source-code-analyze\images\lvs-roles.png)
