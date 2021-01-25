@@ -54,7 +54,8 @@ struct nf_hook_ops
 另外，钩子函数 `nf_hookfn` 的原型如下：
 
 ```c
-typedef unsigned int nf_hookfn(unsigned int hooknum, struct sk_buff **skb, const struct net_device *in, const struct net_device *out, int (*okfn)(struct sk_buff *));
+typedef unsigned int nf_hookfn(unsigned int hooknum, struct sk_buff **skb, 
+    const struct net_device *in, const struct net_device *out, int (*okfn)(struct sk_buff *));
 ```
 
 其参数说明如下：
