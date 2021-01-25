@@ -140,7 +140,7 @@ static int __init ip_vs_init(void)
 
 `ip_vs_scheduler` 对象的 `schedule` 字段指向了一个调度算法函数，通过这个调度函数可以从 `ip_vs_service` 对象的  `ip_vs_dest` 对象列表中选择一个合适的真实服务器。
 
-那么，`ip_vs_service` 对象和 `ip_vs_dest` 对象的信息怎么来的呢？答案是通过用户配置来的。例如可以通过下面的配置创建 `ip_vs_service` 对象和 `ip_vs_dest` 对象：
+那么，`ip_vs_service` 对象和 `ip_vs_dest` 对象的信息怎么来的呢？答案是通过用户配置创建。例如可以通过下面的配置创建来 `ip_vs_service` 对象和 `ip_vs_dest` 对象：
 
 ```bash
 node1 ]# ipvsadm -A -t node1:80 -s wrr
@@ -148,5 +148,5 @@ node1 ]# ipvsadm -a -t node1:80 -r node2 -m -w 3
 node1 ]# ipvsadm -a -t node1:80 -r node3 -m -w 5
 ```
 
-第一行用于创建一个 `ip_vs_service` 对象，而第二和第三行用于向 `ip_vs_service` 对象添加 `ip_vs_dest` 对象列表。关于 LVS 的配置这里不作详细介绍，读者可以参考其他关于 LVS 配置的资料。
+第一行用于创建一个 `ip_vs_service` 对象，而第二和第三行用于向 `ip_vs_service` 对象添加 `ip_vs_dest` 对象到 `destinations` 列表中。关于 LVS 的配置这里不作详细介绍，读者可以参考其他关于 LVS 配置的资料。
 
