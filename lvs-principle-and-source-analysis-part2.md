@@ -114,9 +114,9 @@ static int __init ip_vs_init(void)
 }
 ```
 
-所以，在路由判决之后，如果发现数据包是发送给本机的，那么就调用 `ip_vs_in()` 函数对数据包进行处理（对应 `LOCAL_IN` 阶段）。
+*   `LOCAL_IN` 阶段：在路由判决之后，如果发现数据包是发送给本机的，那么就调用 `ip_vs_in()` 函数对数据包进行处理。
 
-否则，调用 `ip_vs_out()` 函数对数据包进行处理（对应 `FORWARD` 阶段）。
+*   `FORWARD` 阶段：在路由判决之后，如果发现数据包不是发送给本机的，调用 `ip_vs_out()` 函数对数据包进行处理。
 
-而在发送数据前，需要调用 `ip_vs_post_routing()` 函数对数据包进行处理（对应 `POST_ROUTING` 阶段）。
+*   `POST_ROUTING` 阶段：在发送数据前，需要调用 `ip_vs_post_routing()` 函数对数据包进行处理。
 
