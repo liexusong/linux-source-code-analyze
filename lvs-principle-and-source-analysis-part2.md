@@ -135,3 +135,4 @@ static int __init ip_vs_init(void)
 各个角色之间的关系如下图所示：
 
 ![lvs-roles](F:\linux-source-code-analyze\images\lvs-roles.png)
+
