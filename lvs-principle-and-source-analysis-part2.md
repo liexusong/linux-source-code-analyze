@@ -132,3 +132,7 @@ static int __init ip_vs_init(void)
 
 *   `ip_vs_conn`：连接对象，主要为了维护相同的客户端与真实服务器之间的连接关系。这是由于 TCP 协议是面向连接的，所以同一个的客户端每次选择真实服务器的时候必须保存一致，否则会出现连接中断的情况，而连接对象就是为了维护这种关系。
 
+各个角色之间的关系如下图所示：
+
+![lvs-roles](F:\linux-source-code-analyze\images\lvs-roles.png)
+
