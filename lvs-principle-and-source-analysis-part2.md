@@ -31,12 +31,6 @@ int nf_register_hook(struct nf_hook_ops *reg);
 其中参数 `reg` 是类型为 `struct nf_hook_ops` 结构的指针，`struct nf_hook_ops` 结构的定义如下：
 
 ```c
-typedef unsigned int nf_hookfn(unsigned int hooknum,
-                               struct sk_buff **skb,
-                               const struct net_device *in,
-                               const struct net_device *out,
-                               int (*okfn)(struct sk_buff *));
-
 struct nf_hook_ops
 {
     struct list_head list;
@@ -56,6 +50,22 @@ struct nf_hook_ops
 *   `priority`：优先级，值越大优先级约小。
 
 所以要使用 `Netfilter` 对网络数据包进行处理，只需要编写好处理数据包的钩子函数，然后通过调用 `nf_register_hook()` 函数向 `Netfilter` 注册即可。
+
+另外，钩子函数 `nf_hookfn` 的原型如下：
+
+```c
+typedef unsigned int nf_hookfn(unsigned int hooknum, 
+    struct sk_buff **skb, const struct net_device *in, 
+    const struct net_device *out, int (*okfn)(struct sk_buff *));
+```
+
+其参数说明如下：
+
+*   `hooknum`：所处的阶段，也就是上面所说的5个不同的阶段。
+*   `skb`：要处理的数据包。
+*   `in`：输入设备。
+*   `out`：输出设备。
+*   `okfn`：如果钩子函数执行成功，即调用这个函数完成对数据包的后续处理工作。
 
 `Netfilter` 相关的知识点就介绍到这里，以后有机会会详解讲解 `Netfilter` 的原理和现实。
 
