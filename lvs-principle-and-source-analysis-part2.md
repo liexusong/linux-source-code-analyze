@@ -577,6 +577,8 @@ ip_vs_conn_new(int proto,                   // 协议类型
 
 `ip_vs_in()` 函数的最后部分就是通过调用数据发送接口把数据包转发出去，对于 `NAT模式` 来说，数据发送接口就是 `ip_vs_nat_xmit()`。
 
+#### 数据发送接口：ip_vs_nat_xmit()
+
 接下来，我们对 `NAT模式` 的数据发送接口 `ip_vs_nat_xmit()` 进行分析。由于 `ip_vs_nat_xmit()` 函数的实现比较复杂，所以我们通过分段来分析：
 
 ```c
@@ -661,7 +663,6 @@ static int ip_vs_nat_xmit(struct sk_buff *skb, struct ip_vs_conn *cp)
 
     ip_send(skb); // 把包发送出去
     ...
-
     return NF_STOLEN; // 让其他 Netfilter 的钩子函数放弃处理该包
 }
 ```
