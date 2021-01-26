@@ -460,9 +460,9 @@ ip_vs_in(unsigned int hooknum,
     cp = ip_vs_conn_in_get(iph->protocol, iph->saddr,
                            h.portp[0], iph->daddr, h.portp[1]);
 
-	// 1. 如果连接还没建立
-	// 2. 如果是TCP协议的话, 第一个包必须是syn包, 或者UDP协议。
-	// 3. 根据协议、虚拟IP和虚拟端口查找服务对象
+    // 1. 如果连接还没建立
+    // 2. 如果是TCP协议的话, 第一个包必须是syn包, 或者UDP协议。
+    // 3. 根据协议、虚拟IP和虚拟端口查找服务对象
     if (!cp && 
         (h.th->syn || (iph->protocol != IPPROTO_TCP)) &&
         (svc = ip_vs_service_get(skb->nfmark, iph->protocol, iph->daddr, h.portp[1])))
@@ -473,6 +473,39 @@ ip_vs_in(unsigned int hooknum,
         cp = ip_vs_schedule(svc, iph); 
         ...
     }
+```
+
+上面的代码主要完成以下几个功能：
+
+*   根据 `协议类型`、`客户端IP`、`客户端端口`、`虚拟IP` 和 `虚拟端口` 五元组，然后调用 `ip_vs_conn_in_get()` 函数获取连接对象。
+*   如果连接还没建立，那么就调用 `ip_vs_schedule()` 函数调度一台合适的真实服务器，然后创建一个连接对象，并且建立真实服务器与客户端之间的连接关系。
+
+我们来分析一下 `ip_vs_schedule()` 函数的实现：
+
+```c
+static struct ip_vs_conn *
+ip_vs_schedule(struct ip_vs_service *svc, struct iphdr *iph)
+{
+    struct ip_vs_conn *cp = NULL;
+    struct ip_vs_dest *dest;
+    const __u16 *portp;
+    ...
+    portp = (__u16 *)&(((char *)iph)[iph->ihl*4]); // 指向TCP或者UDP头部
+    ...
+    dest = svc->scheduler->schedule(svc, iph); // 通过调度器选择一台合适的真实服务器
+    ...
+    cp = ip_vs_conn_new(iph->protocol,                      // 协议类型
+                        iph->saddr,                         // 客户端IP
+                        portp[0],                           // 客户端端口
+                        iph->daddr,                         // 虚拟IP
+                        portp[1],                           // 虚拟端口
+                        dest->addr,                         // 真实服务器的IP
+                        dest->port ? dest->port : portp[1], // 真实服务器的端口
+                        0,                                  // flags
+                        dest);
+    ...
+    return cp;
+}
 ```
 
 
