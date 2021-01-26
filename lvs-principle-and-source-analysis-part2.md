@@ -387,4 +387,4 @@ struct ip_vs_conn {
 
 一个客户端请求到达 `LVS` 后，`Director服务器` 首先会查找客户端是否已经与真实服务器建立了连接关系，如果已经建立了连接，那么直接使用这个连接关系。否则，通过调度器对象选择一台合适的真实服务器，然后创建客户端与真实服务器的连接关系，并且保存到全局哈希表 `ip_vs_conn_tab` 中。流程图如下：
 
-![lvs-connection-process](F:\linux-source-code-analyze\images\lvs-connection-process.png)
+![lvs-connection-process](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/lvs-connection-process.png)
