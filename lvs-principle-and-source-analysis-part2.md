@@ -353,3 +353,10 @@ ip_vs_rr_schedule(struct ip_vs_service *svc, struct iphdr *iph)
 
 #### ip_vs_conn 对象
 
+`ip_vs_conn` 对象用于维护 `客户端` 与 `真实服务器` 之间的关系，为什么需要维护它们之间的关系？原因是 `TCP协议` 面向连接的协议，所以每次调度都必须选择相同的真实服务器，否则连接就会失效。
+
+![lvs-connection](F:\linux-source-code-analyze\images\lvs-connection.png)
+
+如上图所示，刚开始时调度器选择了 `Real-Server(1)` 服务器进行处理客户端请求，但第二次调度时却选择了 `Real-Server(2)` 来处理客户端请求。
+
+由于 `TCP协议` 需要客户端与服务器进行连接，但第二次请求的服务器发生了变化，所以连接状态就失效了，这就为什么 LVS 需要维持客户端与真实服务器连接关系的原因。
