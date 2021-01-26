@@ -341,5 +341,5 @@ ip_vs_rr_schedule(struct ip_vs_service *svc, struct iphdr *iph)
 
 其原理可以通过以下图片说明：
 
-![](F:\linux-source-code-analyze\images\lvs-scheduler.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/lvs-scheduler.png)
 
