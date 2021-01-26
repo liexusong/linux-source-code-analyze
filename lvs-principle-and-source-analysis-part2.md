@@ -258,3 +258,27 @@ ip_vs_new_dest(struct ip_vs_service *svc,
 }
 ```
 
+`ip_vs_new_dest()` 函数的实现也比较简单，首先通过调用 `kmalloc()` 函数申请一个 `ip_vs_dest` 对象，然后根据用户配置的规则信息来初始化 `ip_vs_dest` 对象的各个字段。
+
+#### ip_vs_scheduler 对象
+
+`ip_vs_scheduler` (调度器) 对象用于从 `ip_vs_service` 对象的 `destinations` 列表中选择一个合适的 `ip_vs_dest` 对象，其定义如下：
+
+```c
+struct ip_vs_scheduler {
+    struct list_head    n_list;     // 连接所有调度策略
+    char                *name;      // 调度策略名称
+    atomic_t            refcnt;     // 应用计数器
+    struct module       *module;    // 模块对象(如果是通过模块引入的)
+
+    int (*init_service)(struct ip_vs_service *svc);   // 用于初始化服务
+    int (*done_service)(struct ip_vs_service *svc);   // 用于停止服务
+    int (*update_service)(struct ip_vs_service *svc); // 用于更新服务
+
+    // 用于获取一个真实服务器对象(Real-Server)
+    struct ip_vs_dest *(*schedule)(struct ip_vs_service *svc, struct iphdr *iph);
+};
+```
+
+`ip_vs_scheduler` 对象的各个字段都在注释说明了，其中 `schedule` 字段是一个函数的指针，其指向一个调度函数，用于从 `ip_vs_service` 对象的 `destinations` 列表中选择一个合适的 `ip_vs_dest` 对象。
+
