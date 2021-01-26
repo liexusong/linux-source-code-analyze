@@ -347,3 +347,7 @@ ip_vs_rr_schedule(struct ip_vs_service *svc, struct iphdr *iph)
 
 上图描述的原理还是比较简单，首先从 `sched_data` 处开始遍历，查找一个合适的 `ip_vs_dest` 对象，然后更新 `sched_data` 的位置。
 
+另外，由于 `LVS` 可以存在多种不同的调度对象（提供不同的调度算法），所以 `LVS` 把这些调度对象通过一个链表（`ip_vs_schedulers`）存储起来，而这些调度对象可以通过调度对象的名字（`name` 字段）来查询。
+
+可以通过调用 `register_ip_vs_scheduler()` 函数向 `LVS` 注册调度对象，而通过调用 `ip_vs_scheduler_get()` 函数来获取指定名字的调度对象。
+
