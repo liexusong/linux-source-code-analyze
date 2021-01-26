@@ -413,3 +413,11 @@ static inline void ip_vs_bind_xmit(struct ip_vs_conn *cp)
 
 因为 `LVS` 是一个负载均衡工具，所以其最重要的功能就是对数据的调度与转发， 而对数据的转发是在前面介绍的 `Netfilter` 钩子函数进行的。
 
+对数据的转发主要是通过 `ip_vs_in()` 和 `ip_vs_out()` 这两个钩子函数：
+
+*   `ip_vs_in()` 运行在 `Netfilter` 的 `LOCAL_IN` 阶段。
+
+*   `ip_vs_out()` 运行在 `Netfilter` 的 `FORWARD` 阶段。
+
+
+
