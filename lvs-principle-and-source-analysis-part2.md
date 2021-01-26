@@ -385,4 +385,6 @@ struct ip_vs_conn {
 
 另外，在《[原理篇](https://github.com/liexusong/linux-source-code-analyze/blob/master/lvs-principle-and-source-analysis-part1.md)》我们说过，LVS 有3中运行模式：`NAT模式`、`DR模式` 和 `TUN模式`。而对于不同的运行模式，发送数据包的接口是不一样的，所以 `ip_vs_conn` 对象的 `packet_xmit` 字段会根据不同的运行模式来选择不同的发送数据包接口。
 
-一个客户端请求到达 `LVS` 后，`Director服务器` 首先会查找客户端是否已经与真实服务器建立了连接关系，如果已经建立了连接，那么直接使用这个连接关系。否则，通过调度器对象选择一台合适的真实服务器，然后创建客户端与真实服务器的连接关系，并且保存到全局哈希表 `ip_vs_conn_tab` 中。
+一个客户端请求到达 `LVS` 后，`Director服务器` 首先会查找客户端是否已经与真实服务器建立了连接关系，如果已经建立了连接，那么直接使用这个连接关系。否则，通过调度器对象选择一台合适的真实服务器，然后创建客户端与真实服务器的连接关系，并且保存到全局哈希表 `ip_vs_conn_tab` 中。流程图如下：
+
+![lvs-connection-process](F:\linux-source-code-analyze\images\lvs-connection-process.png)
