@@ -150,6 +150,8 @@ node1 ]# ipvsadm -a -t node1:80 -r node3 -m -w 5
 
 第一行用于创建一个 `ip_vs_service` 对象，而第二和第三行用于向 `ip_vs_service` 对象添加 `ip_vs_dest` 对象到 `destinations` 列表中。关于 LVS 的配置这里不作详细介绍，读者可以参考其他关于 LVS 配置的资料。
 
+#### ip_vs_service 对象创建
+
 我们来看看 LVS 源码是怎么创建一个 `ip_vs_service` 对象的，创建 `ip_vs_service` 对象通过 `ip_vs_add_service()` 函数完成，如下：
 
 ```c
@@ -191,8 +193,10 @@ ip_vs_add_service(struct ip_vs_rule_user *ur, struct ip_vs_service **svc_p)
 上面代码主要完成以下几个工作：
 
 *   通过调用 `ip_vs_scheduler_get()` 函数来获取一个 `ip_vs_scheduler` (调度器) 对象。
+
 *   然后申请一个 `ip_vs_service` 对象并且根据用户的配置设置其各个参数，并且把调度器对象绑定这个 `ip_vs_service` 对象。
+
 *   最后把 `ip_vs_service` 对象添加到 `ip_vs_service` 对象的全局哈希表中（这是由于可以创建多个 `ip_vs_service` 对象，这些对象通过一个全局哈希表来存储）。
 
-
+#### ip_vs_dest 对象创建
 
