@@ -365,17 +365,17 @@ ip_vs_rr_schedule(struct ip_vs_service *svc, struct iphdr *iph)
 
 ```c
 struct ip_vs_conn {
-    struct list_head    c_list;     /* hashed list heads */
+    struct list_head    c_list;     /* 用于连接到哈希表 */
 
-    __u32               caddr;      /* client address */
-    __u32               vaddr;      /* virtual address */
-    __u32               daddr;      /* destination address */
-    __u16               cport;      /* client port */
-    __u16               vport;      /* virtual port */
-    __u16               dport;      /* destination port */
-    __u16               protocol;   /* Which protocol (TCP/UDP) */
+    __u32               caddr;      /* 客户端IP地址 */
+    __u32               vaddr;      /* 虚拟IP地址 */
+    __u32               daddr;      /* 真实服务器IP地址 */
+    __u16               cport;      /* 客户端端口 */
+    __u16               vport;      /* 虚拟端口 */
+    __u16               dport;      /* 真实端口 */
+    __u16               protocol;   /* 协议类型（UPD/TCP） */
     ...
-    /* packet transmitter for different forwarding methods */
+    /* 用于发送数据包的函数 */
     int (*packet_xmit)(struct sk_buff *skb, struct ip_vs_conn *cp);
     ...
 };
