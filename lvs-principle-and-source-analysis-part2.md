@@ -478,6 +478,7 @@ ip_vs_in(unsigned int hooknum,
 上面的代码主要完成以下几个功能：
 
 *   根据 `协议类型`、`客户端IP`、`客户端端口`、`虚拟IP` 和 `虚拟端口` 五元组，然后调用 `ip_vs_conn_in_get()` 函数获取连接对象。
+
 *   如果连接还没建立，那么就调用 `ip_vs_schedule()` 函数调度一台合适的真实服务器，然后创建一个连接对象，并且建立真实服务器与客户端之间的连接关系。
 
 我们来分析一下 `ip_vs_schedule()` 函数的实现：
@@ -508,5 +509,9 @@ ip_vs_schedule(struct ip_vs_service *svc, struct iphdr *iph)
 }
 ```
 
+`ip_vs_schedule()` 函数的主要工作如下：
 
+*   首先通过调用调度器（`ip_vs_scheduler` 对象）的 `schedule()` 方法从 `ip_vs_service` 对象的 `destinations` 链表中选择一台真实服务器（`ip_vs_dest` 对象）
+
+*   然后调用 `ip_vs_conn_new()` 函数创建一个新的 `ip_vs_conn` 对象。
 
