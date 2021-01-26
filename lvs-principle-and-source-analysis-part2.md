@@ -421,6 +421,8 @@ static inline void ip_vs_bind_xmit(struct ip_vs_conn *cp)
 
 `FORWARD` 阶段发送在数据包不是发送给本机的情况，但是一般来说数据包都是发送给本机的，所以对于 `ip_vs_out()` 这个函数的实现就不作介绍，我们主要重点分析 `ip_vs_in()` 这个函数。
 
+#### ip_vs_in() 钩子函数
+
 有了前面的知识点，我们对 `ip_vs_in()` 函数的分析就不那么困难了。下面我们分段对 `ip_vs_in()` 函数进行分析：
 
 ```c
@@ -559,4 +561,114 @@ ip_vs_conn_new(int proto,                   // 协议类型
 *   根据 `LVS` 的运行模式，调用 `ip_vs_bind_xmit()` 函数为连接对象选择一个正确的数据发送接口，`ip_vs_bind_xmit()` 函数在前面已经介绍过。
 
 *   调用 `ip_vs_conn_hash()` 函数把新创建的 `ip_vs_conn` 对象添加到全局连接信息哈希表中。
+
+我们接着分析 `ip_vs_in()` 函数：
+
+```c
+    if (cp->packet_xmit)
+        ret = cp->packet_xmit(skb, cp); // 把数据包转发出去
+    else {
+        ret = NF_ACCEPT;
+    }
+    ...
+    return ret;
+}
+```
+
+`ip_vs_in()` 函数的最后部分就是通过调用数据发送接口把数据包转发出去，对于 `NAT模式` 来说，数据发送接口就是 `ip_vs_nat_xmit()`。
+
+接下来，我们对 `NAT模式` 的数据发送接口 `ip_vs_nat_xmit()` 进行分析。由于 `ip_vs_nat_xmit()` 函数的实现比较复杂，所以我们通过分段来分析：
+
+```c
+static int ip_vs_nat_xmit(struct sk_buff *skb, struct ip_vs_conn *cp)
+{
+    struct rtable *rt;      /* Route to the other host */
+    struct iphdr  *iph;
+    union ip_vs_tphdr h;
+    int ihl;
+    unsigned short size;
+    int mtu;
+    ...
+    iph = skb->nh.iph;                // IP头部
+    ihl = iph->ihl << 2;              // IP头部长度
+    h.raw = (char*) iph + ihl;        // 传输层头部(TCP/UDP)
+    size = ntohs(iph->tot_len) - ihl; // 数据长度
+    ...
+    // 找到真实服务器IP的路由信息
+    if (!(rt = __ip_vs_get_out_rt(cp, RT_TOS(iph->tos)))) 
+        goto tx_error_icmp;
+    ...
+    // 替换新路由信息
+    dst_release(skb->dst);
+    skb->dst = &rt->u.dst;
+```
+
+上面的代码主要完成两个工作：
+
+*   调用 `__ip_vs_get_out_rt()` 函数查找真实服务器 IP 对应的路由信息对象。
+
+*   把数据包的旧路由信息替换成新的路由信息。
+
+我们接着分析：
+
+```c
+    iph->daddr = cp->daddr; // 修改目标IP地址为真实服务器IP地址
+    h.portp[1] = cp->dport; // 修改目标端口为真实服务器端口
+    ...
+    // 更新UDP/TCP头部的校验和
+    if (!cp->app && (iph->protocol != IPPROTO_UDP || h.uh->check != 0)) {
+        ip_vs_fast_check_update(&h, cp->vaddr, cp->daddr, cp->vport,
+                                cp->dport, iph->protocol);
+
+        if (skb->ip_summed == CHECKSUM_HW)
+            skb->ip_summed = CHECKSUM_NONE;
+
+    } else {
+        switch (iph->protocol) {
+        case IPPROTO_TCP:
+            h.th->check = 0;
+            h.th->check = csum_tcpudp_magic(iph->saddr, iph->daddr,
+                                            size, iph->protocol,
+                                            csum_partial(h.raw, size, 0));
+            break;
+
+        case IPPROTO_UDP:
+            h.uh->check = 0;
+            h.uh->check = csum_tcpudp_magic(iph->saddr, iph->daddr,
+                                            size, iph->protocol,
+                                            csum_partial(h.raw, size, 0));
+            if (h.uh->check == 0)
+                h.uh->check = 0xFFFF;
+            break;
+        }
+
+        skb->ip_summed = CHECKSUM_UNNECESSARY;
+    }
+```
+
+上面的代码完成两个工作：
+
+*   修改目标IP地址和端口为真实服务器IP地址和端口。
+
+*   更新 `UDP/TCP 头部` 的校验和（checksum）。
+
+我们接着分析：
+
+```c
+    ip_send_check(iph); // 计算IP头部的校验和
+    ...
+    skb->nfcache |= NFC_IPVS_PROPERTY;
+
+    ip_send(skb); // 把包发送出去
+    ...
+
+    return NF_STOLEN; // 让其他 Netfilter 的钩子函数放弃处理该包
+}
+```
+
+上面的代码完成两个工作：
+
+*   调用 `ip_send_check()` 函数重新计算数据包的 `IP头部` 校验和。
+
+*   调用 `ip_send()` 函数把数据包发送出去。
 
