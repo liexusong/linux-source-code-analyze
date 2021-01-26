@@ -419,5 +419,61 @@ static inline void ip_vs_bind_xmit(struct ip_vs_conn *cp)
 
 *   `ip_vs_out()` 运行在 `Netfilter` 的 `FORWARD` 阶段。
 
+`FORWARD` 阶段发送在数据包不是发送给本机的情况，但是一般来说数据包都是发送给本机的，所以对于 `ip_vs_out()` 这个函数的实现就不作介绍，我们主要重点分析 `ip_vs_in()` 这个函数。
+
+有了前面的知识点，我们对 `ip_vs_in()` 函数的分析就不那么困难了。下面我们分段对 `ip_vs_in()` 函数进行分析：
+
+```c
+static unsigned int
+ip_vs_in(unsigned int hooknum,
+         struct sk_buff **skb_p,
+         const struct net_device *in,
+         const struct net_device *out,
+         int (*okfn)(struct sk_buff *))
+{
+    struct sk_buff *skb = *skb_p;
+    struct iphdr *iph = skb->nh.iph; // IP头部
+    union ip_vs_tphdr h;
+    struct ip_vs_conn *cp;
+    struct ip_vs_service *svc;
+    int ihl;
+    int ret;
+    ...
+    // 因为LVS只支持TCP和UDP
+    if (iph->protocol != IPPROTO_TCP && iph->protocol != IPPROTO_UDP)
+        return NF_ACCEPT;
+
+    ihl = iph->ihl << 2; // IP头部长度
+
+    // IP头部是否正确
+    if (ip_vs_header_check(skb, iph->protocol, ihl) == -1)
+        return NF_DROP;
+
+    iph = skb->nh.iph;         // IP头部指针
+    h.raw = (char*)iph + ihl;  // TCP/UDP头部指针
+```
+
+上面的代码主要对数据包的 `IP头部` 进行正确性验证，并且将 `iph` 变量指向 `IP头部`，而 `h` 变量指向 `TCP/UDP` 头部。
+
+```c
+    // 根据 "协议类型", "客户端IP", "客户端端口", "虚拟IP", "虚拟端口" 五元组获取连接对象
+    cp = ip_vs_conn_in_get(iph->protocol, iph->saddr,
+                           h.portp[0], iph->daddr, h.portp[1]);
+
+	// 1. 如果连接还没建立
+	// 2. 如果是TCP协议的话, 第一个包必须是syn包, 或者UDP协议。
+	// 3. 根据协议、虚拟IP和虚拟端口查找服务对象
+    if (!cp && 
+        (h.th->syn || (iph->protocol != IPPROTO_TCP)) &&
+        (svc = ip_vs_service_get(skb->nfmark, iph->protocol, iph->daddr, h.portp[1])))
+    {
+        ...
+        // 通过调度器选择一个真实服务器
+        // 并且创建一个新的连接对象, 建立真实服务器与客户端连接关系
+        cp = ip_vs_schedule(svc, iph); 
+        ...
+    }
+```
+
 
 
