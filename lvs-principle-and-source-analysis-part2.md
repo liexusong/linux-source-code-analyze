@@ -359,4 +359,25 @@ ip_vs_rr_schedule(struct ip_vs_service *svc, struct iphdr *iph)
 
 如上图所示，刚开始时调度器选择了 `Real-Server(1)` 服务器进行处理客户端请求，但第二次调度时却选择了 `Real-Server(2)` 来处理客户端请求。
 
-由于 `TCP协议` 需要客户端与服务器进行连接，但第二次请求的服务器发生了变化，所以连接状态就失效了，这就为什么 LVS 需要维持客户端与真实服务器连接关系的原因。
+由于 `TCP协议` 需要客户端与服务器进行连接，但第二次请求的服务器发生了变化，所以连接状态就失效了，这就为什么 `LVS` 需要维持客户端与真实服务器连接关系的原因。
+
+`LVS` 通过 `ip_vs_conn` 对象来维护客户端与真实服务器之间的连接关系，其定义如下：
+
+```c
+struct ip_vs_conn {
+    struct list_head    c_list;     /* hashed list heads */
+
+    __u32               caddr;      /* client address */
+    __u32               vaddr;      /* virtual address */
+    __u32               daddr;      /* destination address */
+    __u16               cport;      /* client port */
+    __u16               vport;      /* virtual port */
+    __u16               dport;      /* destination port */
+    __u16               protocol;   /* Which protocol (TCP/UDP) */
+    ...
+    /* packet transmitter for different forwarding methods */
+    int (*packet_xmit)(struct sk_buff *skb, struct ip_vs_conn *cp);
+    ...
+};
+```
+
