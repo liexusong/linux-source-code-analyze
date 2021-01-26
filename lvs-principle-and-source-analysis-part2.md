@@ -181,10 +181,18 @@ ip_vs_add_service(struct ip_vs_rule_user *ur, struct ip_vs_service **svc_p)
 
     ret = ip_vs_bind_scheduler(svc, sched); // 绑定调度器
     ...
-    ip_vs_svc_hash(svc); // 添加到hash表中
+    ip_vs_svc_hash(svc); // 添加到ip_vs_service对象的hash表中
     ...
     *svc_p = svc;
     return 0;
 }
 ```
+
+上面代码主要完成以下几个工作：
+
+*   通过调用 `ip_vs_scheduler_get()` 函数来获取一个 `ip_vs_scheduler` (调度器) 对象。
+*   然后申请一个 `ip_vs_service` 对象并且根据用户的配置设置其各个参数，并且把调度器对象绑定这个 `ip_vs_service` 对象。
+*   最后把 `ip_vs_service` 对象添加到 `ip_vs_service` 对象的全局哈希表中（这是由于可以创建多个 `ip_vs_service` 对象，这些对象通过一个全局哈希表来存储）。
+
+
 
