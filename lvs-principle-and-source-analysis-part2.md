@@ -336,10 +336,14 @@ ip_vs_rr_schedule(struct ip_vs_service *svc, struct iphdr *iph)
 `ip_vs_rr_schedule()` 函数是轮询调度算法的实现，其实现原理如下：
 
 *   `ip_vs_service` 对象的 `sched_data` 字段保存了最后一次调度的位置，所以每次调度时都是从这个字段读取到最后一次调度的位置。
+
 *   从最后一次调度的位置开始遍历，找到一个权限值（weight）大于 0 的 `ip_vs_dest` 对象。
+
 *   如果找到就把 `ip_vs_service` 对象的 `sched_data` 字段设置为最后被选择的 `ip_vs_dest` 对象的位置。
 
 其原理可以通过以下图片说明：
 
 ![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/lvs-scheduler.png)
+
+上图描述的原理还是比较简单，首先从 `sched_data` 处开始遍历，查找一个合适的 `ip_vs_dest` 对象，然后更新 `sched_data` 的位置。
 
