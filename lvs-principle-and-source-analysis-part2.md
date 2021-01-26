@@ -275,10 +275,61 @@ struct ip_vs_scheduler {
     int (*done_service)(struct ip_vs_service *svc);   // 用于停止服务
     int (*update_service)(struct ip_vs_service *svc); // 用于更新服务
 
-    // 用于获取一个真实服务器对象(Real-Server)
+    // 用于获取一个真实服务器对象 (Real-Server)
     struct ip_vs_dest *(*schedule)(struct ip_vs_service *svc, struct iphdr *iph);
 };
 ```
 
 `ip_vs_scheduler` 对象的各个字段都在注释说明了，其中 `schedule` 字段是一个函数的指针，其指向一个调度函数，用于从 `ip_vs_service` 对象的 `destinations` 列表中选择一个合适的 `ip_vs_dest` 对象。
+
+我们可以通过一个最简单的调度模块（轮询调度模块）来分析 `ip_vs_scheduler` 对象的工作原理（文件路径：`/net/ipv4/ipvs/ip_vs_rr.c`）：
+
+```c
+static struct ip_vs_scheduler ip_vs_rr_scheduler = {
+    {0},                /* n_list */
+    "rr",               /* name */
+    ATOMIC_INIT(0),     /* refcnt */
+    THIS_MODULE,        /* this module */
+    ip_vs_rr_init_svc,  /* service initializer */
+    ip_vs_rr_done_svc,  /* service done */
+    ip_vs_rr_update_svc,/* service updater */
+    ip_vs_rr_schedule,  /* select a server from the destination list */
+};
+```
+
+首先轮询调度模块定义了一个 `ip_vs_scheduler` 对象，其中 `schedule` 字段设置为 `ip_vs_rr_schedule()` 函数。我们来看看 `ip_vs_rr_schedule()` 函数的实现：
+
+```c
+static struct ip_vs_dest *
+ip_vs_rr_schedule(struct ip_vs_service *svc, struct iphdr *iph)
+{
+    register struct list_head *p, *q;
+    struct ip_vs_dest *dest;
+
+    write_lock(&svc->sched_lock);
+    p = (struct list_head *)svc->sched_data; // 最后一次被调度的位置
+    p = p->next;
+    q = p;
+    // 遍历 destinations 列表
+    do {
+        if (q == &svc->destinations) {
+            q = q->next;
+            continue;
+        }
+        dest = list_entry(q, struct ip_vs_dest, n_list);
+        // 找到一个权限值大于 0 的 ip_vs_dest 对象
+        if (atomic_read(&dest->weight) > 0)
+            goto out;
+        q = q->next;
+    } while (q != p);
+    write_unlock(&svc->sched_lock);
+
+    return NULL;
+
+  out:
+    svc->sched_data = q; // 设置最后一次被调度的位置
+    ...
+    return dest;
+}
+```
 
