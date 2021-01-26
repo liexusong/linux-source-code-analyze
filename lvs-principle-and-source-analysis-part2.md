@@ -162,11 +162,9 @@ ip_vs_add_service(struct ip_vs_rule_user *ur, struct ip_vs_service **svc_p)
 
     sched = ip_vs_scheduler_get(ur->sched_name); // 根据调度器名称获取调度策略对象
     ...
-
     // 申请一个 ip_vs_service 对象
     svc = (struct ip_vs_service *)kmalloc(sizeof(struct ip_vs_service), GFP_ATOMIC);
     ...
-
     memset(svc, 0, sizeof(struct ip_vs_service));
     // 设置 ip_vs_service 对象的各个字段
     svc->protocol = ur->protocol;       // 协议
@@ -183,10 +181,8 @@ ip_vs_add_service(struct ip_vs_rule_user *ur, struct ip_vs_service **svc_p)
 
     ret = ip_vs_bind_scheduler(svc, sched); // 绑定调度器
     ...
-    write_lock_bh(&__ip_vs_svc_lock);
     ip_vs_svc_hash(svc); // 添加到hash表中
-    write_unlock_bh(&__ip_vs_svc_lock);
-
+    ...
     *svc_p = svc;
     return 0;
 }
