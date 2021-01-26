@@ -553,7 +553,10 @@ ip_vs_conn_new(int proto,                   // 协议类型
 `ip_vs_conn_new()` 函数的主要工作如下：
 
 *   创建一个新的 `ip_vs_conn` 对象，并且设置其各个字段的值。
+
 *   调用 `ip_vs_bind_dest()` 函数将 `ip_vs_conn` 对象与真实服务器对象（`ip_vs_dest` 对象）进行绑定。
+
 *   根据 `LVS` 的运行模式，调用 `ip_vs_bind_xmit()` 函数为连接对象选择一个正确的数据发送接口，`ip_vs_bind_xmit()` 函数在前面已经介绍过。
+
 *   调用 `ip_vs_conn_hash()` 函数把新创建的 `ip_vs_conn` 对象添加到全局连接信息哈希表中。
 
