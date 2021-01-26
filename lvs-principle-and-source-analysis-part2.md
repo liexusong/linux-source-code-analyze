@@ -224,3 +224,37 @@ static int ip_vs_add_dest(struct ip_vs_service *svc, struct ip_vs_rule_user *ur)
 }
 ```
 
+`ip_vs_add_dest()` 函数主要通过调用 `ip_vs_new_dest()` 创建一个 `ip_vs_dest` 对象，然后将其添加到 `ip_vs_service` 对象的 `destinations` 列表中。我们来看看 `ip_vs_new_dest()` 函数的实现：
+
+```c
+static int
+ip_vs_new_dest(struct ip_vs_service *svc,
+               struct ip_vs_rule_user *ur,
+               struct ip_vs_dest **destp)
+{
+    struct ip_vs_dest *dest;
+    ...
+    *destp = dest = (struct ip_vs_dest*)kmalloc(sizeof(struct ip_vs_dest), GFP_ATOMIC);
+    ...
+    memset(dest, 0, sizeof(struct ip_vs_dest));
+    // 设置 ip_vs_dest 对象的各个字段
+    dest->protocol = svc->protocol; // 协议
+    dest->vaddr = svc->addr;        // 虚拟IP
+    dest->vport = svc->port;        // 虚拟端口
+    dest->vfwmark = svc->fwmark;    // 虚拟网络掩码
+    dest->addr = ur->daddr;         // 真实IP
+    dest->port = ur->dport;         // 真实端口
+
+    atomic_set(&dest->activeconns, 0);
+    atomic_set(&dest->inactconns, 0);
+    atomic_set(&dest->refcnt, 0);
+
+    INIT_LIST_HEAD(&dest->d_list);
+    dest->dst_lock = SPIN_LOCK_UNLOCKED;
+    dest->stats.lock = SPIN_LOCK_UNLOCKED;
+    __ip_vs_update_dest(svc, dest, ur);
+    ...
+    return 0;
+}
+```
+
