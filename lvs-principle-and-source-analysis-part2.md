@@ -140,7 +140,7 @@ static int __init ip_vs_init(void)
 
 `ip_vs_scheduler` 对象的 `schedule` 字段指向了一个调度算法函数，通过这个调度函数可以从 `ip_vs_service` 对象的  `ip_vs_dest` 对象列表中选择一个合适的真实服务器。
 
-那么，`ip_vs_service` 对象和 `ip_vs_dest` 对象的信息怎么来的呢？答案是通过用户配置创建。例如可以通过下面的配置创建来 `ip_vs_service` 对象和 `ip_vs_dest` 对象：
+那么，`ip_vs_service` 对象和 `ip_vs_dest` 对象的信息怎么来的呢？答案是通过用户配置创建。例如可以通过下面的命令来创建 `ip_vs_service` 对象和 `ip_vs_dest` 对象：
 
 ```bash
 node1 ]# ipvsadm -A -t node1:80 -s wrr
@@ -149,4 +149,46 @@ node1 ]# ipvsadm -a -t node1:80 -r node3 -m -w 5
 ```
 
 第一行用于创建一个 `ip_vs_service` 对象，而第二和第三行用于向 `ip_vs_service` 对象添加 `ip_vs_dest` 对象到 `destinations` 列表中。关于 LVS 的配置这里不作详细介绍，读者可以参考其他关于 LVS 配置的资料。
+
+我们来看看 LVS 源码是怎么创建一个 `ip_vs_service` 对象的，创建 `ip_vs_service` 对象通过 `ip_vs_add_service()` 函数完成，如下：
+
+```c
+static int
+ip_vs_add_service(struct ip_vs_rule_user *ur, struct ip_vs_service **svc_p)
+{
+    int ret = 0;
+    struct ip_vs_scheduler *sched;
+    struct ip_vs_service *svc = NULL;
+
+    sched = ip_vs_scheduler_get(ur->sched_name); // 根据调度器名称获取调度策略对象
+    ...
+
+    // 申请一个 ip_vs_service 对象
+    svc = (struct ip_vs_service *)kmalloc(sizeof(struct ip_vs_service), GFP_ATOMIC);
+    ...
+
+    memset(svc, 0, sizeof(struct ip_vs_service));
+    // 设置 ip_vs_service 对象的各个字段
+    svc->protocol = ur->protocol;       // 协议
+    svc->addr = ur->vaddr;              // 虚拟IP
+    svc->port = ur->vport;              // 虚拟端口
+    svc->fwmark = ur->vfwmark;          // 防火墙标记
+    svc->flags = ur->vs_flags;          // 标志位
+    svc->timeout = ur->timeout * HZ;    // 超时时间
+    svc->netmask = ur->netmask;         // 网络掩码
+
+    INIT_LIST_HEAD(&svc->destinations);
+    svc->sched_lock = RW_LOCK_UNLOCKED;
+    svc->stats.lock = SPIN_LOCK_UNLOCKED;
+
+    ret = ip_vs_bind_scheduler(svc, sched); // 绑定调度器
+    ...
+    write_lock_bh(&__ip_vs_svc_lock);
+    ip_vs_svc_hash(svc); // 添加到hash表中
+    write_unlock_bh(&__ip_vs_svc_lock);
+
+    *svc_p = svc;
+    return 0;
+}
+```
 
