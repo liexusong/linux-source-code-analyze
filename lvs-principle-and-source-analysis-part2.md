@@ -515,3 +515,45 @@ ip_vs_schedule(struct ip_vs_service *svc, struct iphdr *iph)
 
 *   然后调用 `ip_vs_conn_new()` 函数创建一个新的 `ip_vs_conn` 对象。
 
+`ip_vs_conn_new()` 主要用于创建 `ip_vs_conn` 对象，并且根据 `LVS` 的运行模式为其选择正确的数据发送接口，其实现如下：
+
+```c
+struct ip_vs_conn *
+ip_vs_conn_new(int proto,                   // 协议类型
+               __u32 caddr, __u16 cport,    // 客户端IP和端口
+               __u32 vaddr, __u16 vport,    // 虚拟IP和端口
+               __u32 daddr, __u16 dport,    // 真实服务器IP和端口
+               unsigned flags, struct ip_vs_dest *dest)
+{
+    struct ip_vs_conn *cp;
+
+    // 创建一个 ip_vs_conn 对象
+    cp = kmem_cache_alloc(ip_vs_conn_cachep, GFP_ATOMIC); 
+    ...
+    // 设置 ip_vs_conn 对象的各个字段
+    cp->protocol = proto;
+    cp->caddr = caddr;
+    cp->cport = cport;
+    cp->vaddr = vaddr;
+    cp->vport = vport;
+    cp->daddr = daddr;
+    cp->dport = dport;
+    cp->flags = flags;
+    ...
+    ip_vs_bind_dest(cp, dest); // 将 ip_vs_conn 与真实服务器对象进行绑定
+    ...
+    ip_vs_bind_xmit(cp); // 绑定一个发送数据的接口
+    ...
+    ip_vs_conn_hash(cp); // 把 ip_vs_conn 对象添加到连接信息表中
+
+    return cp;
+}
+```
+
+`ip_vs_conn_new()` 函数的主要工作如下：
+
+*   创建一个新的 `ip_vs_conn` 对象，并且设置其各个字段的值。
+*   调用 `ip_vs_bind_dest()` 函数将 `ip_vs_conn` 对象与真实服务器对象（`ip_vs_dest` 对象）进行绑定。
+*   根据 `LVS` 的运行模式，调用 `ip_vs_bind_xmit()` 函数为连接对象选择一个正确的数据发送接口，`ip_vs_bind_xmit()` 函数在前面已经介绍过。
+*   调用 `ip_vs_conn_hash()` 函数把新创建的 `ip_vs_conn` 对象添加到全局连接信息哈希表中。
+
