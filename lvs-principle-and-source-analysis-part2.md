@@ -409,3 +409,7 @@ static inline void ip_vs_bind_xmit(struct ip_vs_conn *cp)
 
 上面对 `LVS` 各个角色都进行了介绍，下面开始讲解 `LVS` 对数据包的转发过程。
 
+### 3. 数据转发
+
+因为 `LVS` 是一个负载均衡工具，所以其最重要的功能就是对数据的调度与转发， 而对数据的转发是在前面介绍的 `Netfilter` 钩子函数进行的。
+
