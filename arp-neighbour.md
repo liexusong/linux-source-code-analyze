@@ -2,7 +2,7 @@
 
 学习过 TCP/IP 协议的同学都应该了解过 TCP/IP 五层网络模型，如下图：
 
-![tcp-ip-layer](F:\linux-source-code-analyze\images\tcp-ip-layer.png)
+![tcp-ip-layer](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/tcp-ip-layer.png)
 
 从上图可以看出，`ARP协议` 位于 TCP/IP 五层网络模型的 `网络层`。那么，`ARP协议` 的用途是什么呢？
 
@@ -16,7 +16,7 @@
 
 `ARP协议` 通过广播消息，向局域网的所有主机广播 `ARP请求消息`，从而询问主机的 IP 地址对应的 MAC 地址，如下图：
 
-![arp-broadcast](F:\linux-source-code-analyze\images\arp-broadcast.png)
+![arp-broadcast](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/arp-broadcast.png)
 
 如上图所示，A主机要与B主机通信，但是只知道B主机的 IP 地址，所以这时可以向局域网广播一条 `ARP请求消息`，用于询问 IP 地址为 `192.168.1.2` 的主机所对应的 MAC 地址。
 
@@ -28,7 +28,7 @@
 
 每种网络协议都有其协议头部，用于本协议的通信，`ARP协议` 的头部格式如下：
 
-![arp-header](F:\linux-source-code-analyze\images\arp-header.png)
+![arp-header](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/arp-header.png)
 
 上图是 `ARP协议` 头部各个字段的信息，其代码结构定义如下（路径: `/src/include/linux/if_arp.h`）：
 
@@ -74,7 +74,7 @@ struct arphdr
 
 首先说明一下什么是 `邻居`：在同一局域网中，每一台主机都可以称为其他主机的 `邻居`。例如 `Windows` 系统可以在网络中查看到同一局域网的邻居主机，如下图：
 
-![image-20210202143741734](F:\linux-source-code-analyze\images\neighbour-nodes.png)
+![image-20210202143741734](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/neighbour-nodes.png)
 
 如上图所示，每一台主机都可以称为 `邻居节点`。
 
@@ -117,7 +117,7 @@ struct neighbour
 
 如下图所示：
 
-![](F:\linux-source-code-analyze\images\neighbour-struct.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/neighbour-struct.png)
 
 所以，当本机需要向某一台 `邻居节点` 主机发送数据时，首先需要通过上层协议地址与输出设备查找对应的 `neighbour` 对象是否已经存在。如果存在，那么就使用这个 `neighbour` 对象。否则，就新创建一个 `neighbour` 对象，并初始化其各个字段。
 
@@ -253,7 +253,7 @@ static int arp_constructor(struct neighbour *neigh)
 
 所以，一个新创建的 `邻居节点信息对象` 各个字段的值大概如下图所示：
 
-![](F:\linux-source-code-analyze\images\neighbour-struct-new.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/neighbour-struct-new.png)
 
 由于此时还不知道邻居节点的 MAC 地址，所以其 `ha` 字段的值为 0。
 
@@ -336,7 +336,7 @@ int __neigh_event_send(struct neighbour *neigh, struct sk_buff *skb)
 
 邻居节点信息对象的 `arp_queue` 队列用于缓存等待发送的数据包，如下图：
 
-![](F:\linux-source-code-analyze\images\neighbour-arp-queue.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/neighbour-arp-queue.png)
 
 
 
