@@ -46,8 +46,8 @@ Linux 进程调度算法经历了以下几个版本的发展：
 2.  **虚拟运行时间**：
 
 >   虚拟运行时间 = 实际运行时间 * 1024 / 进程权重
->                          = (调度周期 * 进程权重 / 所有进程权重之和) * 1024 / 进程权重
->                          = 调度周期 * 1024 / 所有进程总权重
+>               = (调度周期 * 进程权重 / 所有进程权重之和) * 1024 / 进程权重
+>               = 调度周期 * 1024 / 所有进程总权重
 
 从上面的公式可以看出，在一个调度周期里，所有进程的 `虚拟运行时间` 是相同的。所以在进程调度时，只需要找到 `虚拟运行时间` 最小的进程调度运行即可。
 
@@ -92,13 +92,13 @@ struct sched_entity {
 	struct list_head	group_node;
 	unsigned int		on_rq;                 // 是否已经在运行队列中
 
-	u64					exec_start;            // 开始统计运行时间的时间点
-	u64					sum_exec_runtime;      // 总共运行的实际时间
-	u64					vruntime;              // 虚拟运行时间(用于红黑树的键值对比)
-	u64					prev_sum_exec_runtime; // 总共运行的虚拟运行时间
+	u64                     exec_start;            // 开始统计运行时间的时间点
+	u64                     sum_exec_runtime;      // 总共运行的实际时间
+	u64                     vruntime;              // 虚拟运行时间(用于红黑树的键值对比)
+	u64                     prev_sum_exec_runtime; // 总共运行的虚拟运行时间
 
-	u64					last_wakeup;
-	u64					avg_overlap;
+	u64                     last_wakeup;
+	u64                     avg_overlap;
     ...
 };
 ```
