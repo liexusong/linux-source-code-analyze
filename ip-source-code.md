@@ -12,13 +12,13 @@
 
 如果计算机A与计算机B是直连的，那么计算机A可以直接发送信息给计算机B，如下图：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-message.png)
+![ip-message](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-message.png)
 
 所以，如果是直连的话，问题很容易解决。但是，大多数情况下，互联网上的计算机都不是直连的。试想一下，如果在中国的电脑如果要与美国的电脑发送消息，那是不可能直接通过一条网线连接的。
 
 那么，互联网上的计算机之间是通过什么连接的的？答案就是 `路由器`。如下图：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-router.png)
+![ip-router](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-router.png)
 
 由于在互联网中，计算机与计算机之间不是直连的，所以两台计算机之间要通讯的话不能直接发送消息，因为不同的计算机之间不知道对方的位置。
 
@@ -28,7 +28,7 @@
 
 但是，32 位的整型数字对人类的记忆不太友好，所以，又将这个 32 位的整型数字分成 4 个 8 位的整型数字，然后用 `点` 将他们连接起来，如下图：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-address-1.png)
+![ip-address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-address-1.png)
 
 所以，`IP地址` 表示的范围如下：
 
@@ -38,11 +38,11 @@
 
 我们可以在 `Windows` 系统的网络设置处查看到本机的 `IP地址`，如下图：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-address.png)
+![ip-address](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-address.png)
 
 有了 `IP地址` 后，就可以为互联网上的每台计算机设置 `IP地址`，如下图：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-network-2.png)
+![ip-network](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-network-2.png)
 
 这样，为每台计算机设置好 `IP地址` 后，不同计算机之间就可以通过 `IP地址` 来进行通讯。比如，计算机A想与计算机D通讯，那么就可以通过向 `IP地址` 为 `11.11.1.1` 的地址发送消息。
 
@@ -60,7 +60,7 @@
 
 由于向网络中的计算机发送数据时，必须指定对方的 `IP地址（目标IP地址）` 和本机的 `IP地址（源IP地址）`，所以需要在发送的数据包添加 `IP协议` 头部。`IP协议` 头部的格式如下图所示：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-header.png)
+![ip-header](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-header.png)
 
 从上图可以看出，除了 `目标IP地址` 和 `源IP地址` 外，还有其他一些字段，这些字段都是为了实现 `IP协议` 而定义的。下面我们来介绍一下 `IP头部` 各个字段的作用：
 
@@ -100,7 +100,7 @@ struct iphdr {
 
 虽然 `IP头部` 看起来好像很复杂，但如果按每个字段所支持的功能来分析，就会豁然开朗。一个被添加上 `IP头部` 的数据包如下图所示：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-package.png)
+![ip-package](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/ip-package.png)
 
 当然，除了 `IP头部` 外，在一个网络数据包中还可能包含一些其他协议的头部，比如 `TCP头部`，`以太网头部` 等，但由于这里只分析 `IP协议`，所以只标出了 `IP头部`。
 
