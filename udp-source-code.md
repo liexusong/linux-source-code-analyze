@@ -1,6 +1,6 @@
 # UDP协议源码分析
 
-`UDP协议` 位于 `TCP/IP协议` 模型的 `传输层`，如下图：
+`UDP协议` 是 **User Datagram Protocol** 的简称， 中文名是用户数据报协议，是 OSI（Open System Interconnection，开放式系统互联） 参考模型中一种无连接的传输层协议，提供面向事务的简单不可靠信息传送服务，位于 `TCP/IP协议` 模型的 `传输层`，如下图：
 
 ![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/tcp-ip-layer.png)
 
