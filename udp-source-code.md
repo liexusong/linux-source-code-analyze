@@ -2,11 +2,11 @@
 
 `UDP协议` 是 **User Datagram Protocol** 的简称， 中文名是用户数据报协议，是 OSI（Open System Interconnection，开放式系统互联） 参考模型中一种无连接的传输层协议，提供面向事务的简单不可靠信息传送服务，位于 `TCP/IP协议` 模型的 `传输层`，如下图：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/tcp-ip-layer.png)
+![tcp-ip-layer](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/tcp-ip-layer.png)
 
 也就是说 `UDP协议` 是建立中 `IP协议`（网络层）之上的，`IP协议` 用于区分网络上不同的主机（[IP协议源码分析](https://github.com/liexusong/linux-source-code-analyze/blob/master/ip-source-code.md)），而 `UDP协议` 用于区分同一台主机上不同的进程发送（接收）的网络数据，如下图所示：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-schedule.png)
+![udp-schedule](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-schedule.png)
 
 从上图可以看出，`UDP协议` 通过 `端口号` 来区分不同进程的数据包。
 
@@ -14,7 +14,7 @@
 
 下面我们来看看 `UDP协议` 的协议头部，如下图所示：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-header.png)
+![udp-header](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-header.png)
 
 从上图可知，`UDP头部` 由四个字段组成：`源端口`、`目标端口`、`数据包长度` 和 `校验和`。
 
@@ -33,7 +33,7 @@ struct udphdr {
 
 可以看出，`udphdr` 结构的字段与 `UDP头部` 结构图中的字段一一对应。最后，我们来看看 `UDP头部` 在数据包的具体位置，如下图：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-header-2.png)
+![udp-header](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-header-2.png)
 
 下面我们主要通过 UDP 数据包的发送和接收两个过程来分析 UDP 在内核中的实现原理。
 
@@ -41,7 +41,7 @@ struct udphdr {
 
 数据的发送是由应用层调用 `send()` 或者 `write()` 系统调用，将数据传递到传输层协议处理，如下图：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-sendmsg.png)
+![udp-sendmsg](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-sendmsg.png)
 
 从上图可以看出，`用户态` 的应用程序调用 `send()` 系统调用时会触发调用 `内核态` 的 `sys_send()` 内核函数，而 `sys_send()` 最终会调用 `inet_sendmsg()` 函数发送数据。
 
@@ -173,7 +173,7 @@ out:
 
 当网卡设备接收到数据包后，会交由内核协议栈处理。内核协议栈对数据包的处理是由下至上，如下图所示：
 
-![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-recv-process.png)
+![udp-recv-process](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/udp/udp-recv-process.png)
 
 也就是说，物理层处理完数据包后会交由链路层处理，而链路层处理完交由网络层处理，以此类推。
 
