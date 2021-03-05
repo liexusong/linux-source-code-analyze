@@ -93,11 +93,29 @@ struct net_bridge
 struct net_bridge_port
 {
     struct net_bridge_port  *next;   // 指向下一个端口
-    struct net_bridge       *br;     // 所属网桥设备
-    struct net_device       *dev;    // 网络接口设备
+    struct net_bridge       *br;     // 所属网桥设备对象
+    struct net_device       *dev;    // 网络接口设备对象
     int                     port_no; // 端口号
 
     /* STP */
     ...
 };
 ```
+
+而 `net_bridge_fdb_entry` 结构用于描述网络接口设备 `MAC地址` 与 `网桥端口` 的对应关系，其定义如下：
+```c
+struct net_bridge_fdb_entry
+{
+    struct net_bridge_fdb_entry *next_hash;
+    struct net_bridge_fdb_entry **pprev_hash;
+    atomic_t                    use_count;
+    mac_addr                    addr;  // 网络接口设备MAC地址
+    struct net_bridge_port      *dst;  // 网桥端口
+    ...
+};
+```
+
+这三个结构的对应关系如下图所示：
+
+![]()
+
