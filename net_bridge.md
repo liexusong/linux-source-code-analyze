@@ -13,3 +13,5 @@ Linux 的 `网桥` 是一种虚拟设备（使用软件实现），可以将 Lin
 Docker 就是使用 `网桥` 来进行容器间通讯的，我们来看看 Docker 是怎么利用 `网桥` 来进行容器间通讯的，原理如下图：
 
 ![docker-bridge](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/net-bridge/docker-bridge.png)
+
+Docker 在启动时，会创建一个名为 `docker0` 的 `网桥`，并且把其 IP 地址设置为 `172.17.0.1/16`。
