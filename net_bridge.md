@@ -248,3 +248,65 @@ static void __br_handle_frame(struct sk_buff *skb)
 * 调用 `br_fdb_get()` 获取目标MAC地址对应的网桥端口，如果目标MAC地址对应的网桥端口存在，那么调用 `br_forward()` 函数把数据包转发给此端口。
 * 否则调用 调用 `br_flood()` 函数把数据包发送给连接到网桥上的所有网络接口。
 
+函数 `br_forward()` 用于把数据包发送给指定的网桥端口，其实现如下：
+```c
+static void __br_forward(struct net_bridge_port *to, struct sk_buff *skb)
+{
+    skb->dev = to->dev;
+    dev_queue_xmit(skb);
+}
+
+void br_forward(struct net_bridge_port *to, struct sk_buff *skb)
+{
+    if (should_forward(to, skb)) { // 端口是否能够接收数据?
+        __br_forward(to, skb);
+        return;
+    }
+    kfree_skb(skb);
+}
+```
+
+`br_forward()` 函数通过调用 `__br_forward()` 函数来发送数据给指定的网桥端口，`__br_forward()` 函数首先将数据包的输出接口设备设置为网桥端口绑定的设备，然后调用 `dev_queue_xmit()` 函数将数据包发送出去。
+
+而 `br_flood()` 函数用于将数据包发送给绑定到 `网桥` 上的所有网络接口设备，其实现如下：
+
+```c
+void br_flood(struct net_bridge *br, struct sk_buff *skb, int clone)
+{
+    struct net_bridge_port *p;
+    struct net_bridge_port *prev;
+    ...
+    prev = NULL;
+
+    p = br->port_list;
+    while (p != NULL) {              // 遍历绑定到网桥的所有网络接口设备
+        if (should_forward(p, skb)) { // 端口是否能够接收数据包?
+            if (prev != NULL) {
+                struct sk_buff *skb2;
+
+                // 克隆一个数据包
+                if ((skb2 = skb_clone(skb, GFP_ATOMIC)) == NULL) { 
+                    br->statistics.tx_dropped++;
+                    kfree_skb(skb);
+                    return;
+                }
+
+                __br_forward(prev, skb2); // 把数据包发送给设备
+            }
+
+            prev = p;
+        }
+
+        p = p->next;
+    }
+
+    if (prev != NULL) {
+        __br_forward(prev, skb);
+        return;
+    }
+
+    kfree_skb(skb);
+}
+```
+
+`br_flood()` 函数的实现也比较简单，主要是遍历绑定到网桥的所有网络接口设备，然后调用 `__br_forward()` 函数将数据包转发给设备对应的端口。
