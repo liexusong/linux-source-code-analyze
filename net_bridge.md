@@ -34,3 +34,28 @@ bridge name     bridge id               STP enabled     interfaces
 br0             8000.000000000000       no
 docker0         8000.000000000000       no
 ```
+
+当使用命令创建一个新的 `网桥` 设备时，会触发内核调用 `br_add_bridge()` 函数，其实现如下：
+```c
+int br_add_bridge(char *name)
+{
+    struct net_bridge *br;
+
+    if ((br = new_nb(name)) == NULL) // 创建一个网桥对象
+        return -ENOMEM;
+
+    if (__dev_get_by_name(name) != NULL) {
+        kfree(br);
+        return -EEXIST;
+    }
+
+    // 添加到网桥列表中
+    br->next = bridge_list;
+    bridge_list = br;
+
+    ...
+    register_netdev(&br->dev); // 把网桥注册到网络设备中
+
+    return 0;
+}
+```
