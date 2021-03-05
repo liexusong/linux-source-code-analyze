@@ -168,3 +168,17 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
 
 也就是说，`br_add_if()` 函数主要建立 `网络接口设备` 与 `网桥` 的关系。
 
+### 3. 网桥中的网络接口接收数据
+
+当某个 `网络接口` 接收到数据包时，会判断这个 `网络接口` 是否绑定到某个 `网桥` 上，如果绑定了，那么就调用 `handle_bridge()` 函数处理这个数据包。`handle_bridge()` 函数实现如下：
+
+```c
+static int __inline__
+handle_bridge(struct sk_buff *skb, struct packet_type *pt_prev)
+{
+    int ret = NET_RX_DROP;
+    ...
+    br_handle_frame_hook(skb);
+    return ret;
+}
+```
