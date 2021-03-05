@@ -160,3 +160,9 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
     return 0;
 }
 ```
+
+`br_add_if()` 函数主要完成以下工作：
+* 调用 `new_nbp()` 函数创建一个新的 `网桥端口` 并且添加到 `网桥` 的 `port_list` 链表中。
+* 将网络接口设备设置为 `混杂模式`。
+* 调用 `br_fdb_insert()` 函数将新建的 `网桥端口` 插入到网络接口 `MAC地址` 对应的哈希表中。
+
