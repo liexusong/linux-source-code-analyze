@@ -41,7 +41,7 @@ int br_add_bridge(char *name)
 {
     struct net_bridge *br;
 
-    if ((br = new_nb(name)) == NULL) // 创建一个网桥对象
+    if ((br = new_nb(name)) == NULL) // 创建一个网桥设备对象
         return -ENOMEM;
 
     if (__dev_get_by_name(name) != NULL) { // 设备名是否已经注册过?
@@ -58,3 +58,11 @@ int br_add_bridge(char *name)
     return 0;
 }
 ```
+
+`br_add_bridge()` 函数主要完成以下几个工作：
+* 调用 `new_nb()` 函数创建一个 `网桥` 设备对象。
+* 检查设备名是否已经被注册过，如果注册过返回错误信息。
+* 将 `网桥` 设备对象添加到 `bridge_list` 链表中，内核使用 `bridge_list` 链表来保存所有 `网桥` 设备。
+* 调用 `register_netdev()` 将网桥设备注册到网络设备中。
+
+
