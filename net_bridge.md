@@ -1,6 +1,6 @@
 # Linux网桥工作原理
 
-Linux 的 `网桥` 是一种虚拟设备，可以将 Linux 内部多个网络接口连接起来，如下图所示：
+Linux 的 `网桥` 是一种虚拟设备（使用软件实现），可以将 Linux 内部多个网络接口连接起来，如下图所示：
 
 ![bridge](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/net-bridge/bridge.jpg)
 
