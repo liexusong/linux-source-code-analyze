@@ -69,12 +69,12 @@ int br_add_bridge(char *name)
 ```c
 struct net_bridge
 {
-    struct net_bridge           *next;              // 连接内核中所有的网桥对象
-    rwlock_t                    lock;               // 锁
-    struct net_bridge_port      *port_list;         // 端口列表
-    struct net_device           dev;                // 网桥设备信息
-    struct net_device_stats     statistics;
-    rwlock_t                    hash_lock;
+    struct net_bridge           *next;               // 连接内核中所有的网桥对象
+    rwlock_t                    lock;                // 锁
+    struct net_bridge_port      *port_list;          // 端口列表
+    struct net_device           dev;                 // 网桥设备信息
+    struct net_device_stats     statistics;          // 信息统计
+    rwlock_t                    hash_lock;           // 用于锁定CAM表
     struct net_bridge_fdb_entry *hash[BR_HASH_SIZE]; // CAM表
     struct timer_list           tick;
 
