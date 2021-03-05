@@ -166,3 +166,5 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
 * 将网络接口设备设置为 `混杂模式`。
 * 调用 `br_fdb_insert()` 函数将新建的 `网桥端口` 插入到网络接口 `MAC地址` 对应的哈希表中。
 
+也就是说，`br_add_if()` 函数主要建立 `网络接口设备` 与 `网桥` 的关系。
+
