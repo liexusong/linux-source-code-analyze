@@ -25,3 +25,12 @@ Docker 在启动时，会创建一个名为 `docker0` 的 `网桥`，并且把�
 ```shell
 $ brctl addbr br0
 ```
+
+然后，我们可以通过命令 `brctl show` 来查看系统中所有的 `网桥` 设备列表，如下：
+
+```shell
+$ brctl show
+bridge name     bridge id               STP enabled     interfaces
+br0             8000.000000000000       no
+docker0         8000.000000000000       no
+```
