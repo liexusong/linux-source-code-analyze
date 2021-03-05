@@ -15,3 +15,7 @@ Docker 就是使用 `网桥` 来进行容器间通讯的，我们来看看 Docke
 ![docker-bridge](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/net-bridge/docker-bridge.png)
 
 Docker 在启动时，会创建一个名为 `docker0` 的 `网桥`，并且把其 IP 地址设置为 `172.17.0.1/16`（私有 IP 地址）。然后使用虚拟设备对 `veth-pair` 来将容器与 `网桥` 连接起来，如上图所示。而对于 `172.17.0.0/16` 网段的数据包，Docker 会定义一条 `iptables NAT` 的规则来将这些数据包的 IP 地址转换成公网 IP 地址，然后通过真实网络接口（如上图的 `ens160` 接口）发送出去。
+
+接下来，我们主要通过代码来分析 `网桥` 的实现。
+
+## 网桥的实现
