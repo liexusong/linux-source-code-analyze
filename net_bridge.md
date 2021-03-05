@@ -197,3 +197,46 @@ void br_handle_frame(struct sk_buff *skb)
     read_unlock(&br->lock);
 }
 ```
+
+`br_handle_frame()` 函数的实现比较简单，首先对 `网桥` 进行上锁操作，然后调用 `__br_handle_frame()` 处理数据包，我们来分析 `__br_handle_frame()` 函数的实现：
+
+```c
+static void __br_handle_frame(struct sk_buff *skb)
+{
+    struct net_bridge *br;
+    unsigned char *dest;
+    struct net_bridge_fdb_entry *dst;
+    struct net_bridge_port *p;
+    int passedup;
+
+    dest = skb->mac.ethernet->h_dest; // 目标MAC地址
+    p = skb->dev->br_port;            // 网络接口绑定的端口
+    br = p->br;
+    passedup = 0;
+    ...
+    // 将学习到的MAC地址插入到网桥的hash表中
+    if (p->state == BR_STATE_LEARNING || p->state == BR_STATE_FORWARDING)
+        br_fdb_insert(br, p, skb->mac.ethernet->h_source, 0);
+    ...
+    if (dest[0] & 1) {        // 如果是一个广播包
+        br_flood(br, skb, 1); // 把数据包发送给连接到网桥上的所有网络接口
+        if (!passedup)
+            br_pass_frame_up(br, skb);
+        else
+            kfree_skb(skb);
+        return;
+    }
+
+    dst = br_fdb_get(br, dest);    // 获取目标MAC地址对应的网桥端口
+    ...
+    if (dst != NULL) {             // 如果目标MAC地址对应的网桥端口存在
+        br_forward(dst->dst, skb); // 那么只将数据包转发给此端口
+        br_fdb_put(dst);
+        return;
+    }
+
+    br_flood(br, skb, 0); // 否则发送给连接到此网桥上的所有网络接口
+    return;
+    ...
+}
+```
