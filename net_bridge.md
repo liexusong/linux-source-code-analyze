@@ -44,15 +44,14 @@ int br_add_bridge(char *name)
     if ((br = new_nb(name)) == NULL) // 创建一个网桥对象
         return -ENOMEM;
 
-    if (__dev_get_by_name(name) != NULL) {
+    if (__dev_get_by_name(name) != NULL) { // 设备名是否已经注册过?
         kfree(br);
-        return -EEXIST;
+        return -EEXIST;                    // 返回错误, 不能重复注册相同名字的设备
     }
 
     // 添加到网桥列表中
     br->next = bridge_list;
     bridge_list = br;
-
     ...
     register_netdev(&br->dev); // 把网桥注册到网络设备中
 
