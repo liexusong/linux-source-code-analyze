@@ -121,3 +121,8 @@ struct net_bridge_fdb_entry
 
 ![net-bridge](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/net-bridge/net-bridge.png)
 
+可见，要将 `网络接口设备` 绑定到一个 `网桥` 上，需要使用 `net_bridge_port` 结构来关联的，下面我们来分析怎么将一个 `网络接口设备` 绑定到一个 `网桥` 中。
+
+### 2. 将网络接口绑定到网桥
+
+
