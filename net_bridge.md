@@ -71,7 +71,7 @@ struct net_bridge
 {
     struct net_bridge           *next;               // 连接内核中所有的网桥对象
     rwlock_t                    lock;                // 锁
-    struct net_bridge_port      *port_list;          // 端口列表
+    struct net_bridge_port      *port_list;          // 网桥端口列表
     struct net_device           dev;                 // 网桥设备信息
     struct net_device_stats     statistics;          // 信息统计
     rwlock_t                    hash_lock;           // 用于锁定CAM表
@@ -82,3 +82,10 @@ struct net_bridge
     ...
 };
 ```
+
+在 `net_bridge` 结构中，比较重要的字段为 `port_list` 和 `hash`：
+
+* `port_list`：网桥端口列表，保存着绑定到 `网桥` 的网络接口列表。
+* `hash`：保存着以网络接口 MAC 地址为键值，以网桥端口为值的哈希表。
+
+
