@@ -65,4 +65,20 @@ int br_add_bridge(char *name)
 * 将 `网桥` 设备对象添加到 `bridge_list` 链表中，内核使用 `bridge_list` 链表来保存所有 `网桥` 设备。
 * 调用 `register_netdev()` 将网桥设备注册到网络设备中。
 
+从上面的代码可知，`网桥` 设备使用了 `net_bridge` 结构来描述，其定义如下：
+```c
+struct net_bridge
+{
+    struct net_bridge           *next;              // 连接内核中所有的网桥对象
+    rwlock_t                    lock;               // 锁
+    struct net_bridge_port      *port_list;         // 端口列表
+    struct net_device           dev;                // 网桥设备信息
+    struct net_device_stats     statistics;
+    rwlock_t                    hash_lock;
+    struct net_bridge_fdb_entry *hash[BR_HASH_SIZE]; // CAM表
+    struct timer_list           tick;
 
+    /* STP */
+    ...
+};
+```
