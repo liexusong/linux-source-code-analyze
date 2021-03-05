@@ -125,4 +125,10 @@ struct net_bridge_fdb_entry
 
 ### 2. 将网络接口绑定到网桥
 
+要将一个 `网络接口设备` 绑定到一个 `网桥` 上，可以使用以下命令：
 
+```shell
+[root@vagrant]# brctl addif br0 eth0
+```
+
+上面的命令让网络接口 `eth0` 绑定到网桥 `br0` 上。
