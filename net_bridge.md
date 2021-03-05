@@ -132,3 +132,31 @@ struct net_bridge_fdb_entry
 ```
 
 上面的命令让网络接口 `eth0` 绑定到网桥 `br0` 上。
+
+当调用命令将网络接口设备绑定到网桥上时，内核会触发调用 `br_add_if()` 函数来实现，其代码如下：
+
+```c
+int br_add_if(struct net_bridge *br, struct net_device *dev)
+{
+    struct net_bridge_port *p;
+    ...
+    write_lock_bh(&br->lock);
+
+    // 创建一个新的网桥端口对象, 并添加到网桥的port_list链表中
+    if ((p = new_nbp(br, dev)) == NULL) { 
+        write_unlock_bh(&br->lock);
+        dev_put(dev);
+        return -EXFULL;
+    }
+
+    // 设置网络接口设备为混杂模式
+    dev_set_promiscuity(dev, 1);
+    ...
+    // 添加到网络接口MAC地址与网桥端口对应的哈希表中
+    br_fdb_insert(br, p, dev->dev_addr, 1);
+    ...
+    write_unlock_bh(&br->lock);
+
+    return 0;
+}
+```
