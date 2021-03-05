@@ -86,6 +86,18 @@ struct net_bridge
 在 `net_bridge` 结构中，比较重要的字段为 `port_list` 和 `hash`：
 
 * `port_list`：网桥端口列表，保存着绑定到 `网桥` 的网络接口列表。
-* `hash`：保存着以网络接口 MAC 地址为键值，以网桥端口为值的哈希表。
+* `hash`：保存着以网络接口 `MAC地址` 为键值，以网桥端口为值的哈希表。
 
+`网桥端口` 使用结构体 `net_bridge_port` 来描述，其定义如下：
+```c
+struct net_bridge_port
+{
+    struct net_bridge_port  *next;   // 指向下一个端口
+    struct net_bridge       *br;     // 所属网桥设备
+    struct net_device       *dev;    // 网络接口设备
+    int                     port_no; // 端口号
 
+    /* STP */
+    ...
+};
+```
