@@ -117,5 +117,5 @@ struct net_bridge_fdb_entry
 
 这三个结构的对应关系如下图所示：
 
-![]()
+![net-bridge](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/net-bridge/net-bridge.png)
 
