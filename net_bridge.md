@@ -182,3 +182,18 @@ handle_bridge(struct sk_buff *skb, struct packet_type *pt_prev)
     return ret;
 }
 ```
+
+`br_handle_frame_hook` 是一个函数指针，其指向 `br_handle_frame()` 函数，我们来分析 `br_handle_frame()` 函数的实现：
+
+```c
+void br_handle_frame(struct sk_buff *skb)
+{
+    struct net_bridge *br;
+
+    br = skb->dev->br_port->br; // 获取设备连接的网桥对象
+
+    read_lock(&br->lock);   // 对网桥上锁
+    __br_handle_frame(skb); // 调用__br_handle_frame()函数处理数据包
+    read_unlock(&br->lock);
+}
+```
