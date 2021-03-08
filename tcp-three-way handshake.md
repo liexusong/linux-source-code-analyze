@@ -175,7 +175,7 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
     ...
     nexthop = daddr = usin->sin_addr.s_addr;
     ...
-    // 1. 获取数据输出路由信息对象
+    // 1. 获取发送数据的路由信息
     tmp = ip_route_connect(&rt, nexthop, sk->saddr,
                            RT_TOS(sk->ip_tos)|RTO_CONN|sk->localroute,
                            sk->bound_dev_if);
@@ -204,4 +204,71 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
     return 0;
 }
 ```
+
+`tcp_v4_connect()` 函数只是做一些连接前的准备工作，如下：
+
+*   调用 `ip_route_connect()` 函数获取发送数据的路由信息，并且将路由信息保存到 socket 对象的路由缓存中。
+*   调用 `sock_wmalloc()` 函数申请一个 skb 数据包对象。
+*   设置 `目的端口` 和 `目的 IP 地址`。
+*   如果没有指定 `源 IP 地址`，那么使用路由信息中的 `源 IP 地址`。
+*   调用 `secure_tcp_sequence_number()` 函数初始化 TCP 序列号。
+*   重置 TCP 协议最大报文段的大小。
+*   调用 `tcp_connect()` 函数发送 `SYN包` 给服务端程序。
+
+由于 `TCP三次握手` 的第一步是由客户端发送 `SYN包` 给服务端，所以我们主要关注 `tcp_connect()` 函数的实现，其代码如下：
+
+```c
+void tcp_connect(struct sock *sk, struct sk_buff *buff, int mtu)
+{
+    struct dst_entry *dst = sk->dst_cache;
+    struct tcp_opt *tp = &(sk->tp_pinfo.af_tcp);
+
+    skb_reserve(buff, MAX_HEADER + sk->prot->max_header); // 保留所有的协议头部空间
+
+    tp->snd_wnd = 0;
+    tp->snd_wl1 = 0;
+    tp->snd_wl2 = tp->write_seq;
+    tp->snd_una = tp->write_seq;
+    tp->rcv_nxt = 0;
+    sk->err = 0;
+
+    tp->tcp_header_len = sizeof(struct tcphdr) +
+                           (sysctl_tcp_timestamps ? TCPOLEN_TSTAMP_ALIGNED : 0);
+    ...
+    tcp_sync_mss(sk, mtu);
+    ...
+    TCP_SKB_CB(buff)->flags = TCPCB_FLAG_SYN; // 设置SYN标志为1(表示这是一个SYN包)
+    TCP_SKB_CB(buff)->sacked = 0;
+    TCP_SKB_CB(buff)->urg_ptr = 0;
+    buff->csum = 0;
+    TCP_SKB_CB(buff)->seq = tp->write_seq++;   // 设置序列号
+    TCP_SKB_CB(buff)->end_seq = tp->write_seq; // 设置确认号
+    tp->snd_nxt = TCP_SKB_CB(buff)->end_seq;
+
+    tp->window_clamp = dst->window;
+
+    // 初始化滑动窗口的大小
+    tcp_select_initial_window(sock_rspace(sk)/2, tp->mss_clamp,
+                              &tp->rcv_wnd, &tp->window_clamp,
+                              sysctl_tcp_window_scaling, &tp->rcv_wscale);
+    ...
+    tcp_set_state(sk, TCP_SYN_SENT); // 设置socket的状态为TCP_SYN_SENT
+
+    // 调用 tcp_v4_hash() 函数把 socket 添加到 tcp_established_hash 哈希表中
+    sk->prot->hash(sk);
+
+    tp->rto = dst->rtt;
+    tcp_init_xmit_timers(sk);
+    ...
+    // 把 skb 添加到 write_queue 队列中, 用于重传时使用
+    __skb_queue_tail(&sk->write_queue, buff);
+    TCP_SKB_CB(buff)->when = jiffies;
+    ...
+    // 构建 TCP 头部并且发送出去
+    tcp_transmit_skb(sk, skb_clone(buff, GFP_KERNEL));
+    ...
+}
+```
+
+
 
