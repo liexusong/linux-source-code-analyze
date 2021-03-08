@@ -334,3 +334,33 @@ void tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 
 ## 服务端处理 SYN 包
 
+当服务端接收到客户端发送过来的 `SYN包` 后，会调用 `tcp_v4_rcv()` 函数对数据包进行处理，`tcp_v4_rcv()` 函数实现如下：
+
+```c
+int tcp_v4_rcv(struct sk_buff *skb, unsigned short len)
+{
+    struct tcphdr *th;
+    struct sock *sk;
+    ...
+    th = skb->h.th; // TCP头部指针
+    ...
+    // 通过IP和端口获取对应的socket对象
+    sk = __tcp_v4_lookup(th, skb->nh.iph->saddr, th->source,
+                         skb->nh.iph->daddr, th->dest, skb->dev->ifindex); 
+    ...
+    TCP_SKB_CB(skb)->seq = ntohl(th->seq);
+    TCP_SKB_CB(skb)->end_seq = (TCP_SKB_CB(skb)->seq + th->syn + th->fin
+                                                    + len - th->doff * 4);
+    TCP_SKB_CB(skb)->ack_seq = ntohl(th->ack_seq);
+
+    skb->used = 0;
+    ...
+    if (!atomic_read(&sk->sock_readers))
+        return tcp_v4_do_rcv(sk, skb);
+
+    __skb_queue_tail(&sk->back_log, skb);
+    return 0;
+    ...
+}
+```
+
