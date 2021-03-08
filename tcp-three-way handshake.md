@@ -348,16 +348,16 @@ int tcp_v4_rcv(struct sk_buff *skb, unsigned short len)
     sk = __tcp_v4_lookup(th, skb->nh.iph->saddr, th->source,
                          skb->nh.iph->daddr, th->dest, skb->dev->ifindex); 
     ...
-    TCP_SKB_CB(skb)->seq = ntohl(th->seq);
+    TCP_SKB_CB(skb)->seq = ntohl(th->seq); // 远端序列号
     TCP_SKB_CB(skb)->end_seq = (TCP_SKB_CB(skb)->seq + th->syn + th->fin
                                                     + len - th->doff * 4);
-    TCP_SKB_CB(skb)->ack_seq = ntohl(th->ack_seq);
+    TCP_SKB_CB(skb)->ack_seq = ntohl(th->ack_seq); // 远端确认号
 
     skb->used = 0;
     ...
-    if (!atomic_read(&sk->sock_readers))
-        return tcp_v4_do_rcv(sk, skb);
-
+    if (!atomic_read(&sk->sock_readers)) // 如果没有其他进程使用此socket
+        return tcp_v4_do_rcv(sk, skb);   // 调用 tcp_v4_do_rcv() 对数据包进行处理
+	// 如果有其他进程使用此socket, 把数据包放到堆积队列中, 稍后处理
     __skb_queue_tail(&sk->back_log, skb);
     return 0;
     ...
