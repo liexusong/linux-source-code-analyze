@@ -1,4 +1,4 @@
-# TCP源码分析 - 三次握手
+# TCP源码分析 - 三次握手之 connect() 过程
 
 本文主要分析 TCP 协议的实现，但由于 TCP 协议比较复杂，所以分几篇文章进行分析，这篇主要介绍 TCP 协议建立连接时的三次握手过程。
 
@@ -330,37 +330,6 @@ void tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 
 `tcp_transmit_skb()` 函数的实现相对简单，就是构建 TCP 协议头部，然后调用 `ip_queue_xmit()` 函数将数据包交由 IP 协议发送出去。
 
-至此，客户端就发送了一个 `SYN包` 给服务端，也就是说，`TCP 三次握手` 的第一步已经完成。接下来，我们继续分析 `TCP 三次握手` 的第二步，也就是服务端接收到客户端发送过来的 `SYN包` 时对应的处理。
+至此，客户端就发送了一个 `SYN包` 给服务端，也就是说，`TCP 三次握手` 的第一步已经完成。
 
-## 服务端处理 SYN 包
-
-当服务端接收到客户端发送过来的 `SYN包` 后，会调用 `tcp_v4_rcv()` 函数对数据包进行处理，`tcp_v4_rcv()` 函数实现如下：
-
-```c
-int tcp_v4_rcv(struct sk_buff *skb, unsigned short len)
-{
-    struct tcphdr *th;
-    struct sock *sk;
-    ...
-    th = skb->h.th; // TCP头部指针
-    ...
-    // 通过IP和端口获取对应的socket对象
-    sk = __tcp_v4_lookup(th, skb->nh.iph->saddr, th->source,
-                         skb->nh.iph->daddr, th->dest, skb->dev->ifindex); 
-    ...
-    TCP_SKB_CB(skb)->seq = ntohl(th->seq); // 远端序列号
-    TCP_SKB_CB(skb)->end_seq = (TCP_SKB_CB(skb)->seq + th->syn + th->fin
-                                                    + len - th->doff * 4);
-    TCP_SKB_CB(skb)->ack_seq = ntohl(th->ack_seq); // 远端确认号
-
-    skb->used = 0;
-    ...
-    if (!atomic_read(&sk->sock_readers)) // 如果没有其他进程使用此socket
-        return tcp_v4_do_rcv(sk, skb);   // 调用 tcp_v4_do_rcv() 对数据包进行处理
-    // 如果有其他进程使用此socket, 把数据包放到堆积队列中, 稍后处理
-    __skb_queue_tail(&sk->back_log, skb);
-    return 0;
-    ...
-}
-```
-
+下一篇文章，我们将会分析 `TCP 三次握手` 的第二步，也就是服务端接收到客户端发送过来的 `SYN包` 时对应的处理。
