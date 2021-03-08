@@ -6,7 +6,7 @@ TCP 协议应该是 TCP/IP 协议栈中最为复杂的一个协议（没有之�
 
 如下图所示，TCP 协议位于 TCP/IP 协议栈的第四层，也就是传输层，其建立在网络层的 IP 协议。
 
-![](F:\linux-source-code-analyze\images\tcp\tcp-ip-layer.png)
+![tcp-ip-layer](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/tcp/tcp-ip-layer.png)
 
 但由于 IP 协议是一个无连接不可靠的协议，所以 TCP 协议要实现面向连接的可靠传输，就必须为每个 CS（Client - Server） 连接维护一个连接状态。由此可知，TCP 协议的连接只是维护了一个连接状态，而非真正的连接。
 
@@ -16,7 +16,7 @@ TCP 协议应该是 TCP/IP 协议栈中最为复杂的一个协议（没有之�
 
 我们知道，TCP 协议是建立在无连接的 IP 协议之上，而为了实现面向连接，TCP 协议使用了一种协商的方式来建立连接状态，称为：`三次握手`。`三次握手` 的过程如下图：
 
-![](F:\linux-source-code-analyze\images\tcp\three-way-handshake.png)
+![three-way-handshake](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/tcp/three-way-handshake.png)
 
 建立连接过程如下：
 
@@ -31,7 +31,7 @@ TCP 协议应该是 TCP/IP 协议栈中最为复杂的一个协议（没有之�
 
 要分析 TCP 协议就免不了要了解 TCP 协议头部，我们通过下面的图片来介绍 TCP 头部的格式：
 
-![](F:\linux-source-code-analyze\images\tcp\tcp-header.png)
+![tcp-header](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/tcp/tcp-header.png)
 
 下面介绍一下 TCP 头部各个字段的作用：
 
@@ -284,7 +284,7 @@ void tcp_connect(struct sock *sk, struct sk_buff *buff, int mtu)
 
 >   **注意**：Linux 内核通过 `tcp_established_hash` 哈希表来保存所有的 TCP 连接 socket 对象，而哈希表的键值就是连接的 IP 和端口，所以可以通过连接的 IP 和端口从 `tcp_established_hash` 哈希表中快速找到对应的 socket 连接。如下图所示：
 >
->   ![](F:\linux-source-code-analyze\images\tcp\tcp-established-hash.png)
+>   ![tcp-established-hash](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/tcp/tcp-established-hash.png)
 
 
 
