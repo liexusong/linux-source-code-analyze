@@ -126,7 +126,7 @@ int inet_stream_connect(struct socket *sock, struct sockaddr * uaddr,
     if (sock->state == SS_CONNECTING) {
         ...
     } else {
-        // 尝试自动绑定端口
+        // 尝试自动绑定一个本地端口
         if (inet_autobind(sk) != 0) 
             return(-EAGAIN);
         ...
@@ -150,6 +150,58 @@ int inet_stream_connect(struct socket *sock, struct sockaddr * uaddr,
     sock->state = SS_CONNECTED; // 设置socket的状态为connected
     ...
     return(0);
+}
+```
+
+`inet_stream_connect()` 函数的主要操作有以下几个步骤：
+
+*   调用 `inet_autobind()` 函数尝试自动绑定一个本地端口。
+*   调用 `tcp_v4_connect()` 函数进行 TCP 协议的连接操作。
+*   如果 socket 设置了非阻塞，并且连接还没建立完成，那么返回 EINPROGRESS 错误。
+*   调用 `inet_wait_for_connect()` 函数等待连接服务端操作完成。
+*   设置 socket 的状态为 `SS_CONNECTED`，表示连接已经建立完成。
+
+在上面的步骤中，最重要的是调用 `tcp_v4_connect()` 函数进行连接操作，我们来分析一下 `tcp_v4_connect()` 函数的实现：
+
+```c
+int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
+{
+    struct tcp_opt *tp = &(sk->tp_pinfo.af_tcp);
+    struct sockaddr_in *usin = (struct sockaddr_in *)uaddr;
+    struct sk_buff *buff;
+    struct rtable *rt;
+    u32 daddr, nexthop;
+    int tmp;
+    ...
+    nexthop = daddr = usin->sin_addr.s_addr;
+    ...
+    // 获取数据输出路由信息对象
+    tmp = ip_route_connect(&rt, nexthop, sk->saddr,
+                           RT_TOS(sk->ip_tos)|RTO_CONN|sk->localroute,
+                           sk->bound_dev_if);
+    ...
+    dst_release(xchg(&sk->dst_cache, rt)); // 设置sk的路由信息
+
+    // 申请一个skb数据包对象
+    buff = sock_wmalloc(sk, (MAX_HEADER + sk->prot->max_header), 0, GFP_KERNEL);
+    ...
+    sk->dport = usin->sin_port; // 设置目的端口
+    sk->daddr = rt->rt_dst;     // 设置目的IP地址
+    ...
+    if (!sk->saddr)
+        sk->saddr = rt->rt_src;
+    sk->rcv_saddr = sk->saddr;
+    ...
+    // 初始化TCP序列号
+    tp->write_seq = secure_tcp_sequence_number(sk->saddr, sk->daddr, sk->sport,
+                                               usin->sin_port);
+    ...
+    /* Reset mss clamp */
+    tp->mss_clamp = ~0;
+    ...
+    // 调用 tcp_connect() 函数继续进行连接操作
+    tcp_connect(sk, buff, rt->u.dst.pmtu);
+    return 0;
 }
 ```
 
