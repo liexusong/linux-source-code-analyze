@@ -108,3 +108,48 @@ int sys_connect(int fd, struct sockaddr *uservaddr, int addrlen)
 }
 ```
 
+`sys_connect()` 内核函数主要完成 3 个步骤：
+
+*   调用 `sockfd_lookup()` 函数获取 `fd` 文件句柄对应的 socket 对象。
+*   调用 `move_addr_to_kernel()` 函数从用户空间复制要连接的远端 IP 地址和端口信息。
+*   调用 `inet_stream_connect()` 函数完成连接操作。
+
+我们继续分析 `inet_stream_connect()` 函数的实现：
+
+```c
+int inet_stream_connect(struct socket *sock, struct sockaddr * uaddr,
+                        int addr_len, int flags)
+{
+    struct sock *sk = sock->sk;
+    int err;
+    ...
+    if (sock->state == SS_CONNECTING) {
+        ...
+    } else {
+        // 尝试自动绑定端口
+        if (inet_autobind(sk) != 0) 
+            return(-EAGAIN);
+        ...
+        // 调用 tcp_v4_connect() 进行连接操作
+        err = sk->prot->connect(sk, uaddr, addr_len);
+        if (err < 0)
+            return(err);
+        sock->state = SS_CONNECTING;
+    }
+    ...
+    // 如果 socket 设置了非阻塞, 并且连接还没建立, 那么返回 EINPROGRESS 错误
+    if (sk->state != TCP_ESTABLISHED && (flags & O_NONBLOCK))
+        return (-EINPROGRESS);
+
+    // 等待连接过程完成
+    if (sk->state == TCP_SYN_SENT || sk->state == TCP_SYN_RECV) {
+        inet_wait_for_connect(sk);
+        if (signal_pending(current))
+            return -ERESTARTSYS;
+    }
+    sock->state = SS_CONNECTED; // 设置socket的状态为connected
+    ...
+    return(0);
+}
+```
+
