@@ -280,6 +280,14 @@ void tcp_connect(struct sock *sk, struct sk_buff *buff, int mtu)
 *   把 skb 添加到 `write_queue` 队列中, 用于超时重传。
 *   调用 `tcp_transmit_skb()` 函数构建 `SYN包` 发送给服务端程序。
 
+
+
+>   **注意**：Linux 内核通过 `tcp_established_hash` 哈希表来保存所有的 TCP 连接 socket 对象，而哈希表的键值就是连接的 IP 和端口，所以可以通过连接的 IP 和端口从 `tcp_established_hash` 哈希表中快速找到对应的 socket 连接。如下图所示
+>
+>   ![](F:\linux-source-code-analyze\images\tcp\tcp-established-hash.png)
+
+
+
 通过上面的分析，构建 `SYN包` 并且发送给服务端是通过 `tcp_transmit_skb()` 函数完成的，所以我们来分析一下 `tcp_transmit_skb()` 函数的实现：
 
 ```c
@@ -320,3 +328,4 @@ void tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 }
 ```
 
+`tcp_transmit_skb()` 函数的实现相对简单，就是构建 TCP 协议头部，然后调用 `ip_queue_xmit()` 函数将数据包交由 IP 协议发送出去。
