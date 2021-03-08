@@ -357,7 +357,7 @@ int tcp_v4_rcv(struct sk_buff *skb, unsigned short len)
     ...
     if (!atomic_read(&sk->sock_readers)) // 如果没有其他进程使用此socket
         return tcp_v4_do_rcv(sk, skb);   // 调用 tcp_v4_do_rcv() 对数据包进行处理
-	// 如果有其他进程使用此socket, 把数据包放到堆积队列中, 稍后处理
+    // 如果有其他进程使用此socket, 把数据包放到堆积队列中, 稍后处理
     __skb_queue_tail(&sk->back_log, skb);
     return 0;
     ...
