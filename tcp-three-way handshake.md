@@ -175,31 +175,31 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
     ...
     nexthop = daddr = usin->sin_addr.s_addr;
     ...
-    // 获取数据输出路由信息对象
+    // 1. 获取数据输出路由信息对象
     tmp = ip_route_connect(&rt, nexthop, sk->saddr,
                            RT_TOS(sk->ip_tos)|RTO_CONN|sk->localroute,
                            sk->bound_dev_if);
     ...
-    dst_release(xchg(&sk->dst_cache, rt)); // 设置sk的路由信息
+    dst_release(xchg(&sk->dst_cache, rt)); // 2. 设置sk的路由信息
 
-    // 申请一个skb数据包对象
+    // 3. 申请一个skb数据包对象
     buff = sock_wmalloc(sk, (MAX_HEADER + sk->prot->max_header), 0, GFP_KERNEL);
     ...
-    sk->dport = usin->sin_port; // 设置目的端口
-    sk->daddr = rt->rt_dst;     // 设置目的IP地址
+    sk->dport = usin->sin_port; // 4. 设置目的端口
+    sk->daddr = rt->rt_dst;     // 5. 设置目的IP地址
     ...
     if (!sk->saddr)
-        sk->saddr = rt->rt_src;
+        sk->saddr = rt->rt_src; // 6. 如果没有指定源IP地址, 那么使用路由信息的源IP地址
     sk->rcv_saddr = sk->saddr;
     ...
-    // 初始化TCP序列号
+    // 7. 初始化TCP序列号
     tp->write_seq = secure_tcp_sequence_number(sk->saddr, sk->daddr, sk->sport,
                                                usin->sin_port);
     ...
-    /* Reset mss clamp */
+    // 8. 重置TCP最大报文段大小
     tp->mss_clamp = ~0;
     ...
-    // 调用 tcp_connect() 函数继续进行连接操作
+    // 9. 调用 tcp_connect() 函数继续进行连接操作
     tcp_connect(sk, buff, rt->u.dst.pmtu);
     return 0;
 }
