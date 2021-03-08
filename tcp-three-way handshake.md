@@ -231,11 +231,11 @@ void tcp_connect(struct sock *sk, struct sk_buff *buff, int mtu)
     tp->snd_una = tp->write_seq;
     tp->rcv_nxt = 0;
     sk->err = 0;
-
+    // 设置TCP头部长度
     tp->tcp_header_len = sizeof(struct tcphdr) +
                            (sysctl_tcp_timestamps ? TCPOLEN_TSTAMP_ALIGNED : 0);
     ...
-    tcp_sync_mss(sk, mtu);
+    tcp_sync_mss(sk, mtu); // 设置TCP报文段最大长度
     ...
     TCP_SKB_CB(buff)->flags = TCPCB_FLAG_SYN; // 设置SYN标志为1(表示这是一个SYN包)
     TCP_SKB_CB(buff)->sacked = 0;
@@ -245,30 +245,78 @@ void tcp_connect(struct sock *sk, struct sk_buff *buff, int mtu)
     TCP_SKB_CB(buff)->end_seq = tp->write_seq; // 设置确认号
     tp->snd_nxt = TCP_SKB_CB(buff)->end_seq;
 
-    tp->window_clamp = dst->window;
-
     // 初始化滑动窗口的大小
+    tp->window_clamp = dst->window;
     tcp_select_initial_window(sock_rspace(sk)/2, tp->mss_clamp,
                               &tp->rcv_wnd, &tp->window_clamp,
                               sysctl_tcp_window_scaling, &tp->rcv_wscale);
     ...
-    tcp_set_state(sk, TCP_SYN_SENT); // 设置socket的状态为TCP_SYN_SENT
+    tcp_set_state(sk, TCP_SYN_SENT); // 设置 socket 的状态为 SYN_SENT
 
     // 调用 tcp_v4_hash() 函数把 socket 添加到 tcp_established_hash 哈希表中
     sk->prot->hash(sk);
 
     tp->rto = dst->rtt;
-    tcp_init_xmit_timers(sk);
+    tcp_init_xmit_timers(sk); // 设置超时重传定时器
     ...
     // 把 skb 添加到 write_queue 队列中, 用于重传时使用
     __skb_queue_tail(&sk->write_queue, buff);
     TCP_SKB_CB(buff)->when = jiffies;
     ...
-    // 构建 TCP 头部并且发送出去
+    // 调用 tcp_transmit_skb() 函数构建 SYN 包发送给服务端程序
     tcp_transmit_skb(sk, skb_clone(buff, GFP_KERNEL));
     ...
 }
 ```
 
+`tcp_connect()` 函数的实现虽然比较长，但是逻辑相对简单，就是设置 TCP 头部各个字段的值，然后把数据包发送给服务端。下面列出 `tcp_connect()` 函数主要的工作：
 
+*   设置 TCP 头部的 `SYN 标志位` 为 1 (表示这是一个 `SYN包`)。
+*   设置 TCP 头部的序列号和确认号。
+*   初始化滑动窗口的大小。
+*   设置 socket 的状态为 `SYN_SENT`，可参考上面三次握手的状态图。
+*   调用 `tcp_v4_hash()` 函数把 socket 添加到 `tcp_established_hash` 哈希表中，用于通过 IP 地址和端口快速查找到对应的 socket 对象。
+*   设置超时重传定时器。
+*   把 skb 添加到 `write_queue` 队列中, 用于超时重传。
+*   调用 `tcp_transmit_skb()` 函数构建 `SYN包` 发送给服务端程序。
+
+通过上面的分析，构建 `SYN包` 并且发送给服务端是通过 `tcp_transmit_skb()` 函数完成的，所以我们来分析一下 `tcp_transmit_skb()` 函数的实现：
+
+```c
+void tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
+{
+    if (skb != NULL) {
+        struct tcp_opt *tp = &(sk->tp_pinfo.af_tcp);
+        struct tcp_skb_cb *tcb = TCP_SKB_CB(skb);
+        int tcp_header_size = tp->tcp_header_len;
+        struct tcphdr *th;
+        ...
+        // TCP头部指针
+        th = (struct tcphdr *)skb_push(skb, tcp_header_size);
+        skb->h.th = th;
+
+        skb_set_owner_w(skb, sk);
+
+        // 构建 TCP 协议头部
+        th->source = sk->sport;                // 源端口
+        th->dest = sk->dport;                  // 目标端口
+        th->seq = htonl(TCP_SKB_CB(skb)->seq); // 请求序列号
+        th->ack_seq = htonl(tp->rcv_nxt);      // 应答序列号
+        th->doff = (tcp_header_size >> 2);     // 头部长度
+        th->res1 = 0;
+        *(((__u8 *)th) + 13) = tcb->flags;     // 设置TCP头部的标志位
+
+        if (!(tcb->flags & TCPCB_FLAG_SYN))
+            th->window = htons(tcp_select_window(sk)); // 滑动窗口大小
+
+        th->check = 0;                                 // 校验和
+        th->urg_ptr = ntohs(tcb->urg_ptr);             // 紧急指针
+        ...
+        // 计算TCP头部的校验和
+        tp->af_specific->send_check(sk, th, skb->len, skb);
+        ...
+        tp->af_specific->queue_xmit(skb); // 调用 ip_queue_xmit() 函数发送数据包
+    }
+}
+```
 
