@@ -282,7 +282,7 @@ void tcp_connect(struct sock *sk, struct sk_buff *buff, int mtu)
 
 
 
->   **注意**：Linux 内核通过 `tcp_established_hash` 哈希表来保存所有的 TCP 连接 socket 对象，而哈希表的键值就是连接的 IP 和端口，所以可以通过连接的 IP 和端口从 `tcp_established_hash` 哈希表中快速找到对应的 socket 连接。如下图所示
+>   **注意**：Linux 内核通过 `tcp_established_hash` 哈希表来保存所有的 TCP 连接 socket 对象，而哈希表的键值就是连接的 IP 和端口，所以可以通过连接的 IP 和端口从 `tcp_established_hash` 哈希表中快速找到对应的 socket 连接。如下图所示：
 >
 >   ![](F:\linux-source-code-analyze\images\tcp\tcp-established-hash.png)
 
@@ -329,3 +329,8 @@ void tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 ```
 
 `tcp_transmit_skb()` 函数的实现相对简单，就是构建 TCP 协议头部，然后调用 `ip_queue_xmit()` 函数将数据包交由 IP 协议发送出去。
+
+至此，客户端就发送了一个 `SYN包` 给服务端，也就是说，`TCP 三次握手` 的第一步已经完成。接下来，我们继续分析 `TCP 三次握手` 的第二步，也就是服务端接收到客户端发送过来的 `SYN包` 时对应的处理。
+
+## 服务端处理 SYN 包
+
