@@ -34,7 +34,7 @@ int open_tun(const char *dev, char *actual, int size)
     int fd;
     char *device = "/dev/net/tun";
 
-    if ((fd = open(device, O_RDWR)) < 0) //创建描述符
+    if ((fd = open(device, O_RDWR)) < 0) // 创建描述符
         msg(M_ERR, "Cannot open TUN/TAP dev %s", device);
 
     memset(&ifr, 0, sizeof (ifr));
@@ -51,7 +51,7 @@ int open_tun(const char *dev, char *actual, int size)
     if (strlen(dev) > 3)
         strncpy(ifr.ifr_name, dev, IFNAMSIZ);
 
-    if (ioctl(fd, TUNSETIFF, (void *) &ifr) < 0) //打开虚拟网卡
+    if (ioctl(fd, TUNSETIFF, (void *) &ifr) < 0) // 打开虚拟网卡设备
         msg(M_ERR, "Cannot ioctl TUNSETIFF %s", dev);
 
     set_nonblock(fd);
@@ -65,3 +65,37 @@ int open_tun(const char *dev, char *actual, int size)
 ```
 
 `open_tun()` 函数会创建并启动一个 TUN/TAP 设备文件句柄，然后就可以通过对这个文件句柄进行 `read()` 和 `write()` 系统调用来读写此 TUN/TAP 设备。
+
+## TUN/TAP 设备实现
+
+上面主要介绍了 TUN/TAP 设备的原理与使用方式，接下来主要分析 TUN/TAP 设备的实现过程。
+
+### 1. 打开 TUN/TAP 设备
+
+当调用 `open()` 系统调用打开一个 TUN/TAP 设备时，会触发调用内核态的 `tun_chr_open()` 函数，其实现如下：
+
+```c
+static int tun_chr_open(struct inode *inode, struct file *file)
+{
+    struct tun_struct *tun = NULL;
+
+    // 申请一个 TUN 对象
+    tun = kmalloc(sizeof(struct tun_struct), GFP_KERNEL);
+    if (tun == NULL)
+        return -ENOMEM;
+
+    memset(tun, 0, sizeof(struct tun_struct));
+    file->private_data = tun; // 将 TUN 对象与文件描述符绑定
+
+    skb_queue_head_init(&tun->txq);         // 出生txq队列
+    init_waitqueue_head(&tun->read_wait);   // 初始化等待队列
+
+    sprintf(tun->name, "tunX"); // 设置设备的名称
+
+    tun->dev.init = tun_net_init; // 设置设备的初始化回调函数
+    tun->dev.priv = tun;
+
+    return 0;
+}
+```
+
