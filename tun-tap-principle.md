@@ -14,6 +14,17 @@
 
 ## TUN/TAP设备使用
 
+在使用 TUN/TAP 设备前，先确保已经装载 TUN/TAP 模块并建立设备文件：
+
+```shell
+root@vagrant]# modprobe tun
+root@vagrant]# mknod /dev/net/tun c 10 200
+```
+
+参数 `c` 表示是字符设备, 10 和 200 分别是主设备号和次设备号。
+
+这样，我们就可以在程序中使用该驱动了。
+
 下面例子主要介绍怎么创建和启动一个 TUN/TAP 设备（摘自openvpn开源项目 [http://openvpn.sourceforge.net](http://openvpn.sourceforge.net/)，tun.c文件）：
 
 ```c
