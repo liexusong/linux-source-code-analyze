@@ -64,3 +64,4 @@ int open_tun(const char *dev, char *actual, int size)
 }
 ```
 
+`open_tun()` 函数会创建并启动一个 TUN/TAP 设备文件句柄，然后就可以通过对这个文件句柄进行 `read()` 和 `write()` 系统调用来读写此 TUN/TAP 设备。
