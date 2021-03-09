@@ -79,23 +79,45 @@ static int tun_chr_open(struct inode *inode, struct file *file)
 {
     struct tun_struct *tun = NULL;
 
-    // 申请一个 TUN 对象
+    // 申请一个 TUN 对象结构
     tun = kmalloc(sizeof(struct tun_struct), GFP_KERNEL);
     if (tun == NULL)
         return -ENOMEM;
 
     memset(tun, 0, sizeof(struct tun_struct));
-    file->private_data = tun; // 将 TUN 对象与文件描述符绑定
+    file->private_data = tun; // 将 TUN 对象结构与文件描述符绑定
 
-    skb_queue_head_init(&tun->txq);         // 出生txq队列
-    init_waitqueue_head(&tun->read_wait);   // 初始化等待队列
+    skb_queue_head_init(&tun->txq);       // 初始化txq队列
+    init_waitqueue_head(&tun->read_wait); // 初始化等待队列
 
     sprintf(tun->name, "tunX"); // 设置设备的名称
 
-    tun->dev.init = tun_net_init; // 设置设备的初始化回调函数
+    tun->dev.init = tun_net_init; // 设置启动TUN设备的初始化函数
     tun->dev.priv = tun;
 
     return 0;
 }
+```
+
+`tun_chr_open()` 函数主要完成以下几个步骤：
+
+*   调用 `kmalloc()` 函数创建一个 `tun` 对象结构。
+*   将 `TUN` 对象结构与文件描述符绑定。
+*   初始化 `TUN` 对象的 `txq` 队列和等待队列。
+*   设置 `TUN` 设备的名称。
+*   设置启动 `TUN` 设备的初始化函数。
+
+我们先来看看 `TUN` 对象结构的定义：
+
+```c
+struct tun_struct {
+    char                    name[8];      // TUN设备的名字
+    unsigned long           flags;        // 设备类型: TUN或者TAP
+    struct fasync_struct    *fasync;
+    wait_queue_head_t       read_wait;    // 等待此设备可读的进程队列
+    struct net_device       dev;          // TUN设备关联的网络设备对象
+    struct sk_buff_head     txq;          // 数据队列(接收到的数据包会保存到这里)
+    ...
+};
 ```
 
