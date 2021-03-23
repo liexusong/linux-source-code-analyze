@@ -6,7 +6,7 @@
 
 异步 IO 与同步 IO 的区别如 图1 所示：
 
-![](F:\books\markdown\aio\aio.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/aio/aio.png)
 
 从上图可知，同步 IO 必须等待内核把 IO 操作处理完成后才返回。而异步 IO 不必等待 IO 操作完成，而是向内核发起一个 IO 操作就立刻返回，当内核完成 IO 操作后，会通过信号的方式通知应用程序。
 
@@ -20,7 +20,7 @@
 
 如 图2 所示：
 
-![](F:\books\markdown\aio\linux-native-aio.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/aio/linux-native-aio.png)
 
 Linux 原生 AIO 处理流程：
 
