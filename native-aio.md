@@ -161,7 +161,7 @@ struct kioctx {
 
 `kioctx` 结构如 图1 所示：
 
-![](F:\books\markdown\aio\kioctx-struct.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/aio/kioctx-struct.png)
 
 如 图1 所示，`active_reqs` 成员保存的异步 IO 操作队列是以 `kiocb` 结构为单元的，而 `ring_info` 成员指向一个类型为 `aio_ring_info` 结构的环形缓冲区（Ring Buffer）。
 
@@ -210,7 +210,7 @@ struct aio_ring_info {
 
 这个环形缓冲区主要用于保存已经完成的异步 IO 操作的结果，异步 IO 操作的结果使用 `io_event` 结构表示。如 图2 所示：
 
-![](F:\books\markdown\aio\ring-buffer.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/aio/ring-buffer.png)
 
 图2 中的 `head` 代表环形缓冲区的开始位置，而 `tail` 代表环形缓冲区的结束位置，如果 `tail` 大于 `head`，则表示有完成的异步 IO 操作结果可以获取。如果 `head` 等于 `tail`，则表示没有完成的异步 IO 操作。
 
@@ -390,7 +390,7 @@ int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 
 `io_submit_one` 函数的操作过程如 图3 所示：
 
-![](F:\books\markdown\aio\io_submit_once.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/aio/io_submit_once.png)
 
 
 
