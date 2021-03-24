@@ -159,7 +159,7 @@ struct kioctx {
 
 在 `kioctx` 结构中，比较重要的成员为 `active_reqs` 和 `ring_info`。`active_reqs` 保存了所有正在进行的异步 IO 操作，而 `ring_info` 成员用于存放异步 IO 操作的结果。
 
-`kioctx` 结构如 图1 所示：
+`kioctx` 结构如 图3 所示：
 
 ![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/aio/kioctx-struct.png)
 
@@ -208,7 +208,7 @@ struct aio_ring_info {
 };
 ```
 
-这个环形缓冲区主要用于保存已经完成的异步 IO 操作的结果，异步 IO 操作的结果使用 `io_event` 结构表示。如 图2 所示：
+这个环形缓冲区主要用于保存已经完成的异步 IO 操作的结果，异步 IO 操作的结果使用 `io_event` 结构表示。如 图4 所示：
 
 ![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/aio/ring-buffer.png)
 
@@ -388,7 +388,7 @@ int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 *   根据不同的异步 IO 操作类型来进行不同的处理，如 `异步读操作` 会调用文件对象的 `aio_read` 方法来进行处理。不同的文件系统，其 `aio_read` 方法的实现不一样，如 Ext3 文件系统的 `aio_read` 方法会指向 `generic_file_aio_read` 函数。
 *   如果异步 IO 操作被添加到内核的 IO 请求队列中，那么就直接返回。否则就代表 IO 操作已经完成，那么就调用 `aio_complete` 函数完成收尾工作。
 
-`io_submit_one` 函数的操作过程如 图3 所示：
+`io_submit_one` 函数的操作过程如 图5 所示：
 
 ![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/aio/io_submit_once.png)
 
