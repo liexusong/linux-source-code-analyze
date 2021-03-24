@@ -1,4 +1,4 @@
-# Linux 原生异步 IO 原理与使用（Native AIO）
+# Linux 原生异步 IO（Native AIO）
 
 什么是异步 IO？
 
