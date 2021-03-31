@@ -15,9 +15,7 @@
 
 `虚拟内存地址` 映射到 `物理内存地址` 如下图所示：
 
-![memory-mapping](D:\Markdown\images\memory-mapping\memory-mapping.png)
-
-
+![memory-mapping](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/memory-mapping/memory-mapping.png)
 
 如上图所示，进程A与进程B的相同 `虚拟内存地址` 映射到不同的 `物理内存地址`，这就是不同进程的相同虚拟内存地址互不影响的原因。
 
@@ -27,9 +25,7 @@
 
 前面说过，`虚拟内存` 需要与 `物理内存` 进行映射才能使用，如果不同进程的 `虚拟内存地址` 映射到相同的 `物理内存地址`，那么就实现了共享内存的机制。如下图所示：
 
-![share-memory](D:\Markdown\images\memory-mapping\share-memory.png)
-
-
+![share-memory](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/memory-mapping/share-memory.png)
 
 由于进程A的 `虚拟内存M` 与进程B的 `虚拟内存M'` 映射到相同的 `物理内存G`，所以当修改进程A `虚拟内存M` 的数据时，进程B `虚拟内存M'` 的数据也会跟着改变。
 
@@ -42,9 +38,7 @@ Linux 为了加速创建子进程过程与节省内存使用的原因，实现�
 
 `写时复制` 过程如下图所示：
 
-![copy-on-write](D:\Markdown\images\memory-mapping\copy-on-write.png)
-
-
+![copy-on-write](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/memory-mapping/copy-on-write.png)
 
 从上图可知，当创建子进程时，父子进程指向相同的 `物理内存`，而不是将父进程所占用的 `物理内存` 复制一份。这样做的好处有两个：
 
