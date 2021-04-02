@@ -40,7 +40,7 @@ Linux 为了加速创建子进程过程与节省内存使用的原因，实现�
 
 ![copy-on-write](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/memory-mapping/copy-on-write.png)
 
-从上图可知，当创建子进程时，父子进程指向相同的 `物理内存`，而不是将父进程所占用的 `物理内存` 复制一份。这样做的好处有两个：
+当创建子进程时，父子进程指向相同的 `物理内存`，而不是将父进程所占用的 `物理内存` 复制一份。这样做的好处有两个：
 
 *   加速创建子进程的速度。
 
