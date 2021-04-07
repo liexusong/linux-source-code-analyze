@@ -56,3 +56,8 @@
     * [RCU原理与实现](https://github.com/liexusong/linux-source-code-analyze/blob/master/rcu.md)
     * [O(1)调度算法](https://github.com/liexusong/linux-source-code-analyze/blob/master/process-schedule-o1.md)
     * [完全公平调度算法](https://github.com/liexusong/linux-source-code-analyze/blob/master/cfs-scheduler.md)
+
+
+### 我们的公众号
+
+![qrcode](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/qrcode_linux_naxieshi.jpg)
