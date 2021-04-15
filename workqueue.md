@@ -32,7 +32,7 @@ struct cpu_workqueue_struct {
 
 `workqueue_struct` 与 `cpu_workqueue_struct` 之间的关系如下图所示：
 
-![](D:\codes\linux-source-code-analyze\images\workqueue\workqueue.png)
+![](https://raw.githubusercontent.com/liexusong/linux-source-code-analyze/master/images/workqueue/workqueue.png)
 
 
 
