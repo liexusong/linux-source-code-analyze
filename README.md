@@ -18,6 +18,7 @@
     * [vmalloc原理与实现](https://github.com/liexusong/linux-source-code-analyze/blob/master/vmalloc-memory-implements.md)
     * [写时复制](https://github.com/liexusong/linux-source-code-analyze/blob/master/copy-on-write.md)
     * [零拷贝技术](https://github.com/liexusong/linux-source-code-analyze/blob/master/zero-copy.md)
+    * [虚拟内存空间管理](https://github.com/liexusong/linux-source-code-analyze/blob/master/process-virtual-memory-manage.md)
 * 中断机制
     * [硬件相关](https://github.com/liexusong/linux-source-code-analyze/blob/master/interrupt_hardware.md)
     * [中断处理](https://github.com/liexusong/linux-source-code-analyze/blob/master/interrupt_softward.md)
