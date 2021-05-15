@@ -124,10 +124,10 @@ typedef struct elf64_phdr {
 sys_execve
 └→ do_execve
    └→ do_execveat_common
-	  └→ __do_execve_file
-	     └→ exec_binprm
-		    └→ search_binary_handler
-                └→ load_elf_binary
+      └→ __do_execve_file
+         └→ exec_binprm
+            └→ search_binary_handler
+               └→ load_elf_binary
 ```
 
 从上面的调用者可以看出，`execve` 系统调用最终会调用 `load_elf_binary` 函数来加载程序的 ELF 文件。
