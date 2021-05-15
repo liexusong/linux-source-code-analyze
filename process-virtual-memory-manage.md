@@ -12,7 +12,7 @@
 
 我们先来看看 Linux 进程虚拟内存空间的布局图，如图 1 所示：
 
-![](D:\Markdown\images\virtaul-memory-manager\virtual-memory-layout.png)
+![](./images/virtaul-memory-manager/virtual-memory-layout.png)
 
 上图展示了 Linux 进程的虚拟内存空间布局情况，我们只关注 `用户空间` 的布局。
 
@@ -65,7 +65,7 @@ struct vm_area_struct {
 
 我们通过图 2 来展示内核是怎么通过 `vm_area_struct` 结构来管理进程中的所有 `段`：
 
-![](D:\Markdown\images\virtaul-memory-manager\vm-area-struct-layout.png)
+![](./images/virtaul-memory-manager/vm-area-struct-layout.png)
 
 
 
@@ -89,7 +89,7 @@ ELF 全称 **Executable and Linkable Format**，即可执行可链接文件格�
 
 ELF 文件的结构大概如图3所示：
 
-![](D:\Markdown\images\virtaul-memory-manager\elf-file-format.png)
+![](./images/virtaul-memory-manager/elf-file-format.png)
 
 
 
@@ -112,7 +112,7 @@ typedef struct elf64_phdr {
 
 我们可以通过 `readelf -S file` 命令来查看 ELF 文件的段（节）信息，如下图所示：
 
-![](D:\Markdown\images\virtaul-memory-manager\elf-sections-list.png)
+![](./images/virtaul-memory-manager/elf-sections-list.png)
 
 上面列出了 `代码段`、`数据段`、`未初始化数据段` 和 `注释段` 的信息。
 
