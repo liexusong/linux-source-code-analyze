@@ -57,7 +57,7 @@
     * [RCU原理与实现](https://github.com/liexusong/linux-source-code-analyze/blob/master/rcu.md)
     * [O(1)调度算法](https://github.com/liexusong/linux-source-code-analyze/blob/master/process-schedule-o1.md)
     * [完全公平调度算法](https://github.com/liexusong/linux-source-code-analyze/blob/master/cfs-scheduler.md)
-    * [HugePages原理与使用](https://github.com/liexusong/linux-source-code-analyze/blob/master/hugepages.md)
+    * [HugePages原理与使用](https://github.com/liexusong/linux-source-code-analyze/blob/master/hugepage.md)
     * [HugePages实现剖析](https://github.com/liexusong/linux-source-code-analyze/blob/master/hugepages-source-code-analysis.md)
 
 ### 我们的公众号
