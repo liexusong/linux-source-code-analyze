@@ -232,6 +232,8 @@ long sys_inotify_add_watch(int fd, const char __user *path, u32 mask)
 * 调用 `create_watch` 函数创建一个新的 `inotify_watch` 对象，并且把这个 `inotify_watch` 对象添加到 `inotify_handle` 对象的 `watches` 列表和 `inode` 对象的 `inotify_watches` 列表中。
 
 
+## 事件通知
+
 
 
 
