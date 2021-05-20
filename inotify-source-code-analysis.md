@@ -224,7 +224,12 @@ long sys_inotify_add_watch(int fd, const char __user *path, u32 mask)
 }
 ```
 
+`sys_inotify_add_watch` 函数主要完成以下几个工作：
 
+* 调用 `fget_light` 函数获取 `inotify` 句柄对应的文件对象。
+* 调用 `find_inode` 函数获取 `path` 路径对应的 `inode` 对象，也就是获取要监听的文件或目录所对应的 `inode` 对象。
+* 从 `inotify` 文件对象的 `private_data` 字段中，获取对应的 `inotify_device` 对象。
+* 调用 `create_watch` 函数创建一个新的 `inotify_watch` 对象。
 
 
 
