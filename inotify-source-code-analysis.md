@@ -328,7 +328,7 @@ inotify_dev_queue_event(struct inotify_watch *w, u32 wd, u32 mask, u32 cookie,
 static inline void fsnotify_access(struct dentry *dentry)
 {
     struct inode *inode = dentry->d_inode;
-    u32 mask = IN_ACCESS;  // 设置为 IN_ACCESS 事件
+    u32 mask = IN_ACCESS;  // 指定事件类型为 IN_ACCESS
 
     if (S_ISDIR(inode->i_mode))
         mask |= IN_ISDIR;  // 如果是目录, 增加 IN_ISDIR 标志
@@ -337,7 +337,15 @@ static inline void fsnotify_access(struct dentry *dentry)
 }
 ```
 
-从上面的分析可知，当发生读事件时，由 `fsnotify_access` 函数指定事件类型为 `IN_ACCESS`。
+从上面的分析可知，当发生读事件时，由 `fsnotify_access` 函数指定事件类型为 `IN_ACCESS`。其他的写事件、创建事件和删除事件都有相应的函数指定，可以查阅文件 `include/linux/fsnotify.h`。
+
+## 总结
+
+本文通过分析 `inotify` 的源码来了解其实现过程，从分析过程可以看出，`inotify` 的原理还是比较简单的：就是当用户调用读写、创建或删除文件的系统调用时，内核会注入相应的事件触发函数来产生一个事件，并且添加到 `inotify` 的事件队列中，然后用户就可以通过调用 `read` 函数来读取 `inotify` 事件队列中的事件。
+
+
+
+
 
 
 
