@@ -256,7 +256,88 @@ long sys_inotify_add_watch(int fd, const char __user *path, u32 mask)
 
 ## 事件通知
 
+到了 `inotify` 最关键的部分，就是 `inotify` 的事件是怎么产生的。
 
+在本文的第一部分中介绍过，当用户调用 `read` 系统调用读取文件内容时，最终会调用 `inotify_dev_queue_event` 函数来产生一个事件，我们先来回顾一下 `read` 系统调用的调用栈：
+
+```text
+read()
+└→ sys_read()
+   └→ vfs_read()
+      └→ fsnotify_access()
+         └→ inotify_inode_queue_event()
+            └→ inotify_dev_queue_event()
+```
+
+下面我们来分析一下 `inotify_dev_queue_event` 函数的实现：
+
+```c
+static void
+inotify_dev_queue_event(struct inotify_watch *w, u32 wd, u32 mask, u32 cookie,
+                        const char *name, struct inode *ignored)
+{
+    struct inotify_user_watch *watch;
+    struct inotify_device *dev;
+    struct inotify_kernel_event *kevent, *last;
+
+    watch = container_of(w, struct inotify_user_watch, wdata);
+    dev = watch->dev;
+    ...
+    // 1. 申请一个 inotify_kernel_event 事件对象
+    if (unlikely(dev->event_count == dev->max_events))
+        kevent = kernel_event(-1, IN_Q_OVERFLOW, cookie, NULL);
+    else
+        kevent = kernel_event(wd, mask, cookie, name);
+    ...
+    // 2. 增加 inotify 事件队列的计数器
+    dev->event_count++;
+    // 3. 增加 inotify 事件队列所占用的内存大小
+    dev->queue_size += sizeof(struct inotify_event) + kevent->event.len;
+
+    // 4. 把事件对象添加到 inotify 的事件队列中
+    list_add_tail(&kevent->list, &dev->events);
+
+    // 5. 唤醒正在等待读取事件的进程
+    wake_up_interruptible(&dev->wq);
+    ...
+}
+```
+
+我们先来介绍一下 `inotify_dev_queue_event` 函数各个参数的意义：
+
+*   `w`：被监听对象，用于描述被监听的文件或目录。
+*   `wd`：被监听对象的ID。
+*   `mask`：发生的事件类型，可以参考《[监听风云 - inotify介绍](https://mp.weixin.qq.com/s/dmHRFWS6qz6M_5Y2MvUXew)》一文。
+*   `cookie`：比较少使用，忽略。
+*   `name`：发生事件的文件或目录名称。
+*   `ignored`：发生事件的文件或目录的 `inode` 对象，在本函数中没有使用。
+
+`inotify_dev_queue_event` 函数主要完成以下几个工作：
+
+*   通过调用 `kernel_event` 函数申请一个 `inotify_kernel_event` 事件对象。
+*   增加 `inotify` 事件队列的计数器。
+*   增加 `inotify` 事件队列所占用的内存大小。
+*   把第一步创建的事件对象添加到 `inotify` 的事件队列中。
+*   唤醒正在等待读取事件的进程（因为已经有事件发生了）。
+
+从上面的分析可以看出，`inotify_dev_queue_event` 函数只负责创建一个事件对象，并且添加到 `inotify` 的事件队列中。但发生了什么事件是由哪个步骤指定的呢？
+
+我们可以通过分析 `read` 系统调用的调用栈，会发现在 `fsnotify_access` 函数中指定了事件的类型，我们来看看 `fsnotify_access` 函数的实现：
+
+```c
+static inline void fsnotify_access(struct dentry *dentry)
+{
+    struct inode *inode = dentry->d_inode;
+    u32 mask = IN_ACCESS;  // 设置为 IN_ACCESS 事件
+
+    if (S_ISDIR(inode->i_mode))
+        mask |= IN_ISDIR;  // 如果是目录, 增加 IN_ISDIR 标志
+    ...
+    inotify_inode_queue_event(inode, mask, 0, NULL, NULL); // 创建事件
+}
+```
+
+从上面的分析可知，当发生读事件时，由 `fsnotify_access` 函数指定事件类型为 `IN_ACCESS`。
 
 
 
