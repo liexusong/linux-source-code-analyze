@@ -1,6 +1,6 @@
 # inotify源码分析
 
-在《[监听风云 - inotify 介绍](https://mp.weixin.qq.com/s/dmHRFWS6qz6M_5Y2MvUXew)》一文中，我们介绍了 `inotify` 的使用，而本篇文章主要介绍 `inotify` 的实现过程。
+在《[监听风云 - inotify 介绍](https://mp.weixin.qq.com/s/dmHRFWS6qz6M_5Y2MvUXew)》一文中，我们介绍了 `inotify` 的使用，而本文主要介绍 `inotify` 功能的实现过程。
 
 ## 重要的数据结构
 
