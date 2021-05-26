@@ -1,20 +1,37 @@
 # inotify源码分析
 
-在《[监听风云 - inotify 介绍](https://mp.weixin.qq.com/s/dmHRFWS6qz6M_5Y2MvUXew)》一文中，我们介绍了 `inotify` 的使用，而本文主要介绍 `inotify` 功能的实现过程。
+在《[监听风云 - inotify 介绍](https://mp.weixin.qq.com/s/dmHRFWS6qz6M_5Y2MvUXew)》一文中，我们介绍了 `inotify` 的使用。为了能更深入理解 `inotify` 的原理，本文开始介绍 `inotify` 功能的实现过程。
 
 ## 重要的数据结构
 
 >   鲁迅先生说过：程序 = 数据结构 + 算法
 
+想想如果让我们来设计 `inotify` 应该如何实现呢？下面来分析一下：
+
+*   我们知道，`inotify` 是用来监控文件或目录的变动事件，所以应该定义一个对象来存储这些事件（在内核中定义了 `inotify_device` 对象来存储事件）。
+
+*   另外，当对文件或目录进行读或者写操作时才会触发事件的产生，所以应该在文件或目录的读写操作系统调用中嵌入产生事件的动作（事件由 `inotify_dev_queue_event` 函数产生）。
+
 在介绍 `inotify` 的实现前，我们先来了解下其原理。`inotify` 的原理如下：
 
->   当用户调用 `read` 或者 `write` 等函数对文件进行读写操作时，内核会把事件保存到 `inotify` 的事件队列中，然后唤醒等待 `inotify` 事件的进程。正所谓一图胜千言，所以我们通过下图来描述此过程：
+>   当用户调用 `read` 或者 `write` 等系统调用对文件进行读写操作时，内核会把事件保存到 `inotify_device` 对象的事件队列中，然后唤醒等待 `inotify` 事件的进程。正所谓一图胜千言，所以我们通过下图来描述此过程：
 
 ![](./images/inotify2/inotify-principle.png)
 
 
 
-从上图可知，当应用程序调用 `read` 函数读取文件的内容时，最终会调用 `inotify_dev_queue_event` 函数。`inotify_dev_queue_event` 函数主要完成两个工作：
+从上图可知，当应用程序调用 `read` 函数读取文件的内容时，最终会调用 `inotify_dev_queue_event` 函数来触发事件，调用栈如下：
+
+```text
+read()
+└→ sys_read()
+   └→ vfs_read()
+      └→ fsnotify_access()
+         └→ inotify_inode_queue_event()
+            └→ inotify_dev_queue_event()
+```
+
+`inotify_dev_queue_event` 函数主要完成两个工作：
 
 *   创建一个表示事件的 `inotify_kernel_event` 对象，并且把其插入到 `inotify_device` 对象的 `events` 列表中。
 *   唤醒正在等待 `inotify` 发生事件的进程，等待的进程放置在 `inotify_device` 对象的 `wq` 字段中。
@@ -72,7 +89,10 @@ struct inotify_kernel_event {
 
 可以看出，`inotify_kernel_event` 对象只是对 `inotify_event` 对象进行扩展而已，而我们在《[监听风云 - inotify介绍](https://mp.weixin.qq.com/s/dmHRFWS6qz6M_5Y2MvUXew)》一文中已经介绍过 `inotify_event` 对象。
 
-`inotify_kernel_event` 对象在 `inotify_event` 对象的基础上增加了 `list` 和 `name` 字段。`list` 字段用于把所有由 `inotify` 监听的文件或目录所发生的事件连接起来，而 `name` 字段用于记录发生事件的文件名或目录名。
+`inotify_kernel_event` 对象在 `inotify_event` 对象的基础上增加了 `list` 字段和 `name` 字段：
+
+*   `list`：用于把所有由 `inotify` 监听的文件或目录所发生的事件连接起来，
+*   `name`：用于记录发生事件的文件名或目录名。
 
 ### 3. inotify_handle对象
 
@@ -90,9 +110,9 @@ struct inotify_handle {
 
 下面来介绍一下 `inotify_handle` 对象的各个字段作用：
 
-*   idr：ID生成器，用于生成被监听对象（文件或目录）的ID。
-*   watches：`inotify` 监听的文件或目录列表。
-*   in_ops：当事件发生时，被 `inotify` 回调的函数列表。
+*   `idr`：ID生成器，用于生成被监听对象（文件或目录）的ID。
+*   `watches`：`inotify` 监听的对象（文件或目录）列表。
+*   `in_ops`：当事件发生时，被 `inotify` 回调的函数列表。
 
 ### 4. inotify_watch对象
 
@@ -112,12 +132,12 @@ struct inotify_watch {
 
 下面介绍一下 `inotify_watch` 对象各个字段的作用：
 
-*   h_list：用于把属于同一个 `inotify` 的所有被监听对象连接起来。
-*   i_list：用于把监听同一个文件或目录的监听对象连接起来。
-*   ih：指向其所属的 `inotify_handle` 对象。
-*   inode：由于在 Linux 内核中，每个文件或目录都由一个 `inode` 对象来描述，所以这个字段就是指向被监听的文件或目录的 `inode` 对象。
-*   wd：被监听对象的ID（或称为描述符）。
-*   mask：被监听的事件类型（在《[监听风云 - inotify介绍](https://mp.weixin.qq.com/s/dmHRFWS6qz6M_5Y2MvUXew)》一文中已经介绍）。
+*   `h_list`：用于把属于同一个 `inotify` 监听的对象连接起来。
+*   `i_list`：由于同一个文件或目录可以被多个 `inotify` 监听，所以使用此字段来把所有监听同一个文件的 `inotify_handle` 对象连接起来。
+*   `ih`：指向其所属的 `inotify_handle` 对象。
+*   `inode`：由于在 Linux 内核中，每个文件或目录都由一个 `inode` 对象来描述，这个字段就是指向被监听的文件或目录的 `inode` 对象。
+*   `wd`：被监听对象的ID（或称为描述符）。
+*   `mask`：被监听的事件类型（在《[监听风云 - inotify介绍](https://mp.weixin.qq.com/s/dmHRFWS6qz6M_5Y2MvUXew)》一文中已经介绍）。
 
 现在，我们通过下图来描述一下 `inotify_device`、`inotify_handle` 和 `inotify_watch` 三者的关系：
 
@@ -235,7 +255,6 @@ long sys_inotify_add_watch(int fd, const char __user *path, u32 mask)
 
 
 ## 事件通知
-
 
 
 
