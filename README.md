@@ -29,6 +29,7 @@
     * [通用块层](https://github.com/liexusong/linux-source-code-analyze/blob/master/filesystem-generic-block-layer.md)
     * [直接I/O](https://github.com/liexusong/linux-source-code-analyze/blob/master/direct-io.md)
     * [原生异步I/O](https://github.com/liexusong/linux-source-code-analyze/blob/master/native-aio.md)
+    * [inotify源码分析](https://github.com/liexusong/linux-source-code-analyze/blob/master/inotify-source-code-analysis.md)
 * 进程间通信
     * [信号处理机制](https://github.com/liexusong/linux-source-code-analyze/blob/master/signal.md)
     * [共享内存](https://github.com/liexusong/linux-source-code-analyze/blob/master/ipc-shm.md)
