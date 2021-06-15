@@ -58,6 +58,7 @@ void __init free_area_init(unsigned long *zones_size)
 }
 ```
 free_area_init()函数会在系统初始化时被调用, 初始化mem_map的过程首先是计算系统中有多少个内存页 `totalpages`, 然后通过alloc_bootmem_node()分配page结构数组. 初始化后的内存结构如下图:
+
 ![](https://raw.githubusercontent.com/liexusong/myblog/master/images/memory_page.jpg)
 
 除了使用page结构管理内存外, Linux还根据不同的用途把内存划分为不同的区域, 主要分为3个内存区域: `ZONE_DMA`, `ZONE_NORMAL` 和 `ZONE_HIGHMEM`. ZONE_DMA是 `小于等于16MB` 的内存地址, 而ZONE_NORMAL是 `大于ZONE_DMA小于等于896MB` 的内存地址, ZONE_HIGHMEM则是 `大于896MB` 的内存地址.
