@@ -383,5 +383,5 @@ CS为0x**00（**代表IPI中包含的vector），IP为0，CS:IP就可以引用tr
 
 ## 参考：
 * https://www.bbsmax.com/A/xl56ELa7Jr/
-*《Linux内核源代码情景分析》
+* 《Linux内核源代码情景分析》
 * https://www.tldp.org/HOWTO/Linux-i386-Boot-Code-HOWTO/smpboot.html
