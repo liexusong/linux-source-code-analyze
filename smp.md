@@ -1,225 +1,387 @@
-## 1. SMP 硬件体系结构：
-对于 SMP 最简单可以理解为系统存在多个完全相同的 CPU ，所有 CPU 共享总线，拥有自己的寄存器。对于内存和外部设备访问，由于共享总线，所以是共享的。 Linux 操作系统多个 CPU 共享在系统空间上映射相同，是完全对等的。
+> 本篇文章基于Linux 2.6.32，x86体系结构
 
-由于系统中存在多个 CPU ，这是就引入一个问题，当外部设备产生中断的时候，具体有哪一个 CPU 进行处理？
+系统的引导和初始化阶段是个特例，因为在这个阶段里系统中只有一个“上下文”，只能由一个处理器来处理。在这个阶段里，也就是在系统刚加电或“总清（reset）”之后，系统中暂时只有一个处理器运行，这个处理器称之为“引导处理器”BP；其余的处理器则处于暂停状态，称为“应用处理器”AP。“引导处理器”完成整个系统的引导和初始化，并创建起多个进程，从而可以由多个处理器同时参与处理时，才启动所有的“应用处理器”，让他们完成自身的初始化以后，投入运行。参考intel手册：
 
-为此， intel 公司提出了 IO APCI 和 LOCAL APCI 的体系结构。
+The MP initialization protocol defines two classes of processors: the bootstrap processor (BSP) and the application processors (APs). Following a power-up or RESET of an MP system, system hardware dynamically selects one of the processors on the system bus as the BSP. The remaining processors are designated as APs.
 
-IO APIC 连接各个外部设备，并可以设置分发类型，根据设定的分发类型，中断信号发送的对应 CPU 的 LOCAL APIC上。
+我们在这里关心的是“引导处理器”怎样为各个“应用处理器”做好准备，然后启动其运行的过程。
 
-LOCAL APIC 负责本地 CPU 的中断处理， LOCAL APIC 不仅可以接受 IO APIC 的中断，也需要处理本地 CPU 产生的异常。同时 LOCAL APIC 还提供了一个定时器。
+在初始化阶段，引导处理器先完成自身的初始化，进入保护模式并开启页式存储管理机制，再完成系统特别是内存的初始化，然后从start_kernel()–> rest_init() –> kernel_init() –> smp_init()进行SMP系统的初始化。由于此时APs处于暂停状态，所以BP需要通过smp_init()–> cpu_up()–> native_cpu_up()–>do_boot_cpu()–> wakeup_secondary_cpu_via_init() 发送IPI中断唤醒APs，这样APs就开始了正常的运行过程，拥有和BP一样的地位。详细过程我们后面分析。先来看总体大纲图：
 
-### 如何确定那个 CPU 是引导 CPU ？
-根据 intel 公司中的资料，系统上电后，会根据 MP Initialization Protocol 随机选择一个 CPU 作为 BSP ，只有 BSP 会运行BIOS 程序，其他 AP 都进入等待状态， BSP 发送 IPI 中断触发后才可以运行。具体的 MP Initialization Protocol 细节，可以参考 Intel® 64 and IA-32 Architectures Software Developer’s Manual Volume 3A: System Programming
-Guide, Part 1 第 8 章。
+![](https://frankjkl.github.io/assert/1552533220510.png)
 
-### 引导 CPU 如何控制其他 CPU 开始运行？
-BSP 可以通过 IPI 消息控制 AP 从指定的起始地址运行。 CPU 中集成的 LOCAL APIC 提供了这个功能。可以通过写LOCAL APIC 中提供的相关寄存器，发送 IPI 消息到指定的 CPU 上。
-
-### 如何获取系统硬件 CPU 信息的？
-在系统初始化后，硬件会在内存的规定位置提供关于 CPU ，总线 , IO APIC 等的信息，即 SMP MP table 。在 linux 初始化的过程，会读取该位置，获取系统相关的硬件信息。
-
-## 2. linux SMP 启动过程流程简介
+### smp_init
+smp_init的代码在init/main.c：
 ```c
-start_kernel
-  |-> setup_arch()
-  |      |-> setup_memory();
-  |      |      |-> reserve_bootmem(PAGE_SIZE, PAGE_SIZE);
-  |      |-> find_smp_config();  // 查找 smp_mp_table 的位置
-  |      |-> smp_alloc_memory();
-  |      |       |-> trampoline_base = (void *) alloc_bootmem_low_pages(PAGE_SIZE); // 分配 trampoline ，用于启动 AP 的引导代码。
-  |      |-> get_smp_config();  // 根据 smp_mp_table ，获取具体的硬件信息
-  |-> trap_init()
-  |      |-> init_apic_mappings();
-  |-> mem_init()
-  |      |-> zap_low_mappings(); // 如果没有定义 SMP 的话，清楚用户空间的地址映射。
-  |-> rest_init();
-  |      |-> kernel_thread(init, NULL, CLONE_FS | CLONE_SIGHAND);
-  |      |       |-> init();
-  
-  |-> set_cpus_allowed(current, CPU_MASK_ALL);
-  |-> smp_prepare_cpus(max_cpus);
-  |       |-> smp_boot_cpus(max_cpus);
-  |       |-> connect_bsp_APIC();
-  |-> setup_local_APIC(); // 初始化 BSP 的 LOCAL APCI 。
-  |-> map_cpu_to_logical_apicid();
-  |-> 针对每个 CPU 调用 do_boot_cpu(apicid, cpu)
-  |-> smp_init(); // 每个 CPU 开始进行调度
-```
-
-trampoline.S AP 引导代码，为 16 进制代码，启用保护模式
-
-head.s 为 AP 创建分页管理
-
-initialize_secondary 根据之前 fork 创建设置的信息，跳转到 start_secondary 处
-
-start_secondary 判断 BSP 是否启动，如果启动 AP 进行任务调度。
-
-## 3. 代码学习总结
-find_smp_config() 查找 MP table 在内存中的位置。具体协议可以参考 MP 协议的第 4 章。
-
-这个表的作用在于描述系统 CPU ，总线， IO APIC 等的硬件信息。
-
-相关的两个全局变量： smp_found_config 是否找到 SMP MP table ， mpf_found SMP MP table 的线性地址。
-
-* smp_alloc_memory() 为启动 AP 的启动程序分配内存空间。相关全局变量 trampoline_base ，分配的启动地址的线性地址。
-* get_smp_config() 根据 MP table 中提供的内容，获取硬件的信息。
-* init_apic_mappings(); 获取 IO APIC 和 LOCAL APIC 的映射地址 。
-* zap_low_mappings(); 如果没有定义 SMP 的话，清楚用户空间的地址映射。将 swapper_pg_dir 中表项清零。
-* setup_local_APIC();  初始化 BSP 的 LOCAL APCI 。
-
-```c
-do_boot_cpu(apicid, cpu)
- |-> idle = alloc_idle_task(cpu);
- |-> task = copy_process(CLONE_VM, 0, idle_regs(&regs), 0, NULL, NULL, 0);
- |-> init_idle(task, cpu);
-```
-
-将 init 进程使用 copy_process 复制，并且调用 init_idle 函数，设置可以运行的 CPU 。
-```c
-idle->thread.eip = (unsigned long) start_secondary;
-```
-
-修改 task_struct 中的 thread.eip ，使得 AP 初始化完成后，就运行 start_secondary 函数。
-```c
-start_eip = setup_trampoline();
-```
-
-调用 setup_trampoline() 函数，复制 trampoline_data 到 trampoline_end 之间的代码到 trampoline_base 处， trampoline_base 就是之前在 setup_arch 处申请的内存。 start_eip 返回值是 trampoline_base 对应的物理地址。
-
-smpboot_setup_warm_reset_vector(start_eip); 设置内存 40:67h 处为 start_eip 为启动地址。
-
-wakeup_secondary_cpu(apicid, start_eip); 在这个函数中通过操作 APIC_ICR 寄存器， BSP 向目标 AP 发送 IPI 消息，触发目标 AP 从 start_eip 地址处，从实模式开始运行。
-```asm
-trampoline.S
-
-       ENTRY(trampoline_data)
-r_base = .
-       wbinvd               # Needed for NUMA-Q should be harmless for others
-       mov %cs, %ax         # Code and data in the same place
-       mov %ax, %ds
-
-       cli                  # We should be safe anyway
-
-       movl       $0xA5A5A5A5, trampoline_data - r_base
-```
-
-这个是设置标识，以便 BSP 知道 AP 运行到这里了。
-```asm
-       lidtl boot_idt - r_base    # load idt with 0, 0
-       lgdtl boot_gdt - r_base    # load gdt with whatever is appropriate
-```
-
-加载 ldt 和 gdt
-
-```asm
-       xor  %ax, %ax
-       inc   %ax        # protected mode (PE) bit
-       lmsw       %ax        # into protected mode
-
-       # flush prefetch and jump to startup_32_smp in arch/i386/kernel/head.S
-       ljmpl       $__BOOT_CS, $(startup_32_smp-__PAGE_OFFSET)
-```
-
-启动保护模式，跳转到 startup_32_smp 处
-```asm
-       # These need to be in the same 64K segment as the above;
-       # hence we don't use the boot_gdt_descr defined in head.S
-
-boot_gdt:
-       .word      __BOOT_DS + 7                 # gdt limit
-       .long       boot_gdt_table-__PAGE_OFFSET # gdt base
-
-boot_idt:
-       .word       0                         # idt limit = 0
-       .long       0                         # idt base = 0L
-
-.globl trampoline_end
-
-trampoline_end:
-```
-
-在这段代码中，设置标识，以便 BSP 知道该 AP 已经运行到这段代码，加载 GDT 和 LDT 表基址。
-
-然后启动保护模式，跳转到 startup_32_smp 处。
-
-
-head.s 部分代码：
-```c
-ENTRY(startup_32_smp)
-       cld
-       movl $(__BOOT_DS),%eax
-       movl %eax,%ds
-       movl %eax,%es
-       movl %eax,%fs
-       movl %eax,%gs
-
-       xorl %ebx,%ebx
-       incl %ebx
-```
-
-如果是 AP 的话，将 bx 设置为 1
-
-```c
-       movl $swapper_pg_dir-__PAGE_OFFSET,%eax
-       movl %eax,%cr3           /* set the page table pointer.. */
-       movl %cr0,%eax
-       orl $0x80000000,%eax
-       movl %eax,%cr0           /* ..and set paging (PG) bit */
-       ljmp $__BOOT_CS,$1f /* Clear prefetch and normalize %eip */
-```
-
-启用分页，
-```c
-       lss stack_start,%esp
-```
-
-使 esp 执行 fork 创建的进程内核堆栈部分，以便后续跳转到 start_secondary
-
-
-```asm
-#ifdef CONFIG_SMP
-       movb ready, %cl
-       movb $1, ready
-       cmpb $0,%cl
-
-       je 1f               # the first CPU calls start_kernel
-                           # all other CPUs call initialize_secondary
-
-       call initialize_secondary
-       jmp L6
-
-1:
-
-#endif /* CONFIG_SMP */
-       call start_kernel
-```
-
-如果是 AP 启动的话，就调用 initialize_secondary 函数。
-```c
-void __devinit initialize_secondary(void)
+/* Called by boot processor to activate the rest. */
+static void __init smp_init(void)
 {
-       /*
-        * We don't actually need to load the full TSS,
-        * basically just the stack pointer and the eip.
-        */
-       asm volatile(
-              "movl %0,%%esp/n/t"
-              "jmp *%1"
-              :
-              :"r" (current->thread.esp),"r" (current->thread.eip));
+	unsigned int cpu;
+
+	/* FIXME: This should be done in userspace --RR */
+	for_each_present_cpu(cpu) {
+		if (num_online_cpus() >= setup_max_cpus)
+			break;
+		if (!cpu_online(cpu))
+			cpu_up(cpu);//（1）--------
+        	//cpu_up到最终调用smp_ops.cpu_up(cpu);
+        	//.cpu_up = native_cpu_up是一个回调函数。在arch/x86/kernel/smp.c注册 
+	}
+
+	/* Any cleanup work */
+	printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
 }
 ```
-设置堆栈为 fork 创建时的堆栈， ip 为 fork 时的 ip ，这样就跳转的了 start_secondary 。
 
-start_secondary 函数中处理如下：
+native_cpu_up的注册：
 ```c
-       while (!cpu_isset(smp_processor_id(), smp_commenced_mask))
-           rep_nop();
+struct smp_ops smp_ops = { 
+   …… 
+  .smp_cpus_done		= native_smp_cpus_done,
+  .cpu_up = native_cpu_up, 
+   …… 
+} 
 ```
 
-进行 smp_commenced_mask 判断，是否启动 AP 运行。 smp_commenced_mask 在 smp_init() 中设置。
+### native_cpu_up
+接下来看标号（1）处native_cpu_up(unsigned int cpu) 。依次启动系统中各个CPU。
 ```c
-       cpu_idle();
+int __cpuinit native_cpu_up(unsigned int cpu)
+{
+    ......
+    mtrr_save_state();
+    per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;//设置对应CPU的状态
+        
+    err = do_boot_cpu(apicid, cpu);	//唤醒AP------------
+    ......
+
+	while (!cpu_online(cpu)) {//在这里不停的一直等。确认前一个AP唤醒后，再唤醒下一个AP
+		cpu_relax();
+		......
+	}
+
+	return 0;
+}
 ```
-如果启动了，调用 cpu_idle 进行任务调度。
+
+### 1、do_boot_cpu
+发送IPI中断唤醒APs，并且在IPI中断中，带有AP唤醒后要执行的代码地址（实际上只是一个vector，AP会把这个vector«12作为要执行的代码地址）。
+```c
+static int __cpuinit do_boot_cpu(int apicid, int cpu)
+{
+	unsigned long boot_error = 0;
+	unsigned long start_ip;
+	int timeout;
+	struct create_idle c_idle = {
+		.cpu	= cpu,
+		.done	= COMPLETION_INITIALIZER_ONSTACK(c_idle.done),
+	};
+	/*  
+	 * 完成c_idle.work.func = do_fork_idle
+	 */
+	INIT_WORK(&c_idle.work, do_fork_idle);
+	......
+	if (!keventd_up() || current_is_keventd())
+        /* 执行do_fork_idle：将init进程使用copy_process复制，并且调用init_idle函数，设置可以运行   
+         * 的CPU。fork出一个idel线程，地址空间还是沿用init进程地址空间。
+         */
+		c_idle.work.func(&c_idle.work);
+	else {
+		......
+	}
+
+	set_idle_for_cpu(cpu, c_idle.idle);
+do_rest:
+	per_cpu(current_task, cpu) = c_idle.idle;
+	......
+
+	/* AP的GDT已经在start_kernel()-->setup_per_cpu_areas()初始化完成，这里只是保存它的基地址
+     * 到early_gdt_descr，等后面唤醒时，AP自己设置到GDTR。见startup_32_smp末尾
+     */
+    early_gdt_descr.address = (unsigned long)get_cpu_gdt_table(cpu);
+    
+    //AP初始化完成后，就运行start_secondary函数，见startup_32_smp末尾
+	initial_code = (unsigned long)start_secondary;
+    
+    //为AP设定好执行start_secondary时将要使用的stack，见startup_32_smp末尾
+	stack_start.sp = (void *) c_idle.idle->thread.sp;
+	
+    //real-mode code that AP runs after BSP kicks it（嘻嘻）
+    /* 复制trampoline_data到trampoline_end之间的代码(在arch/i386/kernel/trampoline.S中）到
+     * trampoline_base处。这里复制到trampoline_base的代码是等下AP唤醒后要执行的代码。所以得通过IPI
+     * 的方式告诉AP，trampoline_base对应物理页所在位置。
+     * trampoline_base是之前在start_kernel()-->setup_arch()-->smp_alloc_memory():
+     *        trampoline_base = (void *) alloc_bootmem_low_pages(PAGE_SIZE)
+     * 处申请的页。这里为什么要在低端内存去分配trampoline_base？还记得之前说的 IPI传递给AP只是传递
+     * 了一个vector，这个vector只有8位大小，AP自己再<<12，所以AP总共只能寻址1M的物理地址空间。因为
+     * AP在唤醒后是处于实模式的。
+     * 
+     * 所以底下调用virt_to_phys，获取trampoline_base对应物理页的地址start_eip，start_eip是4K对其
+     * 的，所以start_eip是形如0xSS000，等下通过IPI发送给AP的是0xSS
+     */
+    start_ip = setup_trampoline(){
+        memcpy(trampoline_base, trampoline_data,
+                        trampoline_end - trampoline_data);
+        return virt_to_phys(trampoline_base);
+    }
+	......
+    
+	/*
+	 * Kick the secondary CPU. Use the method in the APIC driver
+	 * if it's defined - or use an INIT boot APIC message otherwise:
+	 */
+	if (apic->wakeup_secondary_cpu)
+		boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
+	else
+        /* 这里是重点拉，发送IPI中断。
+         * 在这个函数中通过操作APIC_ICR寄存器，BSP向目标AP发送IPI消息，触发目标AP从start_eip地址处，
+         * 实模式开始运行。
+         */
+		boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);	
+
+	if (!boot_error) {
+		/*
+		 * allow APs to start initializing.
+		 */
+		pr_debug("Before Callout %d.\n", cpu);
+        
+		cpumask_set_cpu(cpu, cpu_callout_mask);
+		pr_debug("After Callout %d.\n", cpu);
+
+		/*
+		 * Wait 5s total for a response
+		 */
+		for (timeout = 0; timeout < 50000; timeout++) {
+            /* AP唤醒后会进入start_secondary()-->smp_callin() 设置对应的cpu_callin_mask
+             * 所以这里只要检测到cpu_callin_mask被设置了，代表AP激活成功
+			 */
+			if (cpumask_test_cpu(cpu, cpu_callin_mask))
+				break;	/* It has booted */
+			udelay(100);
+			/*
+			 * Allow other tasks to run while we wait for the
+			 * AP to come online. This also gives a chance
+			 * for the MTRR work(triggered by the AP coming online)
+			 * to be completed in the stop machine context.
+			 */
+			schedule();
+		}
+
+		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
+			/* Signal AP that it may continue to boot */
+			cpumask_set_cpu(cpu, cpu_may_complete_boot_mask);
+			pr_debug("CPU%d: has booted.\n", cpu);//提示对应的AP激活成功
+		} else {
+			boot_error = 1;
+			......可能出了什么问题
+		}
+	}
+	......
+
+	return boot_error;
+}
+```
+
+### 2、wakeup_secondary_cpu_via_init发送IPI
+发送IPI中断，至于为什么这里apic_icr_write可以发送vector到AP，请参考intel文档。
+```c
+wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+{
+    ......
+    /* 
+    * STARTUP IPI 
+    */  
+
+    /* Target chip */  
+    /* Boot on the stack */  
+    /* Kick the second */  
+    apic_icr_write(APIC_DM_STARTUP | (start_eip >> 12),  
+    phys_apicid); 
+    ......
+} 
+```
+AP接收到IPI，就开始激活执行了。
+
+3、trampoline.S
+这段代码就是前面do_boot_cpu()—>setup_trampoline()拷贝到trampoline_base的代码：
+```asm
+ENTRY(trampoline_data)
+r_base = .
+	wbinvd			# Needed for NUMA-Q should be harmless for others
+	mov	%cs, %ax	# Code and data in the same place
+	mov	%ax, %ds
+
+	cli			# We should be safe anyway
+	
+	/* 这个是设置标识，以便BP知道AP运行到这里了。当前处于实模式，DS段寄存器指向前面的r_base处，此处往
+	 * r_base处写入0xA5A5A5A5。BP可以
+	 * 通过虚拟地址trampoline_base寻址到r_base来查看是否设置$0xA5A5A5A5，以此来检测AP激活是否成功
+	 */
+	movl	$0xA5A5A5A5, trampoline_data - r_base
+				# write marker for master knows we're running
+
+	/* GDT tables in non default location kernel can be beyond 16MB and
+	 * lgdt will not be able to load the address as in real mode default
+	 * operand size is 16bit. Use lgdtl instead to force operand size
+	 * to 32 bit.
+	 */
+	
+	/* 设置临时idt和gdt，方便后面开启保护模式
+	 * 至于为什么这里要减r_base，因为此时的DS段寄存器已经指向r_base
+	 * boot_idt_descr - r_base + DS段寄存器<<4 = boot_idt_descr
+	 */
+	lidtl	boot_idt_descr - r_base	# load idt with 0, 0
+	lgdtl	boot_gdt_descr - r_base	# load gdt with whatever is appropriate
+
+	xor	%ax, %ax
+	inc	%ax		# protected mode (PE) bit
+	lmsw	%ax		# into protected mode 将%ax加载到CR0，进入保护模式
+	
+	# flush prefetch and jump to startup_32_smp in arch/i386/kernel/head.S
+	/* 长跳转至startup_32_smp。此时的__BOOT_CS为0x10，对应GDT的描述符base为0，然后没有开启分页，直接
+	 * 访问startup_32_smp物理地址
+	 */
+	ljmpl	$__BOOT_CS, $(startup_32_smp-__PAGE_OFFSET)
+
+boot_gdt_descr:
+	.word	__BOOT_DS + 7			# gdt limit
+	.long	boot_gdt - __PAGE_OFFSET	# gdt base 
+	/* 由于编译时boot_gdt是加上了__PAGE_OFFSET，而当前还没有开启页表，所以boot_gdt - __PAGE_OFFSET
+	 * 后作为物理地址直接使用。
+	 */
+	
+boot_idt_descr:
+	.word	0				# idt limit = 0
+	.long	0				# idt base = 0L
+
+.globl trampoline_end
+trampoline_end:
+-------------------------------------boot_gdt来自于arch/x86/kernel/head_32.S
+ENTRY(boot_gdt)
+	.fill GDT_ENTRY_BOOT_CS,8,0 /* GDT_ENTRY_BOOT_CS为2，这里有两项 */
+	.quad 0x00cf9a000000ffff	/* kernel 4GB code at 0x00000000 */
+	.quad 0x00cf92000000ffff	/* kernel 4GB data at 0x00000000 */
+```
+在这段代码中，设置标识，以便BSP知道该AP已经运行到这段代码，加载GDT和LDT表基址。然后启动保护模式，更新CS段寄存器，跳转到startup_32_smp 处。
+
+### 4、startup_32_smp
+```asm
+ENTRY(startup_32_smp)
+	cld
+	/* 前面长跳转已经设置好CS，这里设置其他段寄存器。__BOOT_DS为0x18,使用GDT第4项，base全为0。也就是说
+	 * 从现在开始，只需要关注EIP 
+	 */
+	movl $(__BOOT_DS),%eax 
+	movl %eax,%ds
+	movl %eax,%es
+	movl %eax,%fs
+	movl %eax,%gs
+	
+	......
+/*
+ * Enable paging
+ */
+ 	/* 还记得前面fork的idel线程吗？这里使用和init进程同样的页表，以使后面能够正确的找到idel线程的内核栈和
+	 * 执行函数。
+	 */
+	movl $pa(swapper_pg_dir),%eax 
+	movl %eax,%cr3		/* set the page table pointer.. */
+	movl %cr0,%eax
+	orl  $X86_CR0_PG,%eax
+	movl %eax,%cr0		/* ..and set paging (PG) bit 开启分页 */
+	
+	/* CS保持原样，更新EIP，此时的EIP为0xC01000xx线性地址，因为在编译时，符号1：的地址在3g后面*/
+	ljmp $__BOOT_CS,$1f	
+1:
+	/* 更新SS和esp，以使用idel进程的内核栈。还记得在do_boot_cpu():stack_start.sp = (void *) 
+	 * c_idle.idle->thread.sp; 后面执行的函数都使用该内核栈  
+	 */
+	lss stack_start,%esp
+	
+	/* 把eflags全部置零 */
+	pushl $0
+	popfl
+	
+	call setup_idt
+	
+	/* 使用BP已经设置好的GDT。见do_boot_cpu()
+	 * early_gdt_descr.address = (unsigned long)get_cpu_gdt_table(cpu) 
+	 */
+	lgdt early_gdt_descr 
+	
+	lidt idt_descr
+	
+	/* 由于重新设置了GDT，所以更新CS为__KERNEL_CS GDT第13项 */
+	ljmp $(__KERNEL_CS),$1f 
+1:	movl $(__KERNEL_DS),%eax	# 更新其他所有的段寄存器
+	movl %eax,%ss
+	
+	movl $(__USER_DS),%eax
+	movl %eax,%ds
+	movl %eax,%es
+	
+	movl $(__KERNEL_PERCPU), %eax
+	movl %eax,%fs	# set this cpu's percpu，这样AP就能找到自己的cpuid,至于原理
+					# 请参考
+					# https://frankjkl.github.io/2019/03/09/Linux内核-smp_processor_id/
+	
+	......
+	/* 对于BP来讲stack_start为init进程的内核栈，initial_code为i386_start_kernel */
+	/* 对于AP来讲stack_start为BP设置的idel进程的内核栈，initial_code为start_secondary */
+	movl (stack_start), %esp
+1:
+	/* 见do_boot_cpu函数 
+	 * initial_code = (unsigned long)start_secondary
+	 */
+	jmp *(initial_code)
+这个函数的主要作用在于开启分页，更新EIP，ESP。重新设置GDT，更新所有的段寄存器，最后跳转到start_secondary执行。
+
+5、start_secondary
+此时分页和保护模式都已经开启，且完全进入BP事先为我们fork好的idel线程的上下文。
+
+static void __cpuinit start_secondary(void *unused)
+{
+	......
+	cpu_init();
+	preempt_disable();
+    
+    /* 设定cpu_callin_mask来告诉BP，AP已经启动。BP才能继续运行。	
+     * 参考do_boot_cpu：if (cpumask_test_cpu(cpu, cpu_callin_mask)) 
+	 */ 
+	smp_callin();
+	
+    /* otherwise gcc will move up smp_processor_id before the cpu_init */
+	barrier();
+	
+    ......
+	
+    //通知BP AP已经启动（BP会在native_cpu_up的while循环里等待）
+	set_cpu_online(smp_processor_id(), true);
+	......
+    //更新AP的状态
+	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
+	......
+	cpu_idle();
+}
+```
+本函数主要是通知BP本AP启动完成，然后cpu_idle，参与到任务调度。
+
+## 总结
+整理一下AP启动的整个过程：
+* wakeup_secondary_cpu_via_init：BP发送IPI中断给AP
+* trampoline.S AP引导代码，为16进制代码，启用保护模式
+* head.s 为AP创建分页管理
+* start_secondary 通知BP启动成功。AP参与任务调度。
+
+## F&Q：
+* 1、每个AP自己的GDTR在哪里设置的？（每个AP的GDT都已经由BP处理器初始化完成，就等待设置到CPU上）
+答：do_boot_cpu()–> early_gdt_descr.address = (unsigned long)get_cpu_gdt_table(cpu);
+    startup_32_smp() –> lgdt early_gdt_descr
+
+* 2、发送IPI到AP后，CS：IP如何设置的？
+CS为0x**00（**代表IPI中包含的vector），IP为0，CS:IP就可以引用trampoline.S中的代码
+
+## 参考：
+* https://www.bbsmax.com/A/xl56ELa7Jr/
+*《Linux内核源代码情景分析》
+* https://www.tldp.org/HOWTO/Linux-i386-Boot-Code-HOWTO/smpboot.html
