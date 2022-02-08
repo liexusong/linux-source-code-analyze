@@ -335,10 +335,11 @@ ENTRY(startup_32_smp)
 	 */
 	jmp *(initial_code)
 这个函数的主要作用在于开启分页，更新EIP，ESP。重新设置GDT，更新所有的段寄存器，最后跳转到start_secondary执行。
+```
 
-5、start_secondary
+### 5、start_secondary
 此时分页和保护模式都已经开启，且完全进入BP事先为我们fork好的idel线程的上下文。
-
+```c
 static void __cpuinit start_secondary(void *unused)
 {
 	......
