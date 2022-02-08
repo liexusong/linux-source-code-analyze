@@ -21,20 +21,22 @@ BSP 可以通过 IPI 消息控制 AP 从指定的起始地址运行。 CPU 中�
 
 ## 2. linux SMP 启动过程流程简介
 ```c
-setup_arch()
-  |-> setup_memory();
-  |       |   |-> reserve_bootmem(PAGE_SIZE, PAGE_SIZE);
-  |       |   |->   find_smp_config();  // 查找 smp_mp_table 的位置
-  |       |-> smp_alloc_memory();
-  |       |-> trampoline_base = (void *) alloc_bootmem_low_pages(PAGE_SIZE); // 分配 trampoline ，用于启动 AP 的引导代码。
-  |       |-> get_smp_config();  // 根据 smp_mp_table ，获取具体的硬件信息
+start_kernel
+  |-> setup_arch()
+  |      |-> setup_memory();
+  |      |      |-> reserve_bootmem(PAGE_SIZE, PAGE_SIZE);
+  |      |-> find_smp_config();  // 查找 smp_mp_table 的位置
+  |      |-> smp_alloc_memory();
+  |      |       |-> trampoline_base = (void *) alloc_bootmem_low_pages(PAGE_SIZE); // 分配 trampoline ，用于启动 AP 的引导代码。
+  |      |-> get_smp_config();  // 根据 smp_mp_table ，获取具体的硬件信息
   |-> trap_init()
-  |-> init_apic_mappings();
+  |      |-> init_apic_mappings();
   |-> mem_init()
-  |-> zap_low_mappings(); // 如果没有定义 SMP 的话，清楚用户空间的地址映射。
+  |      |-> zap_low_mappings(); // 如果没有定义 SMP 的话，清楚用户空间的地址映射。
   |-> rest_init();
-  |-> kernel_thread(init, NULL, CLONE_FS | CLONE_SIGHAND);
-  |-> init();
+  |      |-> kernel_thread(init, NULL, CLONE_FS | CLONE_SIGHAND);
+  |      |       |-> init();
+  
   |-> set_cpus_allowed(current, CPU_MASK_ALL);
   |-> smp_prepare_cpus(max_cpus);
   |       |-> smp_boot_cpus(max_cpus);
