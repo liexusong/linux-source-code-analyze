@@ -1,7 +1,5 @@
 ## 1. SMP 硬件体系结构：
-
 对于 SMP 最简单可以理解为系统存在多个完全相同的 CPU ，所有 CPU 共享总线，拥有自己的寄存器。对于内存和外部设备访问，由于共享总线，所以是共享的。 Linux 操作系统多个 CPU 共享在系统空间上映射相同，是完全对等的。
-
 
 由于系统中存在多个 CPU ，这是就引入一个问题，当外部设备产生中断的时候，具体有哪一个 CPU 进行处理？
 
@@ -12,22 +10,14 @@ IO APIC 连接各个外部设备，并可以设置分发类型，根据设定的
 LOCAL APIC 负责本地 CPU 的中断处理， LOCAL APIC 不仅可以接受 IO APIC 的中断，也需要处理本地 CPU 产生的异常。同时 LOCAL APIC 还提供了一个定时器。
 
 ### 如何确定那个 CPU 是引导 CPU ？
-
 根据 intel 公司中的资料，系统上电后，会根据 MP Initialization Protocol 随机选择一个 CPU 作为 BSP ，只有 BSP 会运行BIOS 程序，其他 AP 都进入等待状态， BSP 发送 IPI 中断触发后才可以运行。具体的 MP Initialization Protocol 细节，可以参考 Intel® 64 and IA-32 Architectures Software Developer’s Manual Volume 3A: System Programming
 Guide, Part 1 第 8 章。
 
-
 ### 引导 CPU 如何控制其他 CPU 开始运行？
-
 BSP 可以通过 IPI 消息控制 AP 从指定的起始地址运行。 CPU 中集成的 LOCAL APIC 提供了这个功能。可以通过写LOCAL APIC 中提供的相关寄存器，发送 IPI 消息到指定的 CPU 上。
 
-
-
-### x如何获取系统硬件 CPU 信息的？
-
+### 如何获取系统硬件 CPU 信息的？
 在系统初始化后，硬件会在内存的规定位置提供关于 CPU ，总线 , IO APIC 等的信息，即 SMP MP table 。在 linux 初始化的过程，会读取该位置，获取系统相关的硬件信息。
-
-
 
 ## 2. linux SMP 启动过程流程简介
 ```c
@@ -64,8 +54,7 @@ initialize_secondary 根据之前 fork 创建设置的信息，跳转到 start_s
 start_secondary 判断 BSP 是否启动，如果启动 AP 进行任务调度。
 
 ## 3. 代码学习总结
-
-find_smp_config(); ，查找 MP table 在内存中的位置。具体协议可以参考 MP 协议的第 4 章。
+find_smp_config() 查找 MP table 在内存中的位置。具体协议可以参考 MP 协议的第 4 章。
 
 这个表的作用在于描述系统 CPU ，总线， IO APIC 等的硬件信息。
 
