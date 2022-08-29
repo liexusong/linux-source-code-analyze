@@ -191,7 +191,7 @@ page_active:
             UnlockPage(page);
         }
 ```
-上面的代码比较简单, 如果内存页已经是干净的, 那么久移动到非活跃干净链表中.
+上面的代码比较简单, 如果内存页已经是干净的, 那么就移动到非活跃干净链表中.
 ```cpp
     if (can_get_io_locks && !launder_loop && free_shortage()) {
         launder_loop = 1;
