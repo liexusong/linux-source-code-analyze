@@ -47,7 +47,7 @@ struct nf_hook_ops
 *   `hook`：钩子函数指针。
 *   `pf`：协议类型，因为 `Netfilter` 可以用于不同的协议，如 IPV4 和 IPV6 等。
 *   `hooknum`：所处的阶段，也就是上面所说的5个不同的阶段。
-*   `priority`：优先级，值越大优先级约小。
+*   `priority`：优先级，值越大优先级越小。
 
 所以要使用 `Netfilter` 对网络数据包进行处理，只需要编写好处理数据包的钩子函数，然后通过调用 `nf_register_hook()` 函数向 `Netfilter` 注册即可。
 
