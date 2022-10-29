@@ -60,6 +60,14 @@
     * [完全公平调度算法](https://github.com/liexusong/linux-source-code-analyze/blob/master/cfs-scheduler.md)
     * [HugePages原理与使用](https://github.com/liexusong/linux-source-code-analyze/blob/master/hugepage.md)
     * [HugePages实现剖析](https://github.com/liexusong/linux-source-code-analyze/blob/master/hugepages-source-code-analysis.md)
+    
+## 其他版本Linux
+
+### 1、Linux-3.x
+
+### 2、Linux-4.x
+
+### 3、Linux-5.x
 
 ### V我
 @jayden-lie
