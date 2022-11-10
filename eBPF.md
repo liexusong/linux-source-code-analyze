@@ -92,7 +92,7 @@ kprobe_dispatcher()
 这个问题涉及到 trace 模块，当我们使用以下命令设置一个 kprobe 事件时，将会触发调用 `create_trace_kprobe()` 函数。
 
 ```bash
-$ echo "r:kretprobe_func sys_write $retval" /sys/kernel/debug/tracing/kprobe_events
+> echo "r:kretprobe_func sys_write $retval" /sys/kernel/debug/tracing/kprobe_events
 ```
 
 我们来看看 `create_trace_kprobe()` 函数的实现：
