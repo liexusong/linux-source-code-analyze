@@ -122,7 +122,7 @@ void scheduler_tick(int user_ticks, int sys_ticks)
         if (!rq->expired_timestamp)
             rq->expired_timestamp = jiffies;
 
-        // 如果不是交互进程或者没有出来饥饿状态
+        // 如果不是交互进程或者没有处于饥饿状态
         if (!TASK_INTERACTIVE(p) || EXPIRED_STARVING(rq)) {
             enqueue_task(p, rq->expired); // 移动到expired队列
         } else
@@ -137,8 +137,8 @@ void scheduler_tick(int user_ticks, int sys_ticks)
 3. 调用 `set_tsk_need_resched()` 函数设 `TIF_NEED_RESCHED` 标志，表示当前进程需要重新调度。
 4. 调用 `effective_prio()` 函数重新计算进程的动态优先级。
 5. 调用 `task_timeslice()` 函数重新计算进程的可运行时间片。
-6. 如果当前进程是交互进程或者出来饥饿状态，那么重新加入到 `active` 队列。
-7. 否则把今天移动到 `expired` 队列。
+6. 如果当前进程是交互进程或者处于饥饿状态，那么重新加入到 `active` 队列。
+7. 否则把进程移动到 `expired` 队列。
 
 #### 任务调度
 
