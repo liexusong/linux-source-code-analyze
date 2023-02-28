@@ -163,9 +163,6 @@ void schedule(void)
     idx = sched_find_first_bit(array->bitmap); // 找到最高优先级的任务队列
     queue = array->queue + idx;
     next = list_entry(queue->next, task_t, run_list); // 获取到下一个将要运行的进程
-
-    ...
-    prev->sleep_avg -= run_time; // 减少当前进程的睡眠时间
     ...
 
     if (likely(prev != next)) {
@@ -179,6 +176,5 @@ void schedule(void)
 上面代码主要完成以下几个步骤：
 1. 如果当前 `runqueue` 的 `active` 队列为空，那么把 `active` 队列与 `expired` 队列进行交换。
 2. 调用 `sched_find_first_bit()` 函数在 `bitmap` 中找到优先级最高并且不为空的任务队列索引。
-3. 减少当前进程的睡眠时间。
-4. 调用 `context_switch()` 函数切换到next进程进行运行。
+3. 调用 `context_switch()` 函数切换到next进程进行运行。
 
