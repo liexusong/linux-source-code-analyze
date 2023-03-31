@@ -4,8 +4,8 @@
 
 ```c
 
-in_interrupt() -> irq_count()
-irq_count() -> (preempt_count() & (HARDIRQ_MASK | SOFTIRQ_MASK))
-preempt_count() -> (current_thread_info()->preempt_count)
+#define in_interrupt() irq_count()
+#define irq_count() (preempt_count() & (HARDIRQ_MASK | SOFTIRQ_MASK))
+#define preempt_count() (current_thread_info()->preempt_count)
 
 ```
