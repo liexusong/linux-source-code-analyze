@@ -15,3 +15,17 @@
 ```c
 #define in_interrupt()  ((current_thread_info()->preempt_count) & (HARDIRQ_MASK | SOFTIRQ_MASK))
 ```
+
+其中 `current_thread_info()` 函数会返回一个类型为 `struct thread_info` 的指针，此指针指向当前线程的信息，`struct thread_info` 结构定义如下：
+
+```c
+struct thread_info {
+    struct task_struct *task; /* main task structure */
+    ...
+    unsigned long flags;      /* low level flags */
+    unsigned long status;     /* thread-synchronous flags */
+    __u32 cpu;                /* current CPU */
+    int preempt_count;        /* 0 => preemptable, <0 => BUG */
+    ...
+};
+```
