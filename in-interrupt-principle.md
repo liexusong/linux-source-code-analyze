@@ -49,4 +49,7 @@ struct thread_info {
 
 ```
 
+* 内核抢占计数器占用 `preempt_count` 字段的 `0 ~ 7` 位。
+* 软中断中断计数器占用 `preempt_count` 字段的 `8 ~ 15` 位。
+* 硬中断中断计数器占用 `preempt_count` 字段的 `16 ~ 27` 位。
 
