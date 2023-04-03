@@ -60,6 +60,8 @@ struct thread_info {
     do {                                      \
         add_preempt_count(HARDIRQ_OFFSET);    \
     } while (0)
+    
+#define add_preempt_count(val)  do { preempt_count() += (val); } while (0)
 ```
 
 
