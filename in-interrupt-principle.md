@@ -60,4 +60,4 @@ struct thread_info {
     do { current_thread_info()->preempt_count += (1UL << 16); } while (0)
 ```
 
-
+从上面代码可以看出，`irq_enter()` 宏就是增加硬中断计数器的值。
