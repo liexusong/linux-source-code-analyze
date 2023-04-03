@@ -57,7 +57,7 @@ struct thread_info {
 
 ```c
 #define irq_enter() \
-    do { current_thread_info()->preempt_count += (val); } while (0)
+    do { current_thread_info()->preempt_count += (1UL << 16); } while (0)
 ```
 
 
