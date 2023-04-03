@@ -53,3 +53,13 @@ struct thread_info {
 * 软中断中断计数器占用 `preempt_count` 字段的 `8 ~ 15` 位。
 * 硬中断中断计数器占用 `preempt_count` 字段的 `16 ~ 27` 位。
 
+当外部设备发生中断时，内核会调用 `irq_enter()` 宏来标记进入硬中断上下文，`irq_enter()` 代码如下所示：
+
+```c
+#define irq_enter()                           \
+    do {                                      \
+        add_preempt_count(HARDIRQ_OFFSET);    \
+    } while (0)
+```
+
+
