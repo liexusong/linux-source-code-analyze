@@ -60,7 +60,7 @@
     * [完全公平调度算法](https://github.com/liexusong/linux-source-code-analyze/blob/master/cfs-scheduler.md)
     * [HugePages原理与使用](https://github.com/liexusong/linux-source-code-analyze/blob/master/hugepage.md)
     * [HugePages实现剖析](https://github.com/liexusong/linux-source-code-analyze/blob/master/hugepages-source-code-analysis.md)
-    * [什么事iowait](https://github.com/liexusong/linux-source-code-analyze/blob/master/iowait.md)
+    * [什么是iowait](https://github.com/liexusong/linux-source-code-analyze/blob/master/iowait.md)
     
 ## 其他版本Linux
 
