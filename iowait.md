@@ -2,7 +2,7 @@
 
 我们对系统性能进行优化时，一般会使用 `top` 命令来查看系统负载和系统中各个进程的运行情况，从而找出影响系统性能的因素。如下图所示：
 
-![top](/Users/liexusong/Desktop/markdown/images/iowait/top.png)
+![top](./images/top.png)
 
 `top` 命令会输出很多系统相关的信息，如：系统负载、系统中的进程数、CPU使用率和内存使用率等，这些信息对排查系统性能问题起着至关重要的作用。
 
@@ -33,7 +33,7 @@ cat /proc/stat
 
 命令输出如下图所示：
 
-![stat](/Users/liexusong/Desktop/markdown/images/iowait/stat.png)
+![stat](./images/stat.png)
 
 红色方框中的数据就是 `iowait` 占用的时间。
 
