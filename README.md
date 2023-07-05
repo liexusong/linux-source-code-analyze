@@ -73,11 +73,6 @@
 ### 3、Linux-5.x
 * 文件系统与I/O
 
-### 4. 随想
-
-### V我
-@jayden-lie
-
 ### 我们的公众号
 
 ![qrcode](https://image-static.segmentfault.com/376/558/3765589661-607fef350658b_fix732)
