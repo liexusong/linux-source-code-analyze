@@ -6,8 +6,10 @@
 * 进程管理
     * [进程管理](https://github.com/liexusong/linux-source-code-analyze/blob/master/process-management.md)
     * [进程调度](https://github.com/liexusong/linux-source-code-analyze/blob/master/process-schedule.md)
+* 同步机制
     * [并发同步](https://github.com/liexusong/linux-source-code-analyze/blob/master/concurrency-synchronize.md)
     * [等待队列](https://github.com/liexusong/linux-source-code-analyze/blob/master/waitqueue.md)
+    * [顺序锁](https://github.com/liexusong/linux-source-code-analyze/blob/master/seqlock.md)
 * 内存管理
     * [物理内存管理](https://github.com/liexusong/linux-source-code-analyze/blob/master/physical-memory-managemen.md)
     * [伙伴分配算法](https://github.com/liexusong/linux-source-code-analyze/blob/master/physical-memory-buddy-system.md)
